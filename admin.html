@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guard Tour Supervisor</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="admin.js" defer></script>
+</head>
+<body>
+  <div class="desktop-only-message">
+    <h2>Desktop only</h2>
+    <p>This admin page is available on computer screens only.</p>
+    <p>Please open this page on a desktop or laptop browser.</p>
+  </div>
+
+  <div class="admin-shell">
+    <header class="topbar">
+      <div class="brand">Guard Tour Admin</div>
+      <div class="top-actions">
+        <span id="todayText"></span>
+        <div id="topUserMenuWrap" class="top-user-menu-wrap">
+          <button id="topUserBtn" type="button" class="top-user top-user-btn" aria-haspopup="menu" aria-expanded="false">
+          <span id="topUserAvatar" class="top-user-avatar">--</span>
+          <span id="topUserName" class="top-user-name">-</span>
+          </button>
+          <div id="topUserMenu" class="top-user-menu" role="menu">
+            <button id="changePasswordBtn" type="button" class="top-user-menu-item" role="menuitem">Change Password</button>
+            <button id="topLogoutBtn" type="button" class="top-user-menu-item danger" role="menuitem">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="view-login" class="login-wrap active">
+      <div class="login-card">
+        <h2>Admin Login</h2>
+        <p class="login-subtitle">Sign in to manage users, checkpoints, templates, and reports.</p>
+        <label for="supervisorId">ID</label>
+        <input id="supervisorId" type="text" placeholder="e.g. A001" autocomplete="off">
+        <button id="loginBtn" class="btn">Login</button>
+        <p id="loginStatus" class="muted"></p>
+      </div>
+    </section>
+
+    <section id="view-dashboard" class="dashboard-wrap">
+      <aside class="left-nav">
+        <button class="menu-item active" data-panel="overview" title="Overview" aria-label="Overview">
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/>
+          </svg>
+          <span class="menu-label">Dashboard</span>
+        </button>
+        <button class="menu-item" data-panel="users" title="User" aria-label="User">
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M16 11a4 4 0 1 0-3.999-4A4 4 0 0 0 16 11zM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zM8 14c-2.76 0-5 1.79-5 4v1h10v-1c0-2.21-2.24-4-5-4zm8 0c-.58 0-1.13.07-1.66.19A5.88 5.88 0 0 1 18 19v1h3v-1c0-2.76-2.24-5-5-5z"/>
+          </svg>
+          <span class="menu-label">User</span>
+        </button>
+        <button class="menu-item" data-panel="checkpoints" title="Manage Checkpoints" aria-label="Manage Checkpoints">
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5z"/>
+          </svg>
+          <span class="menu-label">Checkpoints</span>
+        </button>
+        <button class="menu-item" data-panel="templates" title="Shift Template" aria-label="Shift Template">
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4h10a2 2 0 0 1 2 2v2H6a2 2 0 0 0-2 2v10a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm4 6h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2 3v2h8v-2h-8zm0 4v2h5v-2h-5z"/>
+          </svg>
+          <span class="menu-label">Template</span>
+        </button>
+
+        <div class="nav-bottom"></div>
+      </aside>
+
+      <main class="content-area">
+        <section id="panel-overview" class="func-panel active">
+          <div class="toolbar">
+            <label for="reportDate">Report Date</label>
+            <input id="reportDate" type="date">
+            <button id="loadBtn" class="btn">Load</button>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card"><span>Total Shifts</span><strong id="kpiShifts">0</strong></div>
+            <div class="kpi-card"><span>Checked Points</span><strong id="kpiChecked">0</strong></div>
+            <div class="kpi-card"><span>Late Points</span><strong id="kpiLate">0</strong></div>
+            <div class="kpi-card"><span>Missed Points</span><strong id="kpiMissed">0</strong></div>
+            <div class="kpi-card"><span>Incidents</span><strong id="kpiIncidents">0</strong></div>
+            <div class="kpi-card"><span>Avg Compliance</span><strong id="kpiCompliance">0%</strong></div>
+          </div>
+
+          <div class="chart-toolbar">
+            <label for="chartRangeDays">Chart Range</label>
+            <select id="chartRangeDays">
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30" selected>Last 30 days</option>
+            </select>
+          </div>
+
+          <div class="chart-grid">
+            <section class="panel-box chart-box">
+              <h3>Compliance Trend</h3>
+              <canvas id="chartCompliance"></canvas>
+            </section>
+            <section class="panel-box chart-box">
+              <h3>Checked / Missed / Invalid</h3>
+              <canvas id="chartOperations"></canvas>
+            </section>
+            <section class="panel-box chart-box">
+              <h3>Incidents by Severity</h3>
+              <canvas id="chartSeverity"></canvas>
+            </section>
+            <section class="panel-box chart-box">
+              <h3>Day vs Night Performance</h3>
+              <canvas id="chartShiftType"></canvas>
+            </section>
+            <section class="panel-box chart-box chart-box-wide">
+              <h3>Top Problem Checkpoints</h3>
+              <canvas id="chartTopCheckpoints"></canvas>
+            </section>
+          </div>
+
+          <div class="panel-grid">
+            <section class="panel-box">
+              <h3>Shift Summary</h3>
+              <div id="summaryList" class="list"></div>
+            </section>
+
+            <section class="panel-box">
+              <h3>Incidents</h3>
+              <div id="incidentList" class="list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="panel-users" class="func-panel">
+          <section class="panel-box">
+            <div class="users-head">
+              <h3>User Management</h3>
+              <button id="addUserBtn" class="btn users-add-btn" type="button" title="Add user" aria-label="Add user">+</button>
+            </div>
+            <div class="user-tabs">
+              <button id="userTabAdmin" class="user-tab active" type="button">Admin</button>
+              <button id="userTabGuards" class="user-tab" type="button">Guards</button>
+            </div>
+
+            <div id="userPaneAdmin" class="user-pane active">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Supervisor ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminTableBody">
+                    <tr><td colspan="4">No admin data</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="userPaneGuards" class="user-pane">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Guard ID</th>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="guardsTableBody">
+                    <tr><td colspan="6">No guards</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="panel-checkpoints" class="func-panel">
+          <section class="panel-box">
+            <div class="users-head">
+              <h3>Manage Checkpoints</h3>
+              <button id="addCheckpointBtn" class="btn users-add-btn" type="button" title="Add checkpoint" aria-label="Add checkpoint">+</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Checkpoint ID</th>
+                    <th>Name</th>
+                    <th>QR Text</th>
+                    <th>Latitude</th>
+                    <th>Longitude</th>
+                    <th>Radius</th>
+                    <th>Photo Req</th>
+                    <th>Active</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="checkpointsTableBody">
+                  <tr><td colspan="9">No checkpoints</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="panel-templates" class="func-panel">
+          <section class="panel-box">
+            <div class="users-head">
+              <h3>Shift Template</h3>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button id="addTemplateBtn" class="btn users-add-btn" type="button" title="Add template" aria-label="Add template">+</button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Template ID</th>
+                    <th>Template Name</th>
+                    <th>Guards</th>
+                    <th>Rounds/Shift</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="templatesTableBody">
+                  <tr><td colspan="8">No templates</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+      </main>
+    </section>
+  </div>
+</body>
+</html>
