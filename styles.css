@@ -452,11 +452,29 @@ input:focus, textarea:focus, select:focus {
   border-color: #8fb1d8;
 }
 
+.quick-card.done {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.quick-card.done .quick-icon {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .quick-card:disabled,
 .quick-card.disabled {
   opacity: 0.45;
   cursor: not-allowed;
   border-color: var(--line);
+}
+
+.quick-card.done:disabled,
+.quick-card.done.disabled {
+  opacity: 1;
+  cursor: not-allowed;
+  border-color: #16a34a;
+  background: #f0fdf4;
 }
 
 .quick-icon {
