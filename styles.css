@@ -25,20 +25,26 @@ body {
   max-width: 480px;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 14px 14px 90px;
+  padding: 126px 14px 102px;
 }
 
 .topbar {
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 8px);
+  transform: translateX(-50%);
+  width: min(460px, calc(100vw - 18px));
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 14px;
   padding: 12px;
   border: 1px solid #ced9e8;
   border-radius: 18px;
   background: linear-gradient(135deg, #ffffff 0%, #f4f8fe 60%, #ecf3fb 100%);
   box-shadow: 0 8px 24px rgba(19, 34, 56, 0.08);
+  backdrop-filter: blur(6px);
+  z-index: 40;
 }
 
 .topbar-main {
@@ -118,7 +124,7 @@ body {
 }
 
 .auth-panel {
-  margin-top: 16dvh;
+  margin-top: 4dvh;
 }
 
 h2 {
@@ -619,7 +625,7 @@ input:focus, textarea:focus, select:focus {
 .bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: 10px;
+  bottom: calc(env(safe-area-inset-bottom) + 10px);
   transform: translateX(-50%);
   width: min(460px, calc(100vw - 18px));
   display: grid;
@@ -658,7 +664,7 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 390px) {
   .mobile-app { padding-left: 10px; padding-right: 10px; }
   .panel { padding: 12px; }
-  .topbar { padding: 10px; }
+  .topbar { padding: 10px; width: calc(100vw - 14px); }
   .topbar-title { font-size: 1.28rem; }
   .guard-avatar { width: 34px; height: 34px; }
   .guard-meta strong { max-width: 98px; font-size: .95rem; }
