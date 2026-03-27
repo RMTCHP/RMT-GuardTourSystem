@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbx14fztV0j1RnGpVeQ39ConbpCYt_AVJ5mSfmsw8SOOBpJ_jMMug6omgW1-6WRRBgg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx14fztV0j1RnGpVeQ39ConbpCYt_AVJ5mSfmsw8SOOBpJ_jMMug6omgW1-6WRRBgg/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -18,6 +18,7 @@ const state = {
   checkpointPhoto: "",
   incidentPhoto: "",
   incidentMode: "NONE",
+  checkpointQrMap: {},
   doneCheckpointCounter: {},
   scanner: null,
   queue: [],
@@ -115,6 +116,15 @@ function bindEvents() {
   el.photoInput.addEventListener("change", async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+    if (!state.gps) {
+      try {
+        setText(el.gpsText, "กำลังโหลดตำแหน่ง...");
+        await captureGps();
+        setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
+      } catch (err) {
+        setText(el.gpsText, `โหลด GPS ไม่สำเร็จ: ${err.message}`);
+      }
+    }
     state.checkpointPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
       timestamp: new Date(),
       lat: state.gps ? state.gps.lat : null,
@@ -152,6 +162,7 @@ async function restoreSession() {
     const loginRes = await callApi("loginGuard", { guardId: session.guardId });
     state.guard = loginRes;
     setGuardHeader(loginRes);
+    await loadCheckpointCatalog();
 
     const date = toYmd(new Date());
     state.shifts = await loadShiftPlanWithFallback(session.guardId, date);
@@ -177,6 +188,7 @@ async function onLogin() {
     const loginRes = await callApi("loginGuard", { guardId });
     state.guard = loginRes;
     setGuardHeader(loginRes);
+    await loadCheckpointCatalog();
 
     const date = toYmd(new Date());
     state.shifts = await loadShiftPlanWithFallback(guardId, date);
@@ -432,16 +444,9 @@ async function onCapturePhotoCard() {
     setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อน");
     return;
   }
-  try {
-    setText(el.gpsText, "กำลังโหลดตำแหน่ง...");
-    await captureGps();
-    setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
-    if (el.photoInput) {
-      el.photoInput.value = "";
-      el.photoInput.click();
-    }
-  } catch (err) {
-    setText(el.checkpointStatus, `ถ่ายรูปไม่สำเร็จ: ${err.message}`);
+  if (el.photoInput) {
+    el.photoInput.value = "";
+    el.photoInput.click();
   }
 }
 
@@ -1089,9 +1094,11 @@ function updateActionCardsState() {
   const hasGps = !!state.gps;
   const hasPhoto = !!state.checkpointPhoto;
 
-  setCardEnabled(el.actionQrCard, hasSelected);
+  setCardEnabled(el.actionQrCard, hasSelected && !hasQr);
   setCardEnabled(el.actionGpsCard, hasSelected);
   setCardEnabled(el.actionIncidentCard, hasSelected);
+  setCardDone(el.actionQrCard, hasQr);
+  setCardDone(el.actionGpsCard, hasPhoto);
 
   setText(el.qrStepStatus, hasQr ? "สแกนแล้ว" : "ยังไม่สแกน");
   setText(el.gpsStepStatus, hasPhoto ? "ถ่ายแล้ว" : "ยังไม่ถ่าย");
@@ -1102,6 +1109,11 @@ function setCardEnabled(node, enabled) {
   if (!node) return;
   node.disabled = !enabled;
   node.classList.toggle("disabled", !enabled);
+}
+
+function setCardDone(node, done) {
+  if (!node) return;
+  node.classList.toggle("done", !!done);
 }
 
 function openActionDetail(name) {
@@ -1157,7 +1169,16 @@ async function openQrScanCard() {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 230, height: 230 } },
         (decodedText) => {
-          state.scannedQr = decodedText;
+          const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
+          const actualQr = String(decodedText || "").trim();
+          if (expectedQr && actualQr !== expectedQr) {
+            setText(el.checkpointStatus, `QR ไม่ตรงจุดที่เลือก (ต้องเป็น: ${expectedQr})`);
+            if (window.Swal && Swal.isVisible()) {
+              Swal.showValidationMessage("QR ไม่ตรงจุดที่เลือก");
+            }
+            return;
+          }
+          state.scannedQr = actualQr;
           if (el.manualQr) el.manualQr.value = decodedText;
           setText(el.qrStepStatus, `สแกนแล้ว: ${decodedText}`);
           updateActionCardsState();
@@ -1175,6 +1196,28 @@ async function openQrScanCard() {
       });
     }
   });
+}
+
+async function loadCheckpointCatalog() {
+  try {
+    const rows = await callApi("listCheckpoints", {});
+    const map = {};
+    (Array.isArray(rows) ? rows : []).forEach((r) => {
+      const id = String(r.checkpoint_id || "").trim();
+      if (!id) return;
+      map[id] = String(r.qr_text || id).trim();
+    });
+    state.checkpointQrMap = map;
+  } catch (_) {
+    state.checkpointQrMap = {};
+  }
+}
+
+function getExpectedQrForSelectedPoint(selectedItem) {
+  if (!selectedItem) return "";
+  const cpId = String(selectedItem.checkpoint_id || "").trim();
+  if (!cpId) return "";
+  return String(state.checkpointQrMap[cpId] || cpId).trim();
 }
 
 function openAssignedRouteOrFallback(activeShiftId) {
