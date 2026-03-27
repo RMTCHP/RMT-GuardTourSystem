@@ -1172,9 +1172,23 @@ async function openQrScanCard() {
           const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
           const actualQr = String(decodedText || "").trim();
           if (expectedQr && actualQr !== expectedQr) {
-            setText(el.checkpointStatus, `QR ไม่ตรงจุดที่เลือก (ต้องเป็น: ${expectedQr})`);
+            setText(el.checkpointStatus, "สแกน QR ไม่ตรงจุด");
+            if (navigator && typeof navigator.vibrate === "function") {
+              navigator.vibrate([180, 120, 180]);
+            }
             if (window.Swal && Swal.isVisible()) {
-              Swal.showValidationMessage("QR ไม่ตรงจุดที่เลือก");
+              Swal.showValidationMessage("สแกน QR ไม่ตรงจุด");
+              const vm = Swal.getValidationMessage ? Swal.getValidationMessage() : null;
+              if (vm) {
+                vm.style.fontSize = "1.06rem";
+                vm.style.fontWeight = "800";
+                vm.style.color = "#b91c1c";
+                vm.style.background = "#fee2e2";
+                vm.style.border = "1px solid #fecaca";
+                vm.style.borderRadius = "10px";
+                vm.style.padding = "10px 12px";
+                vm.style.marginTop = "10px";
+              }
             }
             return;
           }
