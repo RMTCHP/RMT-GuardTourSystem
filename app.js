@@ -272,7 +272,7 @@ function renderShiftList() {
   }).join("");
 }
 
-function openShift(index) {
+async function openShift(index) {
   stopQrScanner();
   const shift = state.shifts[index];
   if (!shift) return;
@@ -307,12 +307,50 @@ function openShift(index) {
   el.tourTitle.textContent = `${getShiftProfile(shift)} (${formatShiftWindow(shift)})`;
   saveSession({ guardId: state.guard.guard_id, activeShiftId: shift.shift_id });
 
+  await hydrateShiftProgressFromLogs(shift);
+
   renderCheckpointList();
   refreshStats();
   refreshQueueBanner();
 
   el.navTour.disabled = false;
   switchView("tour");
+}
+
+async function hydrateShiftProgressFromLogs(shift) {
+  if (!shift || !state.guard) return;
+  let rows = [];
+  try {
+    rows = await callApi("listCheckLogs", {
+      guardId: state.guard.guard_id
+    });
+  } catch (_) {
+    try {
+      // Backward-compatible payload for older API versions.
+      rows = await callApi("listCheckLogs", {
+        supervisorId: state.guard.supervisor_id || "",
+        date: toYmd(new Date()),
+        guardId: state.guard.guard_id,
+        status: ""
+      });
+    } catch (_) {
+      rows = [];
+    }
+  }
+
+  const logs = (Array.isArray(rows) ? rows : []).filter((r) =>
+    String(r.shift_id || "") === String(shift.shift_id || "")
+  );
+
+  const counter = {};
+  logs.forEach((r) => {
+    const status = String(r.status || "").toUpperCase();
+    if (status !== "ONTIME" && status !== "LATE") return;
+    const cpId = String(r.checkpoint_id || "").trim();
+    if (!cpId) return;
+    counter[cpId] = Number(counter[cpId] || 0) + 1;
+  });
+  state.doneCheckpointCounter = counter;
 }
 
 function renderCheckpointList() {
@@ -355,10 +393,11 @@ function renderCheckpointList() {
     const isSelected = key === state.selectedPlanKey;
     const idx = currentItems.findIndex((x) => getPlanItemKey(x) === key);
     const locked = firstPendingIdx >= 0 && idx > firstPendingIdx && !done;
+    const disabled = done || locked;
     const statusMeta = getCheckpointStatusMeta({ done, locked, isSelected });
 
     return `
-      <button type="button" class="checkpoint-card ${done ? "done" : ""} ${isSelected ? "active" : ""}" data-plan-key="${escapeAttr(key)}" ${locked ? "disabled" : ""}>
+      <button type="button" class="checkpoint-card ${done ? "done" : ""} ${isSelected ? "active" : ""}" data-plan-key="${escapeAttr(key)}" ${disabled ? "disabled" : ""}>
         <div class="point-head">
           <div>
             <p class="point-label">จุดที่</p>
