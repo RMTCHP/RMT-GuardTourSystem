@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbx14fztV0j1RnGpVeQ39ConbpCYt_AVJ5mSfmsw8SOOBpJ_jMMug6omgW1-6WRRBgg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzJ9pPRvOKnJwbD-KmdH5BblUf60FsNBxzbWT_S1cQgh3c2sEa44OZ3NFsSV0Z0N88/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -42,7 +42,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     setText(el.loginStatus, "อุปกรณ์ออฟไลน์: บันทึกคิวไว้ก่อน แล้วซิงก์ภายหลังได้");
   }
 
-  await restoreSession();
+  clearSession();
+  hideGuardHeader();
+  switchView("login");
 });
 
 function bindElements() {
@@ -302,7 +304,7 @@ function openShift(index) {
   setIncidentMode("NONE");
   hideAllActionDetails();
 
-  el.tourTitle.textContent = `${getShiftProfile(shift)} (${shift.shift_id})`;
+  el.tourTitle.textContent = `${getShiftProfile(shift)} (${formatShiftWindow(shift)})`;
   saveSession({ guardId: state.guard.guard_id, activeShiftId: shift.shift_id });
 
   renderCheckpointList();
@@ -325,7 +327,7 @@ function renderCheckpointList() {
   }
 
   const planItems = buildPlanWithOccurrence(state.activePlan);
-  const rounds = Array.from(new Set(planItems.map((x) => Number(x.round_no || 1)))).sort((a, b) => a - b);
+  const rounds = getRoundNumbers(planItems);
   if (!rounds.includes(state.currentRound)) state.currentRound = rounds[0];
   renderRoundTabs(rounds);
 
@@ -383,14 +385,11 @@ function renderCheckpointList() {
 
 function refreshStats() {
   const planItems = buildPlanWithOccurrence(state.activePlan);
-  const roundItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
-  const roundTotal = roundItems.length;
-  const roundDone = roundItems.reduce((sum, item) => {
-    const doneCount = Number(state.doneCheckpointCounter[String(item.checkpoint_id || "")] || 0);
-    return sum + (doneCount >= Number(item._occurrence || 0) ? 1 : 0);
-  }, 0);
-  el.statTotal.textContent = `${roundTotal} รอบ`;
-  el.statDone.textContent = `${roundDone} รอบ`;
+  const rounds = getRoundNumbers(planItems);
+  const totalRounds = rounds.length;
+  const doneRounds = rounds.filter((r) => isRoundDone(r)).length;
+  el.statTotal.textContent = `${totalRounds} \u0e23\u0e2d\u0e1a`;
+  el.statDone.textContent = `${doneRounds} \u0e23\u0e2d\u0e1a`;
 }
 
 function renderDashboard() {
@@ -1001,9 +1000,28 @@ function getSelectedPlanItem() {
 }
 
 function detectFirstRound(plan) {
-  if (!Array.isArray(plan) || !plan.length) return 1;
-  const rounds = Array.from(new Set(plan.map((x) => Number(x.round_no || 1)))).sort((a, b) => a - b);
+  const rounds = getRoundNumbers(Array.isArray(plan) ? plan : []);
   return rounds[0] || 1;
+}
+
+function getRoundNumbers(planItems) {
+  const set = {};
+  (Array.isArray(planItems) ? planItems : []).forEach((x) => {
+    const r = Number(x.round_no || 1);
+    if (Number.isFinite(r) && r > 0) set[r] = true;
+  });
+
+  const required = Number(state.activeShift && state.activeShift.rounds_required);
+  if (Number.isFinite(required) && required > 0) {
+    for (let i = 1; i <= required; i += 1) set[i] = true;
+  }
+
+  const rounds = Object.keys(set)
+    .map((k) => Number(k))
+    .filter((n) => Number.isFinite(n) && n > 0)
+    .sort((a, b) => a - b);
+
+  return rounds.length ? rounds : [1];
 }
 
 function renderRoundTabs(rounds) {
@@ -1039,7 +1057,7 @@ function buildPlanWithOccurrence(plan) {
 
 function moveToNextRoundIfCurrentDone() {
   const planItems = buildPlanWithOccurrence(state.activePlan);
-  const rounds = Array.from(new Set(planItems.map((x) => Number(x.round_no || 1)))).sort((a, b) => a - b);
+  const rounds = getRoundNumbers(planItems);
   const currentItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
   if (!currentItems.length) return;
   const doneAll = currentItems.every((item) => {
@@ -1262,6 +1280,67 @@ function formatTime(date) {
   });
 }
 
+function formatShiftWindow(shift) {
+  const dateRaw = shift && shift.date ? shift.date : "";
+  const dateParts = extractDateParts(dateRaw);
+  const dd = dateParts ? dateParts.dd : "--";
+  const monthText = dateParts ? toThaiMonthShort(dateParts.mm) : "--";
+  const yy = dateParts ? dateParts.yy : "--";
+  const start = String((shift && shift.start_time) || "-").slice(0, 5);
+  const end = String((shift && shift.end_time) || "-").slice(0, 5);
+  return `${dd} ${monthText} ${yy} ${start} - ${end}`;
+}
+
+function toThaiMonthShort(mm) {
+  const m = Number(mm);
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  if (!Number.isFinite(m) || m < 1 || m > 12) return "--";
+  return months[m - 1];
+}
+
+function extractDateParts(value) {
+  if (!value) return null;
+
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    const y = String(value.getFullYear());
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return { dd: d, mm: m, yy: y.slice(2) };
+  }
+
+  const raw = String(value).trim();
+  const ymd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymd) {
+    return { dd: ymd[3], mm: ymd[2], yy: ymd[1].slice(2) };
+  }
+
+  const dmy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (dmy) {
+    return { dd: dmy[1], mm: dmy[2], yy: dmy[3].slice(2) };
+  }
+
+  // ISO datetime (e.g. 2026-04-20T17:00:00.000Z) should be converted to local date.
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    const isoDate = new Date(raw);
+    if (!isNaN(isoDate.getTime())) {
+      const y = String(isoDate.getFullYear());
+      const m = String(isoDate.getMonth() + 1).padStart(2, "0");
+      const day = String(isoDate.getDate()).padStart(2, "0");
+      return { dd: day, mm: m, yy: y.slice(2) };
+    }
+  }
+
+  const d = new Date(raw);
+  if (!isNaN(d.getTime())) {
+    const y = String(d.getFullYear());
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return { dd: day, mm: m, yy: y.slice(2) };
+  }
+
+  return null;
+}
+
 function updateTodayText() {
   const now = new Date();
   el.todayText.textContent = `วันนี้ ${formatDate(now)} ${formatTime(now)}`;
@@ -1399,5 +1478,6 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
 
 

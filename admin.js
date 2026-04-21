@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbx14fztV0j1RnGpVeQ39ConbpCYt_AVJ5mSfmsw8SOOBpJ_jMMug6omgW1-6WRRBgg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzJ9pPRvOKnJwbD-KmdH5BblUf60FsNBxzbWT_S1cQgh3c2sEa44OZ3NFsSV0Z0N88/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -8,6 +8,7 @@ const state = {
   guards: [],
   checkpoints: [],
   templates: [],
+  liveLogs: [],
   shiftCheckpoints: {},
   charts: {},
   userTab: "admin"
@@ -22,12 +23,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   startTopClock();
   el.reportDate.value = toYmd(new Date());
-
-  const session = loadSession();
-  if (session.supervisor_id) {
-    el.supervisorId.value = session.supervisor_id;
-    await login(true);
-  }
+  el.liveDate.value = toYmd(new Date());
+  clearSession();
+  switchView("login");
 });
 
 function bindElements() {
@@ -46,6 +44,11 @@ function bindElements() {
     "loginBtn",
     "loginStatus",
     "reportDate",
+    "liveDate",
+    "liveGuardFilter",
+    "liveStatusFilter",
+    "liveRefreshBtn",
+    "liveTableBody",
     "loadBtn",
     "kpiShifts",
     "kpiChecked",
@@ -80,6 +83,10 @@ function bindElements() {
 function bindEvents() {
   el.loginBtn.addEventListener("click", () => login(false));
   el.loadBtn.addEventListener("click", loadDashboard);
+  el.liveRefreshBtn.addEventListener("click", loadLiveLogs);
+  el.liveDate.addEventListener("change", loadLiveLogs);
+  el.liveGuardFilter.addEventListener("change", loadLiveLogs);
+  el.liveStatusFilter.addEventListener("change", loadLiveLogs);
   el.chartRangeDays.addEventListener("change", loadDashboard);
   el.topLogoutBtn.addEventListener("click", logout);
   el.topUserBtn.addEventListener("click", (event) => {
@@ -203,6 +210,10 @@ function switchFuncPanel(panelName) {
 
   if (panelName === "templates") {
     loadTemplateData();
+    return;
+  }
+  if (panelName === "live") {
+    loadLiveLogs();
   }
 }
 
@@ -316,9 +327,11 @@ async function loadMasterData() {
     state.guards = guardsResult.value || [];
     renderGuardsTable(state.guards);
     renderAdminTable();
+    renderLiveGuardFilter();
   } else {
     state.guards = [];
     renderGuardsTable([]);
+    renderLiveGuardFilter();
     notify(`???? Guards ?????????: ${guardsResult.reason?.message || guardsResult.reason}`);
   }
 
@@ -337,6 +350,65 @@ async function loadMasterData() {
     state.templates = [];
     renderTemplatesTable([]);
   }
+}
+
+function renderLiveGuardFilter() {
+  if (!el.liveGuardFilter) return;
+  const prev = String(el.liveGuardFilter.value || "");
+  const options = ['<option value="">All</option>']
+    .concat((state.guards || []).map((g) => {
+      const id = String(g.guard_id || "");
+      const name = String(g.name || "-");
+      return `<option value="${escapeAttr(id)}">${escapeHtml(id)} - ${escapeHtml(name)}</option>`;
+    }))
+    .join("");
+  el.liveGuardFilter.innerHTML = options;
+  if (prev) el.liveGuardFilter.value = prev;
+}
+
+async function loadLiveLogs() {
+  if (!state.supervisor) return;
+  const date = el.liveDate && el.liveDate.value ? el.liveDate.value : toYmd(new Date());
+  const guardId = String(el.liveGuardFilter ? el.liveGuardFilter.value : "").trim();
+  const status = String(el.liveStatusFilter ? el.liveStatusFilter.value : "").trim();
+  try {
+    const rows = await callApi("listCheckLogs", {
+      date,
+      guardId,
+      status
+    });
+    state.liveLogs = Array.isArray(rows) ? rows : [];
+    renderLiveLogs(state.liveLogs);
+  } catch (err) {
+    renderLiveLogs([]);
+    notify(`Load live logs failed: ${err.message}`, "error");
+  }
+}
+
+function renderLiveLogs(rows) {
+  if (!el.liveTableBody) return;
+  if (!rows || !rows.length) {
+    el.liveTableBody.innerHTML = '<tr><td colspan="8">No logs</td></tr>';
+    return;
+  }
+  el.liveTableBody.innerHTML = rows.map((r) => {
+    const photoUrl = String(r.photo_url || "").trim();
+    const photoCell = photoUrl
+      ? `<a class="btn row-btn" href="${escapeAttr(photoUrl)}" target="_blank" rel="noopener">View</a>`
+      : "-";
+    return `
+      <tr>
+        <td>${escapeHtml(r.scan_time || "-")}</td>
+        <td>${escapeHtml(r.guard_id || "-")}</td>
+        <td>${escapeHtml(r.shift_id || "-")}</td>
+        <td>${escapeHtml(r.checkpoint_name || r.checkpoint_id || "-")}</td>
+        <td>${escapeHtml(r.qr_text_scanned || "-")}</td>
+        <td>${escapeHtml(String(r.distance_m ?? "-"))}</td>
+        <td>${escapeHtml(r.status || "-")}</td>
+        <td>${photoCell}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 async function openAddUserSwal(existingGuard) {
@@ -756,10 +828,10 @@ async function confirmDeleteGuard(guard) {
 
   try {
     await callApi("deleteGuard", { guardId: guard.guard_id });
-    notify("à¸¥à¸š Guard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Guard สำเร็จ");
     await loadMasterData();
   } catch (err) {
-    notify(`à¸¥à¸š Guard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Guard ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -778,14 +850,14 @@ async function confirmDeleteAdmin(admin) {
 
   try {
     await callApi("deleteSupervisor", { supervisorId: admin.supervisor_id });
-    notify("à¸¥à¸š Admin à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Admin สำเร็จ");
     if (state.supervisor && String(state.supervisor.supervisor_id) === String(admin.supervisor_id)) {
       logout();
       return;
     }
     await loadMasterData();
   } catch (err) {
-    notify(`à¸¥à¸š Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Admin ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -851,7 +923,7 @@ async function openCheckpointQrSwal(checkpoint) {
   if (!window.Swal) return;
   const qrText = String(checkpoint.qr_text || checkpoint.checkpoint_id || "").trim();
   if (!qrText) {
-    notify("Checkpoint à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸¡à¸µ QR Text");
+    notify("Checkpoint นี้ไม่มี QR Text");
     return;
   }
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(qrText)}`;
@@ -885,10 +957,10 @@ async function confirmDeleteCheckpoint(checkpoint) {
 
   try {
     await callApi("deleteCheckpoint", { checkpointId: checkpoint.checkpoint_id });
-    notify("à¸¥à¸š Checkpoint à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Checkpoint สำเร็จ");
     await loadMasterData();
   } catch (err) {
-    notify(`à¸¥à¸š Checkpoint à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Checkpoint ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -1226,9 +1298,9 @@ async function openChangePasswordSwal() {
       supervisorId: state.supervisor.supervisor_id,
       newPassword: result.value.newPassword
     });
-    notify("à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("เปลี่ยนรหัสผ่านสำเร็จ");
   } catch (err) {
-    notify(`à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -1307,10 +1379,10 @@ async function confirmDeleteTemplate(template) {
 
   try {
     await callApi("deleteShiftTemplate", { templateId: template.template_id });
-    notify("à¸¥à¸š Template à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Template สำเร็จ");
     await loadTemplateData();
   } catch (err) {
-    notify(`à¸¥à¸š Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Template ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -1767,7 +1839,7 @@ function notify(message, icon) {
   const autoIcon = icon || (
     lower.includes("failed") ||
     lower.includes("error") ||
-    lower.includes("à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ") ||
+    lower.includes("ไม่สำเร็จ") ||
     lower.includes("not found")
       ? "error"
       : "success"

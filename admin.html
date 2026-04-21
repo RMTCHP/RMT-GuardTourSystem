@@ -53,6 +53,12 @@
           </svg>
           <span class="menu-label">Dashboard</span>
         </button>
+        <button class="menu-item" data-panel="live" title="Live Logs" aria-label="Live Logs">
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h16v2H4z"/>
+          </svg>
+          <span class="menu-label">Live Logs</span>
+        </button>
         <button class="menu-item" data-panel="users" title="User" aria-label="User">
           <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M16 11a4 4 0 1 0-3.999-4A4 4 0 0 0 16 11zM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zM8 14c-2.76 0-5 1.79-5 4v1h10v-1c0-2.21-2.24-4-5-4zm8 0c-.58 0-1.13.07-1.66.19A5.88 5.88 0 0 1 18 19v1h3v-1c0-2.76-2.24-5-5-5z"/>
@@ -184,6 +190,56 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="panel-live" class="func-panel">
+          <section class="panel-box">
+            <div class="users-head">
+              <h3>Live Check Logs</h3>
+              <button id="liveRefreshBtn" class="btn" type="button">Refresh</button>
+            </div>
+            <div class="toolbar">
+              <div>
+                <label for="liveDate">Date</label>
+                <input id="liveDate" type="date">
+              </div>
+              <div>
+                <label for="liveGuardFilter">Guard</label>
+                <select id="liveGuardFilter">
+                  <option value="">All</option>
+                </select>
+              </div>
+              <div>
+                <label for="liveStatusFilter">Status</label>
+                <select id="liveStatusFilter">
+                  <option value="">All</option>
+                  <option value="ONTIME">ONTIME</option>
+                  <option value="LATE">LATE</option>
+                  <option value="INVALID_QR">INVALID_QR</option>
+                  <option value="INVALID_GPS">INVALID_GPS</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Scan Time</th>
+                    <th>Guard</th>
+                    <th>Shift</th>
+                    <th>Checkpoint</th>
+                    <th>QR Scanned</th>
+                    <th>Distance(m)</th>
+                    <th>Status</th>
+                    <th>Photo</th>
+                  </tr>
+                </thead>
+                <tbody id="liveTableBody">
+                  <tr><td colspan="8">No logs</td></tr>
+                </tbody>
+              </table>
             </div>
           </section>
         </section>
