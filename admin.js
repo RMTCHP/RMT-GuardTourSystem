@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzJ9pPRvOKnJwbD-KmdH5BblUf60FsNBxzbWT_S1cQgh3c2sEa44OZ3NFsSV0Z0N88/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxN9u_uChDlJZQue1agvtMlu_11XOaH0y2Qdx2S1Ms5oPxPHWGYNZZxuYQcfa2ZiZs/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -283,7 +283,7 @@ async function loadDashboard() {
 
   const date = el.reportDate.value || toYmd(new Date());
   const days = Number(el.chartRangeDays.value || 30);
-  notify("???????????????...");
+  notify("Loading dashboard...");
 
   try {
     const [data, chartData] = await Promise.all([
@@ -298,20 +298,38 @@ async function loadDashboard() {
       })
     ]);
 
-    const kpi = data.kpi || {};
-    el.kpiShifts.textContent = String(kpi.total_shifts || 0);
-    el.kpiChecked.textContent = String(kpi.total_checked_points || 0);
-    el.kpiLate.textContent = String(kpi.total_late_points || 0);
-    el.kpiMissed.textContent = String(kpi.total_missed_points || 0);
-    el.kpiIncidents.textContent = String(kpi.total_incidents || 0);
-    el.kpiCompliance.textContent = `${Number(kpi.avg_compliance_pct || 0).toFixed(2)}%`;
+    const hasApiCharts = hasDashboardChartData(chartData);
+    if (hasApiCharts) {
+      const kpi = data.kpi || {};
+      el.kpiShifts.textContent = String(kpi.total_shifts || 0);
+      el.kpiChecked.textContent = String(kpi.total_checked_points || 0);
+      el.kpiLate.textContent = String(kpi.total_late_points || 0);
+      el.kpiMissed.textContent = String(kpi.total_missed_points || 0);
+      el.kpiIncidents.textContent = String(kpi.total_incidents || 0);
+      el.kpiCompliance.textContent = `${Number(kpi.avg_compliance_pct || 0).toFixed(2)}%`;
 
-    renderSummary(data.shifts || []);
-    renderIncidents(data.incidents || []);
-    renderDashboardCharts(chartData || {});
-    notify("????????????????");
+      renderSummary(data.shifts || []);
+      renderIncidents(data.incidents || []);
+      renderDashboardCharts(chartData || {});
+      notify("Dashboard loaded");
+      return;
+    }
+
+    const fallback = await buildFallbackDashboardFromLogs(date, days);
+    const fbKpi = fallback.kpi || {};
+    el.kpiShifts.textContent = String(fbKpi.total_shifts || 0);
+    el.kpiChecked.textContent = String(fbKpi.total_checked_points || 0);
+    el.kpiLate.textContent = String(fbKpi.total_late_points || 0);
+    el.kpiMissed.textContent = String(fbKpi.total_missed_points || 0);
+    el.kpiIncidents.textContent = String(fbKpi.total_incidents || 0);
+    el.kpiCompliance.textContent = `${Number(fbKpi.avg_compliance_pct || 0).toFixed(2)}%`;
+
+    renderSummary(fallback.summaryRows || []);
+    renderIncidents([]);
+    renderDashboardCharts(fallback.charts || {});
+    notify("Dashboard loaded (log fallback)");
   } catch (err) {
-    notify(`???????????????????: ${err.message}`);
+    notify(`Load dashboard failed: ${err.message}`);
   }
 }
 
@@ -373,6 +391,7 @@ async function loadLiveLogs() {
   const status = String(el.liveStatusFilter ? el.liveStatusFilter.value : "").trim();
   try {
     const rows = await callApi("listCheckLogs", {
+      supervisorId: state.supervisor && state.supervisor.supervisor_id ? state.supervisor.supervisor_id : "",
       date,
       guardId,
       status
@@ -695,6 +714,170 @@ function renderDashboardCharts(data) {
       scales: { x: { beginAtZero: true } }
     })
   });
+}
+
+function hasDashboardChartData(data) {
+  if (!data || typeof data !== "object") return false;
+  if (Array.isArray(data.compliance_trend) && data.compliance_trend.length) return true;
+  if (Array.isArray(data.daily_operations) && data.daily_operations.length) return true;
+  if (Array.isArray(data.shift_type_performance) && data.shift_type_performance.length) return true;
+  if (Array.isArray(data.top_problem_checkpoints) && data.top_problem_checkpoints.length) return true;
+  const sev = data.incidents_by_severity || {};
+  return Number(sev.LOW || 0) + Number(sev.MEDIUM || 0) + Number(sev.HIGH || 0) > 0;
+}
+
+async function buildFallbackDashboardFromLogs(endDate, days) {
+  const safeDays = Math.max(1, Number(days || 30));
+  const dates = buildDateRangeLocal(endDate, safeDays);
+
+  const responses = await Promise.allSettled(
+    dates.map((date) => callApi("listCheckLogs", {
+      supervisorId: state.supervisor?.supervisor_id || "",
+      date,
+      guardId: "",
+      status: ""
+    }))
+  );
+
+  const allLogs = [];
+  responses.forEach((res) => {
+    if (res.status === "fulfilled" && Array.isArray(res.value)) {
+      allLogs.push(...res.value);
+    }
+  });
+
+  const dayStats = {};
+  dates.forEach((d) => {
+    dayStats[d] = { checked: 0, late: 0, invalid: 0, total: 0 };
+  });
+
+  const shiftMap = {};
+  const checkpointIssueMap = {};
+  const shiftTypeMap = {
+    DAY: { total: 0, checked: 0, invalid: 0 },
+    NIGHT: { total: 0, checked: 0, invalid: 0 }
+  };
+
+  allLogs.forEach((log) => {
+    const status = String(log.status || "").toUpperCase();
+    const scanTime = String(log.scan_time || "");
+    const dateKey = scanTime.slice(0, 10);
+    const cpKey = String(log.checkpoint_id || "");
+    const shiftId = String(log.shift_id || "");
+
+    if (!dayStats[dateKey]) {
+      dayStats[dateKey] = { checked: 0, late: 0, invalid: 0, total: 0 };
+    }
+
+    dayStats[dateKey].total += 1;
+
+    if (status === "ONTIME" || status === "LATE") {
+      dayStats[dateKey].checked += 1;
+      if (status === "LATE") dayStats[dateKey].late += 1;
+    } else if (status.startsWith("INVALID")) {
+      dayStats[dateKey].invalid += 1;
+      if (cpKey) checkpointIssueMap[cpKey] = Number(checkpointIssueMap[cpKey] || 0) + 1;
+    }
+
+    if (shiftId) {
+      if (!shiftMap[shiftId]) {
+        shiftMap[shiftId] = {
+          shift_id: shiftId,
+          guard_id: String(log.guard_id || "-"),
+          total_points: 0,
+          checked_points: 0,
+          late_points: 0,
+          missed_points: 0,
+          incidents_count: 0,
+          compliance_pct: 0
+        };
+      }
+      shiftMap[shiftId].total_points += 1;
+      if (status === "ONTIME" || status === "LATE") {
+        shiftMap[shiftId].checked_points += 1;
+      }
+      if (status === "LATE") {
+        shiftMap[shiftId].late_points += 1;
+      }
+    }
+
+    const hh = Number(scanTime.slice(11, 13) || 0);
+    const type = (hh >= 18 || hh < 6) ? "NIGHT" : "DAY";
+    shiftTypeMap[type].total += 1;
+    if (status === "ONTIME" || status === "LATE") shiftTypeMap[type].checked += 1;
+    if (status.startsWith("INVALID")) shiftTypeMap[type].invalid += 1;
+  });
+
+  const complianceTrend = dates.map((d) => {
+    const s = dayStats[d] || { total: 0, checked: 0 };
+    const compliancePct = s.total ? (s.checked / s.total) * 100 : 0;
+    return { date: d, compliance_pct: Number(compliancePct.toFixed(2)) };
+  });
+
+  const dailyOperations = dates.map((d) => {
+    const s = dayStats[d] || { checked: 0, invalid: 0, total: 0 };
+    const missed = Math.max(0, s.total - s.checked - s.invalid);
+    return { date: d, checked: s.checked, missed, invalid: s.invalid };
+  });
+
+  const shiftTypePerformance = Object.keys(shiftTypeMap).map((type) => {
+    const s = shiftTypeMap[type];
+    const avgCompliance = s.total ? (s.checked / s.total) * 100 : 0;
+    return {
+      shift_type: type,
+      total_shifts: s.total,
+      avg_compliance_pct: Number(avgCompliance.toFixed(2)),
+      incidents: 0
+    };
+  });
+
+  const checkpointsById = {};
+  (state.checkpoints || []).forEach((cp) => {
+    checkpointsById[String(cp.checkpoint_id || "")] = cp;
+  });
+
+  const topProblemCheckpoints = Object.keys(checkpointIssueMap)
+    .map((cpId) => ({
+      checkpoint_id: cpId,
+      checkpoint_name: checkpointsById[cpId]?.checkpoint_name || "",
+      issues: Number(checkpointIssueMap[cpId] || 0)
+    }))
+    .sort((a, b) => b.issues - a.issues)
+    .slice(0, 10);
+
+  const summaryRows = Object.values(shiftMap).map((row) => {
+    const total = Number(row.total_points || 0);
+    const checked = Number(row.checked_points || 0);
+    row.compliance_pct = total ? Number(((checked / total) * 100).toFixed(2)) : 0;
+    return row;
+  });
+
+  const totalShifts = summaryRows.length;
+  const totalChecked = summaryRows.reduce((n, r) => n + Number(r.checked_points || 0), 0);
+  const totalLate = summaryRows.reduce((n, r) => n + Number(r.late_points || 0), 0);
+  const totalMissed = summaryRows.reduce((n, r) => n + Number(r.missed_points || 0), 0);
+  const avgCompliancePct = totalShifts
+    ? summaryRows.reduce((n, r) => n + Number(r.compliance_pct || 0), 0) / totalShifts
+    : 0;
+
+  return {
+    kpi: {
+      total_shifts: totalShifts,
+      total_checked_points: totalChecked,
+      total_late_points: totalLate,
+      total_missed_points: totalMissed,
+      total_incidents: 0,
+      avg_compliance_pct: Number(avgCompliancePct.toFixed(2))
+    },
+    summaryRows,
+    charts: {
+      compliance_trend: complianceTrend,
+      daily_operations: dailyOperations,
+      incidents_by_severity: { LOW: 0, MEDIUM: 0, HIGH: 0 },
+      shift_type_performance: shiftTypePerformance,
+      top_problem_checkpoints: topProblemCheckpoints
+    }
+  };
 }
 
 function upsertChart(key, canvasEl, config) {
@@ -1890,6 +2073,19 @@ function toYmd(date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function buildDateRangeLocal(endYmd, days) {
+  const safeDays = Math.max(1, Number(days || 1));
+  const end = new Date(`${String(endYmd).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(end.getTime())) return [toYmd(new Date())];
+  const out = [];
+  for (let i = safeDays - 1; i >= 0; i -= 1) {
+    const d = new Date(end);
+    d.setDate(end.getDate() - i);
+    out.push(toYmd(d));
+  }
+  return out;
 }
 
 function toHms(date) {
