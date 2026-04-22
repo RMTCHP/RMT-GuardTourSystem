@@ -260,15 +260,6 @@ input:focus, textarea:focus, select:focus {
   cursor: pointer;
 }
 
-.dashboard-card {
-  cursor: pointer;
-}
-
-.shift-card [data-open-shift],
-.dashboard-card [data-open-dashboard-shift] {
-  display: none;
-}
-
 .checkpoint-card {
   cursor: pointer;
   display: flex;
