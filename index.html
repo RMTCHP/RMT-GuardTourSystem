@@ -92,13 +92,14 @@
             </button>
           </div>
 
-          <div id="detailGpsPhoto" class="step-card hidden">
-            <h3>ถ่ายรูป</h3>
-            <button id="gpsBtn" class="btn btn-soft">ใช้ตำแหน่งปัจจุบัน</button>
-            <p id="gpsText" class="hint">ยังไม่โหลด GPS</p>
-            <input id="photoInput" type="file" accept="image/*" capture="environment">
-            <img id="photoPreview" class="preview hidden" alt="ภาพตัวอย่าง">
-          </div>
+        <div id="detailGpsPhoto" class="step-card hidden">
+          <h3>ถ่ายรูป</h3>
+          <button id="gpsBtn" class="btn btn-soft">ใช้ตำแหน่งปัจจุบัน</button>
+          <p id="gpsText" class="hint">ยังไม่โหลด GPS</p>
+          <input id="photoInput" type="file" accept="image/*" capture="environment">
+          <img id="photoPreview" class="preview hidden" alt="ภาพตัวอย่าง">
+          <p id="checkpointStatus" class="status-text"></p>
+        </div>
 
           <div id="detailIncident" class="step-card hidden">
             <h3>ยืนยันจุดตรวจ / แจ้งเหตุ</h3>
@@ -138,6 +139,8 @@
         </div>
 
         <div id="dashboardList" class="shift-cards"></div>
+        <p id="activeShiftText" class="hint hidden" aria-hidden="true">ยังไม่ได้เลือกกะงาน</p>
+        <p id="closeShiftResult" class="status-text hidden" aria-hidden="true"></p>
       </div>
     </section>
 

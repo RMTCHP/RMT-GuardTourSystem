@@ -18,7 +18,7 @@
 
   <div class="admin-shell">
     <header class="topbar">
-      <div class="brand">Guard Tour Admin</div>
+      <div class="brand">Guard Tour Admin Setup</div>
       <div class="top-actions">
         <span id="todayText"></span>
         <div id="topUserMenuWrap" class="top-user-menu-wrap">
@@ -37,9 +37,11 @@
     <section id="view-login" class="login-wrap active">
       <div class="login-card">
         <h2>Admin Login</h2>
-        <p class="login-subtitle">Sign in to manage users, checkpoints, templates, and reports.</p>
+        <p class="login-subtitle">Sign in to manage guards, checkpoints, template assignments, and reports.</p>
         <label for="supervisorId">ID</label>
         <input id="supervisorId" type="text" placeholder="e.g. A001" autocomplete="off">
+        <label for="supervisorPassword">Password</label>
+        <input id="supervisorPassword" type="password" placeholder="Password" autocomplete="current-password">
         <button id="loginBtn" class="btn">Login</button>
         <p id="loginStatus" class="muted"></p>
       </div>
@@ -63,7 +65,7 @@
           <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M16 11a4 4 0 1 0-3.999-4A4 4 0 0 0 16 11zM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zM8 14c-2.76 0-5 1.79-5 4v1h10v-1c0-2.21-2.24-4-5-4zm8 0c-.58 0-1.13.07-1.66.19A5.88 5.88 0 0 1 18 19v1h3v-1c0-2.76-2.24-5-5-5z"/>
           </svg>
-          <span class="menu-label">User</span>
+          <span class="menu-label">Users</span>
         </button>
         <button class="menu-item" data-panel="checkpoints" title="Manage Checkpoints" aria-label="Manage Checkpoints">
           <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -75,9 +77,8 @@
           <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 4h10a2 2 0 0 1 2 2v2H6a2 2 0 0 0-2 2v10a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm4 6h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2 3v2h8v-2h-8zm0 4v2h5v-2h-5z"/>
           </svg>
-          <span class="menu-label">Template</span>
+          <span class="menu-label">Templates</span>
         </button>
-
         <div class="nav-bottom"></div>
       </aside>
 
@@ -147,6 +148,7 @@
           <section class="panel-box">
             <div class="users-head">
               <h3>User Management</h3>
+              <p class="muted">Create admin users and guard accounts that will be assigned through templates.</p>
               <button id="addUserBtn" class="btn users-add-btn" type="button" title="Add user" aria-label="Add user">+</button>
             </div>
             <div class="user-tabs">
@@ -248,6 +250,7 @@
           <section class="panel-box">
             <div class="users-head">
               <h3>Manage Checkpoints</h3>
+              <p class="muted">Define each patrol location, QR text, GPS position, and allowed radius.</p>
               <button id="addCheckpointBtn" class="btn users-add-btn" type="button" title="Add checkpoint" aria-label="Add checkpoint">+</button>
             </div>
             <div class="table-wrap">
@@ -276,7 +279,8 @@
         <section id="panel-templates" class="func-panel">
           <section class="panel-box">
             <div class="users-head">
-              <h3>Shift Template</h3>
+              <h3>Shift Templates</h3>
+              <p class="muted">Each template defines a patrol shift: time window, route checkpoints, rounds, and responsible guards.</p>
               <div style="display:flex;gap:8px;align-items:center">
                 <button id="addTemplateBtn" class="btn users-add-btn" type="button" title="Add template" aria-label="Add template">+</button>
               </div>
