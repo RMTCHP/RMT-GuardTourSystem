@@ -28,6 +28,10 @@ body {
   padding: 126px 14px 102px;
 }
 
+.mobile-app.login-mode {
+  padding-top: 20px;
+}
+
 .topbar {
   position: fixed;
   left: 50%;

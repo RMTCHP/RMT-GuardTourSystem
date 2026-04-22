@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbz5oaXP-o7CDvjVnZeoEUDHwB1vya6f1mmEUNGmiJadlpmyqaQnyS0RX6CHopQ4M3Q/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbyPgzQwVolJhU7FxjnZJ6MBgA71uXwbGyBdKzfH6ptXabSUSdWCugjy-YXTGQ0-yVo/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -266,7 +266,7 @@ async function openAddAdminSwal(existingAdmin) {
 
   try {
     await callApi("upsertSupervisor", { payload: result.value });
-    notify("บันทึกข้อมูล Admin สำเร็จ");
+    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Admin à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     if (state.supervisor && String(state.supervisor.supervisor_id) === String(result.value.supervisor_id)) {
       state.supervisor = { ...state.supervisor, ...result.value };
       el.topUserName.textContent = state.supervisor.name || state.supervisor.supervisor_id;
@@ -274,7 +274,7 @@ async function openAddAdminSwal(existingAdmin) {
     }
     renderAdminTable();
   } catch (err) {
-    notify(`บันทึกข้อมูล Admin ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -350,7 +350,7 @@ async function loadMasterData() {
     state.guards = [];
     renderGuardsTable([]);
     renderLiveGuardFilter();
-    notify(`โหลดข้อมูล Guards ไม่สำเร็จ: ${guardsResult.reason?.message || guardsResult.reason}`);
+    notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guards à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${guardsResult.reason?.message || guardsResult.reason}`);
   }
 
   if (checkpointsResult.status === "fulfilled") {
@@ -358,7 +358,7 @@ async function loadMasterData() {
     renderCheckpointsTable(state.checkpoints);
   } else if (guardsResult.status === "fulfilled") {
     // Keep user data visible even if checkpoint loading fails.
-    notify("โหลด Checkpoints ไม่สำเร็จ แต่ยังแสดงข้อมูลผู้ใช้งานได้");
+    notify("à¹‚à¸«à¸¥à¸” Checkpoints à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸•à¹ˆà¸¢à¸±à¸‡à¹à¸ªà¸”à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¹„à¸”à¹‰");
   }
 
   if (templatesResult.status === "fulfilled") {
@@ -479,10 +479,10 @@ async function openAddUserSwal(existingGuard) {
       ...result.value
     };
     await callApi("upsertGuard", { payload });
-    notify("บันทึกข้อมูล Guard สำเร็จ");
+    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     await loadMasterData();
   } catch (err) {
-    notify(`บันทึกข้อมูล Guard ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -584,10 +584,10 @@ async function openCheckpointSwal(existingCheckpoint) {
 
   try {
     await callApi("upsertCheckpoint", { payload: result.value });
-    notify("บันทึกข้อมูล Checkpoint สำเร็จ");
+    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Checkpoint à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     await loadMasterData();
   } catch (err) {
-    notify(`บันทึกข้อมูล Checkpoint ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Checkpoint à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1011,10 +1011,10 @@ async function confirmDeleteGuard(guard) {
 
   try {
     await callApi("deleteGuard", { guardId: guard.guard_id });
-    notify("ลบ Guard สำเร็จ");
+    notify("à¸¥à¸š Guard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     await loadMasterData();
   } catch (err) {
-    notify(`ลบ Guard ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸¥à¸š Guard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1033,14 +1033,14 @@ async function confirmDeleteAdmin(admin) {
 
   try {
     await callApi("deleteSupervisor", { supervisorId: admin.supervisor_id });
-    notify("ลบ Admin สำเร็จ");
+    notify("à¸¥à¸š Admin à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     if (state.supervisor && String(state.supervisor.supervisor_id) === String(admin.supervisor_id)) {
       logout();
       return;
     }
     await loadMasterData();
   } catch (err) {
-    notify(`ลบ Admin ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸¥à¸š Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1106,7 +1106,7 @@ async function openCheckpointQrSwal(checkpoint) {
   if (!window.Swal) return;
   const qrText = String(checkpoint.qr_text || checkpoint.checkpoint_id || "").trim();
   if (!qrText) {
-    notify("Checkpoint นี้ไม่มี QR Text");
+    notify("Checkpoint à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸¡à¸µ QR Text");
     return;
   }
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(qrText)}`;
@@ -1140,10 +1140,10 @@ async function confirmDeleteCheckpoint(checkpoint) {
 
   try {
     await callApi("deleteCheckpoint", { checkpointId: checkpoint.checkpoint_id });
-    notify("ลบ Checkpoint สำเร็จ");
+    notify("à¸¥à¸š Checkpoint à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     await loadMasterData();
   } catch (err) {
-    notify(`ลบ Checkpoint ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸¥à¸š Checkpoint à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1188,9 +1188,9 @@ async function openChangePasswordSwal() {
       supervisorId: state.supervisor.supervisor_id,
       newPassword: result.value.newPassword
     });
-    notify("เปลี่ยนรหัสผ่านสำเร็จ");
+    notify("à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
   } catch (err) {
-    notify(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${err.message}`);
+    notify(`à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1200,11 +1200,11 @@ async function loadTemplateData() {
     const rows = await callApi("listShiftTemplates", {});
     state.templates = Array.isArray(rows) ? rows : [];
     renderTemplatesTable(state.templates);
-    notify("โหลดข้อมูล Template สำเร็จ");
+    notify("à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Template à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
   } catch (err) {
     state.templates = [];
     renderTemplatesTable([]);
-    notify(`โหลดข้อมูล Template ไม่สำเร็จ: ${err.message}`);
+    notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1269,10 +1269,10 @@ async function confirmDeleteTemplate(template) {
 
   try {
     await callApi("deleteShiftTemplate", { templateId: template.template_id });
-    notify("ลบ Template สำเร็จ");
+    notify("à¸¥à¸š Template à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
     await loadTemplateData();
   } catch (err) {
-    notify(`ลบ Template ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸¥à¸š Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1541,9 +1541,9 @@ async function openTemplateSwal(existingTemplate) {
       items: result.value.routeItems
     });
     await loadTemplateData();
-    notify("บันทึกข้อมูล Template สำเร็จ");
+    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Template à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
   } catch (err) {
-    notify(`บันทึกข้อมูล Template ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1553,7 +1553,7 @@ async function openTemplateRouteSwal(template) {
   try {
     rows = await callApi("listTemplateCheckpoints", { templateId: template.template_id });
   } catch (err) {
-    notify(`โหลด Route ของ Template ไม่สำเร็จ: ${err.message}`);
+    notify(`à¹‚à¸«à¸¥à¸” Route à¸‚à¸­à¸‡ Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
     return;
   }
 
@@ -1662,9 +1662,9 @@ async function openTemplateRouteSwal(template) {
   if (!result.isConfirmed || !result.value) return;
   try {
     await callApi("replaceTemplateCheckpoints", { templateId: template.template_id, items: result.value });
-    notify("บันทึก Route Template สำเร็จ");
+    notify("à¸šà¸±à¸™à¸—à¸¶à¸ Route Template à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
   } catch (err) {
-    notify(`บันทึก Route Template ไม่สำเร็จ: ${err.message}`);
+    notify(`à¸šà¸±à¸™à¸—à¸¶à¸ Route Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -1729,7 +1729,7 @@ function notify(message, icon) {
   const autoIcon = icon || (
     lower.includes("failed") ||
     lower.includes("error") ||
-    lower.includes("ไม่สำเร็จ") ||
+    lower.includes("à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ") ||
     lower.includes("not found")
       ? "error"
       : "success"
@@ -1976,6 +1976,7 @@ function generateNextCheckpointId() {
   const next = maxId + 1;
   return `CP${String(next).padStart(3, "0")}`;
 }
+
 
 
 

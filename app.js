@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbz5oaXP-o7CDvjVnZeoEUDHwB1vya6f1mmEUNGmiJadlpmyqaQnyS0RX6CHopQ4M3Q/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbyPgzQwVolJhU7FxjnZJ6MBgA71uXwbGyBdKzfH6ptXabSUSdWCugjy-YXTGQ0-yVo/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -40,7 +40,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   refreshQueueBanner();
 
   if (!navigator.onLine) {
-    setText(el.loginStatus, "à¸­à¸¸à¸›à¸à¸£à¸“à¹Œà¸­à¸­à¸Ÿà¹„à¸¥à¸™à¹Œ: à¸šà¸±à¸™à¸—à¸¶à¸à¸„à¸´à¸§à¹„à¸§à¹‰à¸à¹ˆà¸­à¸™ à¹à¸¥à¹‰à¸§à¸‹à¸´à¸‡à¸à¹Œà¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡à¹„à¸”à¹‰");
+    setText(el.loginStatus, "อุปกรณ์ออฟไลน์: บันทึกคิวไว้ก่อน แล้วซิงก์ภายหลังได้");
   }
 
   clearSession();
@@ -50,7 +50,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 function bindElements() {
   [
-    "todayText", "guardBadge", "guardAvatar", "guardNameText", "guardIdText",
+    "appRoot", "appHeader", "todayText", "guardBadge", "guardAvatar", "guardNameText", "guardIdText",
     "guardId", "loginBtn", "loginStatus",
     "view-login", "view-shifts", "view-tour", "view-dashboard",
     "logoutBtn", "shiftList", "tourTitle",
@@ -121,11 +121,11 @@ function bindEvents() {
     if (!file) return;
     if (!state.gps) {
       try {
-        setText(el.gpsText, "à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡...");
+        setText(el.gpsText, "กำลังโหลดตำแหน่ง...");
         await captureGps();
         setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
       } catch (err) {
-        setText(el.gpsText, `à¹‚à¸«à¸¥à¸” GPS à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+        setText(el.gpsText, `โหลด GPS ไม่สำเร็จ: ${err.message}`);
       }
     }
     state.checkpointPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
@@ -135,7 +135,7 @@ function bindEvents() {
     });
     el.photoPreview.src = state.checkpointPhoto;
     el.photoPreview.classList.remove("hidden");
-    setText(el.checkpointStatus, "à¸–à¹ˆà¸²à¸¢à¸£à¸¹à¸›à¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸¥à¸°à¸›à¸£à¸°à¸—à¸±à¸šà¸¥à¸²à¸¢à¸™à¹‰à¸³à¹à¸¥à¹‰à¸§");
+    setText(el.checkpointStatus, "ถ่ายรูปสำเร็จ และประทับลายน้ำแล้ว");
     updateActionCardsState();
   });
 
@@ -173,7 +173,7 @@ async function restoreSession() {
     renderDashboard();
     openAssignedRouteOrFallback(session.activeShiftId);
   } catch (err) {
-    setText(el.loginStatus, `à¸à¸¹à¹‰à¸„à¸·à¸™à¹€à¸‹à¸ªà¸Šà¸±à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    setText(el.loginStatus, `กู้คืนเซสชันไม่สำเร็จ: ${err.message}`);
     clearSession();
     switchView("login");
   }
@@ -232,38 +232,40 @@ function onLogout() {
 function setGuardHeader(guard) {
   if (!guard) return;
 
-  const guardName = guard.name || "à¹€à¸ˆà¹‰à¸²à¸«à¸™à¹‰à¸²à¸—à¸µà¹ˆ";
-  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "à¸£";
+  const guardName = guard.name || "เจ้าหน้าที่";
+  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "ร";
 
   el.guardAvatar.textContent = initials;
   el.guardNameText.textContent = guardName;
+  if (el.appHeader) el.appHeader.classList.remove("hidden");
   if (el.guardIdText) el.guardIdText.textContent = "";
   el.guardBadge.classList.remove("hidden");
   el.bottomNav.classList.remove("hidden");
 }
 
 function hideGuardHeader() {
+  if (el.appHeader) el.appHeader.classList.add("hidden");
   el.guardBadge.classList.add("hidden");
   el.bottomNav.classList.add("hidden");
 }
 
 function getShiftProfile(shift) {
   return String(
-    shift.profile_name || shift.template_name || shift.shift_name || "à¸—à¸±à¹ˆà¸§à¹„à¸›"
+    shift.profile_name || shift.template_name || shift.shift_name || "ทั่วไป"
   ).trim();
 }
 
 function displayShiftStatus(status) {
   const code = String(status || "OPEN").toUpperCase();
-  if (code === "CLOSED") return "à¸›à¸´à¸”à¹à¸¥à¹‰à¸§";
-  return "à¹€à¸›à¸´à¸”à¸­à¸¢à¸¹à¹ˆ";
+  if (code === "CLOSED") return "ปิดแล้ว";
+  return "เปิดอยู่";
 }
 
 function renderShiftList() {
   const rows = state.shifts || [];
 
   if (!rows.length) {
-    el.shiftList.innerHTML = '<div class="shift-card">à¹„à¸¡à¹ˆà¸žà¸šà¹€à¸—à¸¡à¹€à¸žà¸¥à¸•à¸—à¸µà¹ˆà¸œà¸¹à¸à¸à¸±à¸šà¸£à¸«à¸±à¸ªà¸™à¸µà¹‰ à¸à¸£à¸¸à¸“à¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¹ƒà¸™à¸«à¸™à¹‰à¸² Admin</div>';
+    el.shiftList.innerHTML = '<div class="shift-card">ไม่พบเทมเพลตที่ผูกกับรหัสนี้ กรุณาตรวจสอบในหน้า Admin</div>';
     return;
   }
 
@@ -274,8 +276,8 @@ function renderShiftList() {
     return `
       <div class="shift-card">
         <h4>${escapeHtml(getShiftProfile(s))}</h4>
-        <p class="meta">à¹€à¸§à¸¥à¸² ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-        <p class="meta">à¸£à¸«à¸±à¸ªà¸à¸°: ${escapeHtml(s.shift_id || "")}</p>
+        <p class="meta">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+        <p class="meta">รหัสกะ: ${escapeHtml(s.shift_id || "")}</p>
         <span class="${statusClass}">${displayShiftStatus(status)}</span>
       </div>
     `;
@@ -304,13 +306,13 @@ async function openShift(index) {
   el.photoPreview.classList.add("hidden");
   if (el.incidentPhotoPreview) el.incidentPhotoPreview.classList.add("hidden");
 
-  setText(el.gpsText, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸” GPS");
+  setText(el.gpsText, "ยังไม่โหลด GPS");
   setText(el.checkpointStatus, "");
   setText(el.incidentStatus, "");
-  setText(el.qrStepStatus, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸ªà¹à¸à¸™ QR");
-  setText(el.gpsStepStatus, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸–à¹ˆà¸²à¸¢");
-  setText(el.submitStepStatus, "à¸£à¸­à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹ƒà¸«à¹‰à¸„à¸£à¸š");
-  setText(el.incidentStepStatus, "à¸£à¸­à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹ƒà¸«à¹‰à¸„à¸£à¸š");
+  setText(el.qrStepStatus, "ยังไม่สแกน QR");
+  setText(el.gpsStepStatus, "ยังไม่ถ่าย");
+  setText(el.submitStepStatus, "รอข้อมูลให้ครบ");
+  setText(el.incidentStepStatus, "รอข้อมูลให้ครบ");
   setIncidentMode("NONE");
   hideAllActionDetails();
 
@@ -366,11 +368,11 @@ async function hydrateShiftProgressFromLogs(shift) {
 function renderCheckpointList() {
   if (!state.activePlan.length) {
     el.roundTabs.innerHTML = "";
-    setText(el.currentPointText, "à¹„à¸¡à¹ˆà¸žà¸šà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¹ƒà¸™à¸£à¸­à¸šà¸™à¸µà¹‰");
+    setText(el.currentPointText, "ไม่พบจุดตรวจในรอบนี้");
     if (el.checkinActionPanel) el.checkinActionPanel.classList.add("hidden");
     if (el.checkpointListPanel) el.checkpointListPanel.classList.remove("hidden");
     stopQrScanner();
-    el.checkpointList.innerHTML = '<div class="checkpoint-card">à¹„à¸¡à¹ˆà¸¡à¸µà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¹ƒà¸™à¸à¸°à¸™à¸µà¹‰</div>';
+    el.checkpointList.innerHTML = '<div class="checkpoint-card">ไม่มีจุดตรวจในกะนี้</div>';
     return;
   }
 
@@ -451,7 +453,7 @@ function renderDashboard() {
   el.dbLastSync.textContent = state.lastSync;
 
   if (!state.shifts.length) {
-    el.dashboardList.innerHTML = '<div class="dashboard-card">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¸à¸°à¸‡à¸²à¸™à¸§à¸±à¸™à¸™à¸µà¹‰</div>';
+    el.dashboardList.innerHTML = '<div class="dashboard-card">ยังไม่มีกะงานวันนี้</div>';
     return;
   }
 
@@ -463,8 +465,8 @@ function renderDashboard() {
     return `
       <div class="dashboard-card">
         <h4>${escapeHtml(getShiftProfile(s))}</h4>
-        <p class="meta">à¹€à¸§à¸¥à¸² ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-        <p class="meta">à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” ${checkpointCount}</p>
+        <p class="meta">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+        <p class="meta">จุดตรวจทั้งหมด ${checkpointCount}</p>
         <span class="${statusClass}">${displayShiftStatus(status)}</span>
       </div>
     `;
@@ -482,14 +484,14 @@ async function loadGps() {
     setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
     updateActionCardsState();
   } catch (err) {
-    setText(el.gpsText, `à¹‚à¸«à¸¥à¸” GPS à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    setText(el.gpsText, `โหลด GPS ไม่สำเร็จ: ${err.message}`);
   }
 }
 
 async function onCapturePhotoCard() {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™");
+    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อน");
     return;
   }
   if (el.photoInput) {
@@ -500,7 +502,7 @@ async function onCapturePhotoCard() {
 
 function captureGps() {
   if (!navigator.geolocation) {
-    return Promise.reject(new Error("à¸­à¸¸à¸›à¸à¸£à¸“à¹Œà¹„à¸¡à¹ˆà¸£à¸­à¸‡à¸£à¸±à¸š GPS"));
+    return Promise.reject(new Error("อุปกรณ์ไม่รองรับ GPS"));
   }
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -521,23 +523,23 @@ async function onSubmitCheckpoint() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸ˆà¸²à¸à¸£à¸²à¸¢à¸à¸²à¸£à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡");
+    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจจากรายการก่อนส่ง");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¸à¸” Card 1 à¹€à¸žà¸·à¹ˆà¸­à¸ªà¹à¸à¸™ QR à¸à¹ˆà¸­à¸™");
+    setText(el.checkpointStatus, "กรุณากด Card 1 เพื่อสแกน QR ก่อน");
     return;
   }
 
   if (!state.gps) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹‚à¸«à¸¥à¸” GPS à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡");
+    setText(el.checkpointStatus, "กรุณาโหลด GPS ก่อนส่ง");
     return;
   }
 
   if (!state.checkpointPhoto) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹à¸™à¸šà¸£à¸¹à¸›à¸–à¹ˆà¸²à¸¢à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡");
+    setText(el.checkpointStatus, "กรุณาแนบรูปถ่ายก่อนส่ง");
     return;
   }
 
@@ -552,7 +554,7 @@ async function onSubmitCheckpoint() {
   };
 
   try {
-    setText(el.checkpointStatus, "à¸à¸³à¸¥à¸±à¸‡à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥...");
+    setText(el.checkpointStatus, "กำลังส่งข้อมูล...");
     const res = await callApi("submitCheckpoint", { payload });
     await showCheckpointResultSwal(res, selectedItem);
 
@@ -569,17 +571,17 @@ async function onSubmitCheckpoint() {
       refreshStats();
 
       if (String(selectedItem.checkpoint_id || "") !== String(res.checkpoint_id || "")) {
-        setText(el.checkpointStatus, "à¸šà¸±à¸™à¸—à¸¶à¸à¹à¸¥à¹‰à¸§ à¹à¸•à¹ˆà¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸ªà¹à¸à¸™à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸šà¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¹€à¸¥à¸·à¸­à¸");
+        setText(el.checkpointStatus, "บันทึกแล้ว แต่จุดที่สแกนไม่ตรงกับจุดที่เลือก");
       } else {
-        setText(el.checkpointStatus, `à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (${res.status})`);
+        setText(el.checkpointStatus, `ส่งข้อมูลสำเร็จ (${res.status})`);
       }
     } else {
-      setText(el.checkpointStatus, `à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (${res.status})`);
+      setText(el.checkpointStatus, `ส่งข้อมูลสำเร็จ (${res.status})`);
     }
     clearCheckpointDraft();
   } catch (err) {
     enqueueAction("submitCheckpoint", { payload });
-    setText(el.checkpointStatus, `à¸ªà¹ˆà¸‡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: à¸šà¸±à¸™à¸—à¸¶à¸à¸„à¸´à¸§à¸­à¸­à¸Ÿà¹„à¸¥à¸™à¹Œà¹à¸¥à¹‰à¸§ (${err.message})`);
+    setText(el.checkpointStatus, `ส่งไม่สำเร็จ: บันทึกคิวออฟไลน์แล้ว (${err.message})`);
     clearCheckpointDraft();
   }
 }
@@ -588,28 +590,28 @@ async function onSubmitIncident() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™");
+    setText(el.incidentStatus, "กรุณาเลือกจุดตรวจก่อน");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸ªà¹à¸à¸™ QR à¸à¹ˆà¸­à¸™");
+    setText(el.incidentStatus, "กรุณาสแกน QR ก่อน");
     return;
   }
   if (!state.gps) {
-    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¹‚à¸«à¸¥à¸” GPS à¸à¹ˆà¸­à¸™");
+    setText(el.incidentStatus, "กรุณาโหลด GPS ก่อน");
     return;
   }
   if (!state.checkpointPhoto) {
-    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸–à¹ˆà¸²à¸¢à¸£à¸¹à¸›à¸à¹ˆà¸­à¸™");
+    setText(el.incidentStatus, "กรุณาถ่ายรูปก่อน");
     return;
   }
 
   const hasAbnormal = state.incidentMode === "HAS";
   const detail = (el.incidentDetail ? el.incidentDetail.value : "").trim();
   if (hasAbnormal && !detail) {
-    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”");
+    setText(el.incidentStatus, "กรุณากรอกรายละเอียด");
     return;
   }
 
@@ -620,11 +622,11 @@ async function onSubmitIncident() {
     gps_lat: state.gps.lat,
     gps_lng: state.gps.lng,
     photo_url: state.checkpointPhoto,
-    remark: hasAbnormal ? `[à¸¡à¸µà¹€à¸«à¸•à¸¸] ${detail}` : "à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸«à¸•à¸¸à¸œà¸´à¸”à¸›à¸à¸•à¸´"
+    remark: hasAbnormal ? `[มีเหตุ] ${detail}` : "ไม่มีเหตุผิดปกติ"
   };
 
   try {
-    setText(el.incidentStatus, "à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆ...");
+    setText(el.incidentStatus, "กำลังบันทึกจุดตรวจ...");
     const checkpointRes = await callApi("submitCheckpoint", { payload: checkpointPayload });
     await showCheckpointResultSwal(checkpointRes, selectedItem);
 
@@ -638,9 +640,9 @@ async function onSubmitIncident() {
         severity: "MEDIUM"
       };
       const incidentRes = await callApi("submitIncident", { payload: incidentPayload });
-      setText(el.incidentStatus, `à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸¥à¸°à¹à¸ˆà¹‰à¸‡à¹€à¸«à¸•à¸¸à¹à¸¥à¹‰à¸§ (${incidentRes.incident_id})`);
+      setText(el.incidentStatus, `บันทึกสำเร็จ และแจ้งเหตุแล้ว (${incidentRes.incident_id})`);
     } else {
-      setText(el.incidentStatus, `à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (${checkpointRes.status || "OK"})`);
+      setText(el.incidentStatus, `บันทึกสำเร็จ (${checkpointRes.status || "OK"})`);
     }
 
     if (checkpointRes && checkpointRes.checkpoint_id) {
@@ -671,7 +673,7 @@ async function onSubmitIncident() {
         }
       });
     }
-    setText(el.incidentStatus, `à¸ªà¹ˆà¸‡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: à¸šà¸±à¸™à¸—à¸¶à¸à¸„à¸´à¸§à¸­à¸­à¸Ÿà¹„à¸¥à¸™à¹Œà¹à¸¥à¹‰à¸§ (${err.message})`);
+    setText(el.incidentStatus, `ส่งไม่สำเร็จ: บันทึกคิวออฟไลน์แล้ว (${err.message})`);
     clearIncidentDraft();
     clearCheckpointDraft();
   }
@@ -827,7 +829,7 @@ async function callApi(action, payload = {}) {
     });
   } catch (err) {
     stopLoading();
-    throw new Error(`à¹€à¸„à¸£à¸·à¸­à¸‚à¹ˆà¸²à¸¢à¸¡à¸µà¸›à¸±à¸à¸«à¸²: ${err.message}`);
+    throw new Error(`เครือข่ายมีปัญหา: ${err.message}`);
   }
 
   try {
@@ -838,7 +840,7 @@ async function callApi(action, payload = {}) {
     const text = await response.text();
     const json = JSON.parse(text);
     if (!json.ok) {
-      throw new Error(json.error || "API à¸œà¸´à¸”à¸žà¸¥à¸²à¸”");
+      throw new Error(json.error || "API ผิดพลาด");
     }
 
     return json.data;
@@ -861,6 +863,9 @@ function switchView(name) {
   ["login", "shifts", "tour", "dashboard"].forEach((v) => {
     el[`view-${v}`].classList.toggle("active", v === name);
   });
+  if (el.appRoot) {
+    el.appRoot.classList.toggle("login-mode", name === "login");
+  }
 
   if (name !== "tour") {
     stopQrScanner();
@@ -894,7 +899,7 @@ function clearCheckpointDraft() {
   state.checkpointPhoto = "";
 
   if (el.manualQr) el.manualQr.value = "";
-  setText(el.gpsText, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸” GPS");
+  setText(el.gpsText, "ยังไม่โหลด GPS");
   if (el.checkpointRemark) el.checkpointRemark.value = "";
   el.photoInput.value = "";
   el.photoPreview.classList.add("hidden");
@@ -1153,9 +1158,9 @@ function updateActionCardsState() {
   setCardDone(el.actionQrCard, hasQr);
   setCardDone(el.actionGpsCard, hasPhoto);
 
-  setText(el.qrStepStatus, hasQr ? "à¸ªà¹à¸à¸™à¹à¸¥à¹‰à¸§" : "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸ªà¹à¸à¸™");
-  setText(el.gpsStepStatus, hasPhoto ? "à¸–à¹ˆà¸²à¸¢à¹à¸¥à¹‰à¸§" : "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸–à¹ˆà¸²à¸¢");
-  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "à¸žà¸£à¹‰à¸­à¸¡à¸¢à¸·à¸™à¸¢à¸±à¸™" : "à¸£à¸­à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹ƒà¸«à¹‰à¸„à¸£à¸š");
+  setText(el.qrStepStatus, hasQr ? "สแกนแล้ว" : "ยังไม่สแกน");
+  setText(el.gpsStepStatus, hasPhoto ? "ถ่ายแล้ว" : "ยังไม่ถ่าย");
+  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "พร้อมยืนยัน" : "รอข้อมูลให้ครบ");
 }
 
 function setCardEnabled(node, enabled) {
@@ -1172,7 +1177,7 @@ function setCardDone(node, done) {
 function openActionDetail(name) {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™");
+    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อน");
     return;
   }
   hideAllActionDetails();
@@ -1205,57 +1210,57 @@ async function showCheckpointResultSwal(res, selectedItem) {
   const isWrongPoint = String((selectedItem && selectedItem.checkpoint_id) || "") !== String(res.checkpoint_id || "");
 
   let icon = "success";
-  let title = "à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ";
-  let text = "à¸•à¸£à¸§à¸ˆà¸ˆà¸¸à¸”à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢";
+  let title = "บันทึกข้อมูลสำเร็จ";
+  let text = "ตรวจจุดเรียบร้อย";
 
   if (status === "INVALID_GPS") {
     icon = "error";
-    title = "à¸ªà¹à¸à¸™à¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸•à¹ˆà¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡";
-    text = "GPS à¹„à¸¡à¹ˆà¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¸£à¸±à¸¨à¸¡à¸µà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆ à¸à¸£à¸¸à¸“à¸²à¹„à¸›à¸—à¸µà¹ˆà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸ˆà¸£à¸´à¸‡à¹à¸¥à¹‰à¸§à¸ªà¹à¸à¸™à¹ƒà¸«à¸¡à¹ˆ";
+    title = "สแกนสำเร็จ แต่ตำแหน่งไม่ถูกต้อง";
+    text = "GPS ไม่อยู่ในรัศมีจุดตรวจ กรุณาไปที่จุดตรวจจริงแล้วสแกนใหม่";
   } else if (status === "INVALID_QR" || isWrongPoint) {
     icon = "error";
-    title = "à¸ªà¹à¸à¸™ QR à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸ˆà¸¸à¸”";
-    text = "QR à¸—à¸µà¹ˆà¸ªà¹à¸à¸™à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸šà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸—à¸µà¹ˆà¹€à¸¥à¸·à¸­à¸ à¸à¸£à¸¸à¸“à¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¹à¸¥à¹‰à¸§à¸ªà¹à¸à¸™à¹ƒà¸«à¸¡à¹ˆ";
+    title = "สแกน QR ไม่ตรงจุด";
+    text = "QR ที่สแกนไม่ตรงกับจุดตรวจที่เลือก กรุณาตรวจสอบแล้วสแกนใหม่";
   } else if (status === "LATE") {
     icon = "warning";
-    title = "à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (à¸Šà¹‰à¸²)";
-    text = "à¸•à¸£à¸§à¸ˆà¸ˆà¸¸à¸”à¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸•à¹ˆà¹€à¸à¸´à¸™à¹€à¸§à¸¥à¸²à¸—à¸µà¹ˆà¸à¸³à¸«à¸™à¸”";
+    title = "บันทึกสำเร็จ (ช้า)";
+    text = "ตรวจจุดสำเร็จ แต่เกินเวลาที่กำหนด";
   } else if (status === "ONTIME") {
     icon = "success";
-    title = "à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ";
-    text = "à¸•à¸£à¸§à¸ˆà¸ˆà¸¸à¸”à¸ªà¸³à¹€à¸£à¹‡à¸ˆà¸•à¸²à¸¡à¹€à¸§à¸¥à¸²";
+    title = "บันทึกสำเร็จ";
+    text = "ตรวจจุดสำเร็จตามเวลา";
   } else if (status) {
     icon = "info";
-    title = "à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ";
-    text = "à¸ªà¸–à¸²à¸™à¸°: " + status;
+    title = "บันทึกสำเร็จ";
+    text = "สถานะ: " + status;
   }
 
   await Swal.fire({
     icon,
     title,
     text,
-    confirmButtonText: "à¸•à¸à¸¥à¸‡"
+    confirmButtonText: "ตกลง"
   });
 }
 async function openQrScanCard() {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™à¸ªà¹à¸à¸™ QR");
+    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อนสแกน QR");
     return;
   }
   if (!window.Swal || !window.Html5Qrcode) {
-    setText(el.checkpointStatus, "à¸­à¸¸à¸›à¸à¸£à¸“à¹Œà¹„à¸¡à¹ˆà¸£à¸­à¸‡à¸£à¸±à¸šà¸ªà¹à¸à¸™à¸à¸¥à¹‰à¸­à¸‡");
+    setText(el.checkpointStatus, "อุปกรณ์ไม่รองรับสแกนกล้อง");
     return;
   }
 
   const readerId = "swalQrReader";
   let scanner = null;
   await Swal.fire({
-    title: "à¸ªà¹à¸à¸™ QR à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆ",
+    title: "สแกน QR จุดตรวจ",
     html: `<div id="${readerId}" style="min-height:280px;border-radius:10px;overflow:hidden;background:#0a1f37"></div>`,
     showCancelButton: true,
-    confirmButtonText: "à¸›à¸´à¸”",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    confirmButtonText: "ปิด",
+    cancelButtonText: "ยกเลิก",
     didOpen: () => {
       scanner = new Html5Qrcode(readerId);
       scanner.start(
@@ -1265,12 +1270,12 @@ async function openQrScanCard() {
           const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
           const actualQr = String(decodedText || "").trim();
           if (expectedQr && actualQr !== expectedQr) {
-            setText(el.checkpointStatus, "à¸ªà¹à¸à¸™ QR à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸ˆà¸¸à¸”");
+            setText(el.checkpointStatus, "สแกน QR ไม่ตรงจุด");
             if (navigator && typeof navigator.vibrate === "function") {
               navigator.vibrate([180, 120, 180]);
             }
             if (window.Swal && Swal.isVisible()) {
-              Swal.showValidationMessage("à¸ªà¹à¸à¸™ QR à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸ˆà¸¸à¸”");
+              Swal.showValidationMessage("สแกน QR ไม่ตรงจุด");
               const vm = Swal.getValidationMessage ? Swal.getValidationMessage() : null;
               if (vm) {
                 vm.style.fontSize = "1.06rem";
@@ -1287,13 +1292,13 @@ async function openQrScanCard() {
           }
           state.scannedQr = actualQr;
           if (el.manualQr) el.manualQr.value = decodedText;
-          setText(el.qrStepStatus, `à¸ªà¹à¸à¸™à¹à¸¥à¹‰à¸§: ${decodedText}`);
+          setText(el.qrStepStatus, `สแกนแล้ว: ${decodedText}`);
           updateActionCardsState();
           Swal.close();
         },
         () => {}
       ).catch(() => {
-        setText(el.checkpointStatus, "à¹€à¸›à¸´à¸”à¸à¸¥à¹‰à¸­à¸‡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+        setText(el.checkpointStatus, "เปิดกล้องไม่สำเร็จ");
       });
     },
     willClose: () => {
@@ -1330,7 +1335,7 @@ function getExpectedQrForSelectedPoint(selectedItem) {
 function openAssignedRouteOrFallback(activeShiftId) {
   if (!state.shifts.length) {
     switchView("shifts");
-    setText(el.loginStatus, "à¹„à¸¡à¹ˆà¸žà¸šà¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡à¸—à¸µà¹ˆà¸œà¸¹à¸à¸à¸±à¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¸™à¸µà¹‰");
+    setText(el.loginStatus, "ไม่พบเส้นทางที่ผูกกับผู้ใช้งานนี้");
     return;
   }
 
@@ -1477,14 +1482,14 @@ async function fileToDataUrl(file, maxSize, quality) {
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¹„à¸”à¹‰"));
+    reader.onerror = () => reject(new Error("ไม่สามารถอ่านไฟล์ได้"));
     reader.readAsDataURL(file);
   });
 
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸›à¸£à¸°à¸¡à¸§à¸¥à¸œà¸¥à¸£à¸¹à¸›à¹„à¸”à¹‰"));
+    im.onerror = () => reject(new Error("ไม่สามารถประมวลผลรูปได้"));
     im.src = dataUrl;
   });
 
@@ -1505,7 +1510,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸›à¸£à¸°à¸¡à¸§à¸¥à¸œà¸¥à¸£à¸¹à¸›à¹„à¸”à¹‰"));
+    im.onerror = () => reject(new Error("ไม่สามารถประมวลผลรูปได้"));
     im.src = dataUrl;
   });
 
@@ -1531,7 +1536,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
     ? `Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)}`
     : "Lat - | Lng -";
 
-  const lines = [`à¸§à¸±à¸™à¸—à¸µà¹ˆ ${dateText}`, gpsText];
+  const lines = [`วันที่ ${dateText}`, gpsText];
   const pad = Math.max(10, Math.round(canvas.width * 0.018));
   const fontSize = Math.max(14, Math.round(canvas.width * 0.03));
   const lineGap = Math.max(6, Math.round(fontSize * 0.4));
@@ -1553,6 +1558,9 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
+
+
 
 
 
