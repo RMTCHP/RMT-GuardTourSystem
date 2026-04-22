@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ระบบตรวจรอบ รปภ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/html5-qrcode" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
@@ -26,13 +30,34 @@
     </header>
 
     <section id="view-login" class="screen active">
-      <div class="panel auth-panel">
-        <h2>เข้าสู่ระบบ รปภ</h2>
-        <p class="hint">กรอกรหัส รปภ เพื่อเริ่มงาน</p>
-        <label for="guardId">รหัส รปภ</label>
-        <input id="guardId" type="text" placeholder="เช่น G001" autocomplete="off">
-        <button id="loginBtn" class="btn btn-primary">เข้าสู่ระบบ</button>
-        <p id="loginStatus" class="status-text"></p>
+      <div class="auth-v2-wrap">
+        <header class="auth-v2-head">
+          <div class="auth-v2-logo">
+            <span class="material-symbols-outlined">local_police</span>
+          </div>
+          <h2 class="auth-v2-title">ระบบตรวจรอบ รปภ</h2>
+          <p class="auth-v2-subtitle">เข้าสู่ระบบเพื่อเริ่มตรวจจุด</p>
+        </header>
+
+        <div class="auth-v2-card">
+          <label for="guardId" class="auth-v2-label">รหัส รปภ</label>
+          <div class="auth-v2-input-wrap">
+            <span class="material-symbols-outlined auth-v2-input-icon">badge</span>
+            <input id="guardId" type="text" placeholder="เช่น G001" autocomplete="off">
+          </div>
+          <button id="loginBtn" class="auth-v2-btn">
+            <span class="material-symbols-outlined">login</span>
+            <span>เข้าสู่ระบบ</span>
+          </button>
+          <p id="loginStatus" class="status-text auth-v2-status"></p>
+        </div>
+
+        <footer class="auth-v2-footer">
+          <button type="button" class="auth-v2-help-btn">
+            <span class="material-symbols-outlined">support_agent</span>
+            <span>ติดต่อศูนย์ควบคุม</span>
+          </button>
+        </footer>
       </div>
     </section>
 

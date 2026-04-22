@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxN9u_uChDlJZQue1agvtMlu_11XOaH0y2Qdx2S1Ms5oPxPHWGYNZZxuYQcfa2ZiZs/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz5oaXP-o7CDvjVnZeoEUDHwB1vya6f1mmEUNGmiJadlpmyqaQnyS0RX6CHopQ4M3Q/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -266,7 +266,7 @@ async function openAddAdminSwal(existingAdmin) {
 
   try {
     await callApi("upsertSupervisor", { payload: result.value });
-    notify("???????????? Admin ??????");
+    notify("บันทึกข้อมูล Admin สำเร็จ");
     if (state.supervisor && String(state.supervisor.supervisor_id) === String(result.value.supervisor_id)) {
       state.supervisor = { ...state.supervisor, ...result.value };
       el.topUserName.textContent = state.supervisor.name || state.supervisor.supervisor_id;
@@ -274,7 +274,7 @@ async function openAddAdminSwal(existingAdmin) {
     }
     renderAdminTable();
   } catch (err) {
-    notify(`???????????? Admin ?????????: ${err.message}`);
+    notify(`บันทึกข้อมูล Admin ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -350,7 +350,7 @@ async function loadMasterData() {
     state.guards = [];
     renderGuardsTable([]);
     renderLiveGuardFilter();
-    notify(`???? Guards ?????????: ${guardsResult.reason?.message || guardsResult.reason}`);
+    notify(`โหลดข้อมูล Guards ไม่สำเร็จ: ${guardsResult.reason?.message || guardsResult.reason}`);
   }
 
   if (checkpointsResult.status === "fulfilled") {
@@ -358,7 +358,7 @@ async function loadMasterData() {
     renderCheckpointsTable(state.checkpoints);
   } else if (guardsResult.status === "fulfilled") {
     // Keep user data visible even if checkpoint loading fails.
-    notify("?????????????????????? ??????? Checkpoints ?????????");
+    notify("โหลด Checkpoints ไม่สำเร็จ แต่ยังแสดงข้อมูลผู้ใช้งานได้");
   }
 
   if (templatesResult.status === "fulfilled") {
@@ -479,10 +479,10 @@ async function openAddUserSwal(existingGuard) {
       ...result.value
     };
     await callApi("upsertGuard", { payload });
-    notify("????????????????????????");
+    notify("บันทึกข้อมูล Guard สำเร็จ");
     await loadMasterData();
   } catch (err) {
-    notify(`?????????????????????: ${err.message}`);
+    notify(`บันทึกข้อมูล Guard ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -584,10 +584,10 @@ async function openCheckpointSwal(existingCheckpoint) {
 
   try {
     await callApi("upsertCheckpoint", { payload: result.value });
-    notify("???????????? Checkpoint ??????");
+    notify("บันทึกข้อมูล Checkpoint สำเร็จ");
     await loadMasterData();
   } catch (err) {
-    notify(`??????????????????????: ${err.message}`);
+    notify(`บันทึกข้อมูล Checkpoint ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -1147,299 +1147,6 @@ async function confirmDeleteCheckpoint(checkpoint) {
   }
 }
 
-function renderGuardFilterOptions() {
-  const selected = el.planGuardFilter.value;
-  const options = ['<option value="">All Guards</option>'].concat(
-    (state.guards || []).map((g) => {
-      const id = String(g.guard_id || "");
-      const name = String(g.name || "");
-      return `<option value="${escapeAttr(id)}">${escapeHtml(id)} - ${escapeHtml(name || "-")}</option>`;
-    })
-  );
-  el.planGuardFilter.innerHTML = options.join("");
-  if (selected) el.planGuardFilter.value = selected;
-}
-
-async function loadShiftPlanData() {
-  if (!state.supervisor) return;
-  const date = el.planDate.value || toYmd(new Date());
-  const guardId = el.planGuardFilter.value || "";
-
-  try {
-    const rows = await callApi("listShifts", { date, guardId });
-    state.shifts = Array.isArray(rows) ? rows : [];
-    renderShiftsTable(state.shifts);
-    notify("????????????????");
-  } catch (err) {
-    state.shifts = [];
-    renderShiftsTable([]);
-    notify(`???? Shift Plan ?????????: ${err.message}`);
-  }
-}
-
-function renderShiftsTable(rows) {
-  if (!rows.length) {
-    el.shiftsTableBody.innerHTML = '<tr><td colspan="8">No shifts</td></tr>';
-    return;
-  }
-
-  const guardFilter = el.planGuardFilter.value || "";
-  const filtered = guardFilter
-    ? rows.filter((s) => String(s.guard_id) === String(guardFilter))
-    : rows;
-
-  if (!filtered.length) {
-    el.shiftsTableBody.innerHTML = '<tr><td colspan="8">No shifts for selected guard</td></tr>';
-    return;
-  }
-
-  el.shiftsTableBody.innerHTML = filtered.map((s) => `
-    <tr>
-      <td>${escapeHtml(s.shift_id || "-")}</td>
-      <td>${escapeHtml(String(s.date || "").slice(0, 10) || "-")}</td>
-      <td>${escapeHtml(s.guard_id || "-")}</td>
-      <td>${escapeHtml(s.shift_name || "-")}</td>
-      <td>${escapeHtml(s.start_time || "-")}</td>
-      <td>${escapeHtml(s.end_time || "-")}</td>
-      <td>${escapeHtml(s.status || "OPEN")}</td>
-      <td>
-        <button class="btn row-btn" data-edit-shift="${escapeAttr(s.shift_id)}">Edit</button>
-        <button class="btn row-btn" data-route-shift="${escapeAttr(s.shift_id)}">Route</button>
-      </td>
-    </tr>
-  `).join("");
-
-  Array.from(el.shiftsTableBody.querySelectorAll("[data-edit-shift]")).forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-edit-shift");
-      const shift = filtered.find((x) => String(x.shift_id) === String(id));
-      if (!shift) return;
-      openShiftSwal(shift);
-    });
-  });
-
-  Array.from(el.shiftsTableBody.querySelectorAll("[data-route-shift]")).forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-route-shift");
-      const shift = filtered.find((x) => String(x.shift_id) === String(id));
-      if (!shift) return;
-      openShiftRouteSwal(shift);
-    });
-  });
-}
-
-async function openShiftSwal(existingShift) {
-  const isEdit = !!existingShift;
-  const defaultShiftId = isEdit ? String(existingShift.shift_id || "") : generateNextShiftId();
-  const defaultDate = isEdit ? String(existingShift.date || "").slice(0, 10) : (el.planDate.value || toYmd(new Date()));
-  const selectedGuardId = isEdit ? String(existingShift.guard_id || "") : String(el.planGuardFilter.value || "");
-  const guardOptions = (state.guards || []).map((g) => {
-    const guardId = String(g.guard_id || "");
-    const selected = guardId === selectedGuardId;
-    return `<option value="${escapeAttr(guardId)}" ${selected ? "selected" : ""}>${escapeHtml(guardId)} - ${escapeHtml(g.name || "-")}</option>`;
-  }).join("");
-
-  if (!window.Swal) return;
-  const result = await Swal.fire({
-    title: isEdit ? "Edit Shift" : "Add Shift",
-    width: 560,
-    customClass: { popup: "swal-user-popup" },
-    html: `
-      <div style="display:grid;gap:8px;text-align:left">
-        <label>Shift ID</label>
-        <input id="swalShiftId" class="swal2-input" value="${escapeAttr(defaultShiftId)}" ${isEdit ? "readonly" : "readonly"}>
-        <label>Date</label>
-        <input id="swalShiftDate" class="swal2-input" type="date" value="${escapeAttr(defaultDate)}">
-        <label>Guard</label>
-        <select id="swalShiftGuard" class="swal2-select">
-          <option value="">Select guard</option>
-          ${guardOptions}
-        </select>
-        <label>Shift Name</label>
-        <input id="swalShiftName" class="swal2-input" value="${escapeAttr(isEdit ? (existingShift.shift_name || "") : "")}" placeholder="e.g. Night Shift">
-        <label>Start Time</label>
-        <input id="swalShiftStart" class="swal2-input" type="time" value="${escapeAttr(toHm(isEdit ? existingShift.start_time : "08:00"))}">
-        <label>End Time</label>
-        <input id="swalShiftEnd" class="swal2-input" type="time" value="${escapeAttr(toHm(isEdit ? existingShift.end_time : "17:00"))}">
-        <label>Status</label>
-        <select id="swalShiftStatus" class="swal2-select">
-          <option value="OPEN" ${String(isEdit ? existingShift.status : "OPEN").toUpperCase() === "OPEN" ? "selected" : ""}>OPEN</option>
-          <option value="CLOSED" ${String(isEdit ? existingShift.status : "").toUpperCase() === "CLOSED" ? "selected" : ""}>CLOSED</option>
-        </select>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: isEdit ? "Save" : "Add",
-    cancelButtonText: "Cancel",
-    preConfirm: () => {
-      const shift_id = document.getElementById("swalShiftId").value.trim();
-      const date = document.getElementById("swalShiftDate").value;
-      const guard_id = document.getElementById("swalShiftGuard").value;
-      const shift_name = document.getElementById("swalShiftName").value.trim();
-      const start_time = normalizeTime(document.getElementById("swalShiftStart").value);
-      const end_time = normalizeTime(document.getElementById("swalShiftEnd").value);
-      const status = document.getElementById("swalShiftStatus").value;
-      if (!shift_id || !date || !guard_id || !shift_name || !start_time || !end_time) {
-        Swal.showValidationMessage("Please fill all required fields");
-        return false;
-      }
-      return { shift_id, date, guard_id, shift_name, start_time, end_time, status };
-    }
-  });
-
-  if (!result.isConfirmed || !result.value) return;
-  try {
-    await callApi("upsertShift", { payload: result.value });
-    await loadShiftPlanData();
-    notify("???????????? Shift ??????");
-  } catch (err) {
-    notify(`???????????? Shift ?????????: ${err.message}`);
-  }
-}
-
-async function openShiftRouteSwal(shift) {
-  if (!window.Swal) return;
-  if (!shift || !shift.shift_id) return;
-
-  let rows = [];
-  try {
-    rows = await callApi("listShiftCheckpoints", { shiftId: shift.shift_id });
-  } catch (err) {
-    notify(`????????????????????: ${err.message}`);
-    return;
-  }
-
-  const cpOptions = (state.checkpoints || []).map((cp) => {
-    return `<option value="${escapeAttr(cp.checkpoint_id)}">${escapeHtml(cp.checkpoint_id)} - ${escapeHtml(cp.checkpoint_name || "-")}</option>`;
-  }).join("");
-
-  const routeRows = (rows || []).map((r) => ({
-    seq_no: Number(r.seq_no || 1),
-    checkpoint_id: String(r.checkpoint_id || ""),
-    planned_time: toHm(r.planned_time || "00:00"),
-    sla_min: Number(r.sla_min || 0)
-  }));
-
-  const tableHtml = () => {
-    if (!routeRows.length) {
-      return '<tr><td colspan="5">No checkpoint route</td></tr>';
-    }
-    return routeRows.map((r, i) => `
-      <tr>
-        <td><input class="swal2-input route-seq" data-idx="${i}" type="number" min="1" value="${r.seq_no}" style="width:90px;margin:0!important"></td>
-        <td>
-          <select class="swal2-select route-cp" data-idx="${i}" style="width:100%;margin:0!important">
-            <option value="">Select checkpoint</option>
-            ${cpOptions.replace(`value="${escapeAttr(r.checkpoint_id)}"`, `value="${escapeAttr(r.checkpoint_id)}" selected`)}
-          </select>
-        </td>
-        <td><input class="swal2-input route-time" data-idx="${i}" type="time" value="${escapeAttr(r.planned_time)}" style="width:120px;margin:0!important"></td>
-        <td><input class="swal2-input route-sla" data-idx="${i}" type="number" min="0" value="${r.sla_min}" style="width:100px;margin:0!important"></td>
-        <td><button type="button" class="btn row-btn route-del" data-idx="${i}">Delete</button></td>
-      </tr>
-    `).join("");
-  };
-
-  const result = await Swal.fire({
-    title: `Route Plan: ${escapeHtml(shift.shift_id)}`,
-    width: "92vw",
-    customClass: { popup: "swal-checkpoint-popup" },
-    html: `
-      <div style="display:grid;gap:10px;text-align:left">
-        <div>Guard: <strong>${escapeHtml(shift.guard_id || "-")}</strong> | Date: <strong>${escapeHtml(String(shift.date || "").slice(0, 10))}</strong></div>
-        <div class="table-wrap" style="max-height:46vh;overflow:auto">
-          <table class="data-table" style="min-width:760px">
-            <thead>
-              <tr>
-                <th>Seq</th>
-                <th>Checkpoint</th>
-                <th>Planned Time</th>
-                <th>SLA (min)</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="swalRouteBody">${tableHtml()}</tbody>
-          </table>
-        </div>
-        <button id="swalAddRouteRow" type="button" class="btn" style="width:160px">+ Add Checkpoint</button>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Save Route",
-    cancelButtonText: "Cancel",
-    didOpen: () => {
-      const syncRowsFromDom = () => {
-        const seqEls = Array.from(document.querySelectorAll(".route-seq"));
-        const cpEls = Array.from(document.querySelectorAll(".route-cp"));
-        if (!cpEls.length) return;
-        const draft = cpEls.map((cpEl, idx) => ({
-          seq_no: Number(seqEls[idx]?.value || 0),
-          checkpoint_id: String(cpEl.value || "").trim()
-        }));
-        routeRows.splice(0, routeRows.length, ...draft);
-      };
-
-      const rerender = () => {
-        const body = document.getElementById("swalRouteBody");
-        if (!body) return;
-        body.innerHTML = tableHtml();
-        Array.from(body.querySelectorAll(".route-del")).forEach((btn) => {
-          btn.addEventListener("click", () => {
-            syncRowsFromDom();
-            const idx = Number(btn.getAttribute("data-idx"));
-            if (Number.isFinite(idx) && idx >= 0) {
-              routeRows.splice(idx, 1);
-              rerender();
-            }
-          });
-        });
-      };
-
-      const addBtn = document.getElementById("swalAddRouteRow");
-      if (addBtn) {
-        addBtn.addEventListener("click", () => {
-          routeRows.push({ seq_no: routeRows.length + 1, checkpoint_id: "", planned_time: "00:00", sla_min: 0 });
-          rerender();
-        });
-      }
-      rerender();
-    },
-    preConfirm: () => {
-      const seqEls = Array.from(document.querySelectorAll(".route-seq"));
-      const cpEls = Array.from(document.querySelectorAll(".route-cp"));
-      const timeEls = Array.from(document.querySelectorAll(".route-time"));
-      const slaEls = Array.from(document.querySelectorAll(".route-sla"));
-
-      if (!cpEls.length) {
-        Swal.showValidationMessage("Please add at least 1 checkpoint");
-        return false;
-      }
-
-      const items = cpEls.map((cpEl, idx) => {
-        const checkpoint_id = String(cpEl.value || "").trim();
-        const seq_no = Number(seqEls[idx]?.value || 0);
-        const planned_time = normalizeTime(timeEls[idx]?.value);
-        const sla_min = Number(slaEls[idx]?.value || 0);
-        return { seq_no, checkpoint_id, planned_time, sla_min };
-      });
-
-      if (items.some((x) => !x.checkpoint_id || !x.seq_no || !x.planned_time)) {
-        Swal.showValidationMessage("Each row requires Seq, Checkpoint and Planned Time");
-        return false;
-      }
-
-      return items;
-    }
-  });
-
-  if (!result.isConfirmed || !result.value) return;
-  try {
-    await callApi("replaceShiftCheckpoints", { shiftId: shift.shift_id, items: result.value });
-    notify("?????? Route ??????");
-  } catch (err) {
-    notify(`?????? Route ?????????: ${err.message}`);
-  }
-}
 
 async function openChangePasswordSwal() {
   closeTopUserMenu();
@@ -1493,11 +1200,11 @@ async function loadTemplateData() {
     const rows = await callApi("listShiftTemplates", {});
     state.templates = Array.isArray(rows) ? rows : [];
     renderTemplatesTable(state.templates);
-    notify("????????????????");
+    notify("โหลดข้อมูล Template สำเร็จ");
   } catch (err) {
     state.templates = [];
     renderTemplatesTable([]);
-    notify(`???? Template ?????????: ${err.message}`);
+    notify(`โหลดข้อมูล Template ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -1834,9 +1541,9 @@ async function openTemplateSwal(existingTemplate) {
       items: result.value.routeItems
     });
     await loadTemplateData();
-    notify("???????????? Template ??????");
+    notify("บันทึกข้อมูล Template สำเร็จ");
   } catch (err) {
-    notify(`???????????? Template ?????????: ${err.message}`);
+    notify(`บันทึกข้อมูล Template ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -1846,7 +1553,7 @@ async function openTemplateRouteSwal(template) {
   try {
     rows = await callApi("listTemplateCheckpoints", { templateId: template.template_id });
   } catch (err) {
-    notify(`??????????? Template ?????????: ${err.message}`);
+    notify(`โหลด Route ของ Template ไม่สำเร็จ: ${err.message}`);
     return;
   }
 
@@ -1955,9 +1662,9 @@ async function openTemplateRouteSwal(template) {
   if (!result.isConfirmed || !result.value) return;
   try {
     await callApi("replaceTemplateCheckpoints", { templateId: template.template_id, items: result.value });
-    notify("?????? Route Template ??????");
+    notify("บันทึก Route Template สำเร็จ");
   } catch (err) {
-    notify(`?????? Route Template ?????????: ${err.message}`);
+    notify(`บันทึก Route Template ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -2244,17 +1951,6 @@ function iconQr() {
   `;
 }
 
-function generateNextShiftId() {
-  let maxId = 0;
-  (state.shifts || []).forEach((s) => {
-    const raw = String(s.shift_id || "").trim();
-    const m = raw.match(/^SH(\d+)$/i);
-    if (!m) return;
-    const n = Number(m[1]);
-    if (Number.isFinite(n) && n > maxId) maxId = n;
-  });
-  return `SH${String(maxId + 1).padStart(3, "0")}`;
-}
 
 function generateNextTemplateId() {
   let maxId = 0;
