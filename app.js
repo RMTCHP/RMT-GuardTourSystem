@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbwWAWgmlVvC3uH0mQIFDoMgK60I8PFo5gZOANx-scbD89ayvaW8r_JGy1vW1KKlumI/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbxGq5ZhxrH49wmhXx0Esw5bh1lb0eQ9mIBthtQxw4Q_Ce-e1lU35TD3CuKihF7q3eI/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -1558,6 +1558,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
 
 
 
