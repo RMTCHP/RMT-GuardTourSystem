@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbxGq5ZhxrH49wmhXx0Esw5bh1lb0eQ9mIBthtQxw4Q_Ce-e1lU35TD3CuKihF7q3eI/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxw8wvK5QKiAfgoXM7bSZry9j9nPI37i9z9PzzYs39b259FlcAp0aPKVntD8I4iZWU/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -1976,6 +1976,7 @@ function generateNextCheckpointId() {
   const next = maxId + 1;
   return `CP${String(next).padStart(3, "0")}`;
 }
+
 
 
 
