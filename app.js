@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -25,7 +25,9 @@ const state = {
   queue: [],
   syncing: false,
   lastSync: "-",
-  suppressLoading: false
+  suppressLoading: false,
+  summaryCacheDate: "",
+  summaryCache: null
 };
 
 const el = {};
@@ -41,7 +43,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   refreshQueueBanner();
 
   if (!navigator.onLine) {
-    console.warn("อุปกรณ์ออฟไลน์: บันทึกคิวไว้ก่อน แล้วซิงก์ภายหลังได้");
+    console.warn("à¸­à¸¸à¸›à¸à¸£à¸“à¹Œà¸­à¸­à¸Ÿà¹„à¸¥à¸™à¹Œ: à¸šà¸±à¸™à¸—à¸¶à¸à¸„à¸´à¸§à¹„à¸§à¹‰à¸à¹ˆà¸­à¸™ à¹à¸¥à¹‰à¸§à¸‹à¸´à¸‡à¸à¹Œà¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡à¹„à¸”à¹‰");
   }
 
   const guardIdFromUrl = readQueryParam("guardId");
@@ -61,7 +63,7 @@ function bindElements() {
     "appRoot", "appHeader", "todayText", "guardBadge", "guardAvatar", "guardNameText", "guardIdText",
     "view-shifts", "view-tour", "view-dashboard",
     "logoutBtn", "shiftList", "tourTitle",
-    "dbShiftTotal", "dbShiftClosed", "dbQueueCount", "dbLastSync", "dashboardList", "syncNowBtn",
+    "dbShiftTotal", "dbRoundProgress", "dbCheckedTotal", "dbIncidentTotal", "dashboardList", "syncNowBtn",
     "statTotal", "statDone", "qrReader", "manualQr",
     "actionQrCard", "actionGpsCard", "actionIncidentCard", "qrStepStatus",
     "gpsBtn", "gpsText", "photoInput", "photoPreview",
@@ -86,12 +88,13 @@ function bindEvents() {
     if (!state.activeShift) return;
     switchView("tour");
   });
-  el.navDashboard.addEventListener("click", () => {
-    renderDashboard();
+  el.navDashboard.addEventListener("click", async () => {
     switchView("dashboard");
+    renderDashboard();
+    await loadGuardDashboardSummary(true);
   });
 
-  el.syncNowBtn.addEventListener("click", () => syncQueue(true));
+  if (el.syncNowBtn) el.syncNowBtn.addEventListener("click", () => syncQueue(true));
 
   el.gpsBtn.addEventListener("click", loadGps);
   if (el.actionQrCard) el.actionQrCard.addEventListener("click", openQrScanCard);
@@ -127,11 +130,11 @@ function bindEvents() {
     if (!file) return;
     if (!state.gps) {
       try {
-        setText(el.gpsText, "กำลังโหลดตำแหน่ง...");
+        setText(el.gpsText, "à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡...");
         await captureGps();
         setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
       } catch (err) {
-        setText(el.gpsText, `โหลด GPS ไม่สำเร็จ: ${err.message}`);
+        setText(el.gpsText, `à¹‚à¸«à¸¥à¸” GPS à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
       }
     }
     state.checkpointPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
@@ -141,7 +144,7 @@ function bindEvents() {
     });
     el.photoPreview.src = state.checkpointPhoto;
     el.photoPreview.classList.remove("hidden");
-    setText(el.checkpointStatus, "ถ่ายรูปสำเร็จ และประทับลายน้ำแล้ว");
+    setText(el.checkpointStatus, "à¸–à¹ˆà¸²à¸¢à¸£à¸¹à¸›à¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸¥à¸°à¸›à¸£à¸°à¸—à¸±à¸šà¸¥à¸²à¸¢à¸™à¹‰à¸³à¹à¸¥à¹‰à¸§");
     updateActionCardsState();
   });
 
@@ -179,7 +182,7 @@ async function restoreSession() {
     clearSession();
     state.suppressLoading = false;
     if (window.Swal) Swal.close();
-    await showSwalMessage("error", "เข้าสู่ระบบไม่สำเร็จ", `กู้คืนเซสชันไม่สำเร็จ: ${err.message}`);
+    await showSwalMessage("error", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", `à¸à¸¹à¹‰à¸„à¸·à¸™à¹€à¸‹à¸ªà¸Šà¸±à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
     window.location.href = "index.html";
   }
 }
@@ -199,8 +202,8 @@ function onLogout() {
 function setGuardHeader(guard) {
   if (!guard) return;
 
-  const guardName = guard.name || "เจ้าหน้าที่";
-  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "ร";
+  const guardName = guard.name || "à¹€à¸ˆà¹‰à¸²à¸«à¸™à¹‰à¸²à¸—à¸µà¹ˆ";
+  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "à¸£";
 
   el.guardAvatar.textContent = initials;
   el.guardNameText.textContent = guardName;
@@ -385,37 +388,250 @@ function refreshStats() {
 
 function renderDashboard() {
   const total = state.shifts.length;
-  const closed = state.shifts.filter((s) => String(s.status || "").toUpperCase() === "CLOSED").length;
+  const rows = state.summaryCache && Array.isArray(state.summaryCache.rows) ? state.summaryCache.rows : [];
+  const checkedTotal = rows.reduce((sum, row) => sum + Number(row.checked || 0), 0);
+  const incidentTotal = rows.reduce((sum, row) => sum + Number(row.incidents || 0), 0);
+  const roundsDone = rows.length
+    ? rows.reduce((sum, row) => sum + Number(row.rounds_done || 0), 0)
+    : 0;
+  const roundsTotal = rows.length
+    ? rows.reduce((sum, row) => sum + Number(row.rounds_total || 0), 0)
+    : (state.shifts || []).reduce((sum, s) => sum + Number(s.rounds_required || 1), 0);
 
-  el.dbShiftTotal.textContent = String(total);
-  el.dbShiftClosed.textContent = String(closed);
-  el.dbQueueCount.textContent = String(state.queue.length);
-  el.dbLastSync.textContent = state.lastSync;
+  if (el.dbShiftTotal) el.dbShiftTotal.textContent = String(total);
+  if (el.dbRoundProgress) el.dbRoundProgress.textContent = `${roundsDone}/${roundsTotal} รอบ`;
+  if (el.dbCheckedTotal) el.dbCheckedTotal.textContent = String(checkedTotal);
+  if (el.dbIncidentTotal) el.dbIncidentTotal.textContent = String(incidentTotal);
 
   if (!state.shifts.length) {
-    el.dashboardList.innerHTML = '<div class="dashboard-card">ยังไม่มีกะงานวันนี้</div>';
+    el.dashboardList.innerHTML = `
+      <div class="dashboard-card dashboard-empty">
+        <h4>ยังไม่มีกะงานวันนี้</h4>
+        <p class="meta">กรุณาตรวจสอบการผูก Template กับรหัส รปภ ในหน้า Admin</p>
+      </div>
+    `;
     return;
   }
 
-  el.dashboardList.innerHTML = state.shifts.map((s) => {
-    const checkpointCount = Array.isArray(s.checkpoints) ? s.checkpoints.length : 0;
-    const status = String(s.status || "OPEN").toUpperCase();
-    const statusClass = status === "CLOSED" ? "badge badge-closed" : "badge badge-open";
+  if (!rows.length) {
+    el.dashboardList.innerHTML = state.shifts.map((s) => {
+      const checkpointCount = Array.isArray(s.checkpoints) ? s.checkpoints.length : 0;
+      const roundsTotal = Number(s.rounds_required || 1);
+      const status = String(s.status || "OPEN").toUpperCase();
+      const statusClass = status === "CLOSED" ? "badge badge-closed" : "badge badge-open";
+      const roundPct = roundsTotal > 0 ? 0 : 0;
+      const checkPct = checkpointCount > 0 ? 0 : 0;
 
+      return `
+        <div class="dashboard-card dashboard-shift-card">
+          <div class="dashboard-head">
+            <h4>${escapeHtml(getShiftProfile(s))}</h4>
+            <span class="${statusClass}">${displayShiftStatus(status)}</span>
+          </div>
+          <p class="meta dashboard-time">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+
+          <div class="dashboard-progress-wrap">
+            <div class="dashboard-progress-head"><span>ความคืบหน้ารอบ</span><strong>0/${roundsTotal}</strong></div>
+            <div class="dashboard-progress-bar"><i style="width:${roundPct}%"></i></div>
+          </div>
+          <div class="dashboard-progress-wrap">
+            <div class="dashboard-progress-head"><span>จุดตรวจแล้ว</span><strong>0/${checkpointCount}</strong></div>
+            <div class="dashboard-progress-bar"><i style="width:${checkPct}%"></i></div>
+          </div>
+
+          <div class="dashboard-mini-grid">
+            <div class="dashboard-mini-card mini-incident">
+              <i class="material-symbols-outlined mini-icon" aria-hidden="true">notification_important</i>
+              <span>แจ้งเหตุ</span><strong>0</strong>
+            </div>
+            <div class="dashboard-mini-card mini-late">
+              <i class="material-symbols-outlined mini-icon" aria-hidden="true">schedule</i>
+              <span>ช้า</span><strong>0</strong>
+            </div>
+            <div class="dashboard-mini-card mini-error">
+              <i class="material-symbols-outlined mini-icon" aria-hidden="true">gpp_bad</i>
+              <span>ผิดพลาด</span><strong>0</strong>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+    return;
+  }
+
+  el.dashboardList.innerHTML = rows.map((row) => {
+    const statusClass = row.done ? "badge badge-closed" : "badge badge-open";
+    const statusText = row.done ? "ครบแล้ว" : "ยังไม่ครบ";
+    const roundsTotalLocal = Number(row.rounds_total || 0);
+    const expectedLocal = Number(row.expected || 0);
+    const roundPct = roundsTotalLocal > 0
+      ? Math.min(100, Math.round((Number(row.rounds_done || 0) / roundsTotalLocal) * 100))
+      : 0;
+    const checkPct = expectedLocal > 0
+      ? Math.min(100, Math.round((Number(row.checked || 0) / expectedLocal) * 100))
+      : 0;
     return `
-      <div class="dashboard-card">
-        <h4>${escapeHtml(getShiftProfile(s))}</h4>
-        <p class="meta">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-        <p class="meta">จุดตรวจทั้งหมด ${checkpointCount}</p>
-        <span class="${statusClass}">${displayShiftStatus(status)}</span>
+      <div class="dashboard-card dashboard-shift-card">
+        <h4>${escapeHtml(row.name)}</h4>
+        <div class="dashboard-head">
+          <p class="meta dashboard-time">เวลา ${escapeHtml(row.start)} - ${escapeHtml(row.end)}</p>
+          <span class="${statusClass}">${statusText}</span>
+        </div>
+
+        <div class="dashboard-progress-wrap">
+          <div class="dashboard-progress-head"><span>ความคืบหน้ารอบ</span><strong>${row.rounds_done}/${row.rounds_total}</strong></div>
+          <div class="dashboard-progress-bar"><i style="width:${roundPct}%"></i></div>
+        </div>
+        <div class="dashboard-progress-wrap">
+          <div class="dashboard-progress-head"><span>จุดตรวจแล้ว</span><strong>${row.checked}/${row.expected}</strong></div>
+          <div class="dashboard-progress-bar"><i style="width:${checkPct}%"></i></div>
+        </div>
+
+        <div class="dashboard-mini-grid">
+          <div class="dashboard-mini-card mini-incident">
+            <i class="material-symbols-outlined mini-icon" aria-hidden="true">notification_important</i>
+            <span>แจ้งเหตุ</span><strong>${row.incidents}</strong>
+          </div>
+          <div class="dashboard-mini-card mini-late">
+            <i class="material-symbols-outlined mini-icon" aria-hidden="true">schedule</i>
+            <span>ช้า</span><strong>${row.late}</strong>
+          </div>
+          <div class="dashboard-mini-card mini-error">
+            <i class="material-symbols-outlined mini-icon" aria-hidden="true">gpp_bad</i>
+            <span>ผิดพลาด</span><strong>${row.invalid}</strong>
+          </div>
+        </div>
       </div>
     `;
   }).join("");
 }
 
+async function loadGuardDashboardSummary(forceRefresh) {
+  if (!state.guard) return;
+  const date = toYmd(new Date());
+  if (!forceRefresh && state.summaryCacheDate === date && state.summaryCache) return;
+
+  try {
+    const [logsRes, incidentsRes] = await Promise.allSettled([
+      callApi("listCheckLogs", { date, guardId: state.guard.guard_id }),
+      callApi("listIncidents", { date, guardId: state.guard.guard_id, status: "" })
+    ]);
+    const logs = logsRes.status === "fulfilled" && Array.isArray(logsRes.value) ? logsRes.value : [];
+    const incidents = incidentsRes.status === "fulfilled" && Array.isArray(incidentsRes.value) ? incidentsRes.value : [];
+    const summary = buildGuardSummaryFromRows(logs, incidents);
+    state.summaryCacheDate = date;
+    state.summaryCache = summary;
+    renderDashboard();
+  } catch (_) {
+    // keep fallback rendering from shifts only
+  }
+}
+
+function buildGuardSummaryFromRows(logRows, incidentRows) {
+  const shiftMap = {};
+  const logCounterByShiftCp = {};
+  (state.shifts || []).forEach((s) => {
+    const shiftId = String(s.shift_id || "");
+    const expected = Array.isArray(s.checkpoints) ? s.checkpoints.length : 0;
+    const baseProgress = state.shiftProgressMap[shiftId] || {};
+    const roundProgress = computeRoundProgressByCounter(s, baseProgress);
+    shiftMap[shiftId] = {
+      id: shiftId,
+      name: getShiftProfile(s),
+      start: String(s.start_time || "-"),
+      end: String(s.end_time || "-"),
+      expected,
+      checked: 0,
+      late: 0,
+      invalid: 0,
+      incidents: 0,
+      rounds_total: Number(roundProgress.total || 0),
+      rounds_done: Number(roundProgress.done || 0),
+      done: false
+    };
+  });
+
+  logRows.forEach((log) => {
+    const shiftId = String(log.shift_id || "");
+    if (!shiftMap[shiftId]) return;
+    const status = String(log.status || "").toUpperCase();
+    if (status === "ONTIME" || status === "LATE") {
+      shiftMap[shiftId].checked += 1;
+      if (status === "LATE") shiftMap[shiftId].late += 1;
+      const cpId = String(log.checkpoint_id || "");
+      if (cpId) {
+        if (!logCounterByShiftCp[shiftId]) logCounterByShiftCp[shiftId] = {};
+        logCounterByShiftCp[shiftId][cpId] = Number(logCounterByShiftCp[shiftId][cpId] || 0) + 1;
+      }
+    } else if (status.startsWith("INVALID")) {
+      shiftMap[shiftId].invalid += 1;
+    }
+  });
+
+  incidentRows.forEach((row) => {
+    const shiftId = String(row.shift_id || "");
+    if (!shiftMap[shiftId]) return;
+    shiftMap[shiftId].incidents += 1;
+  });
+
+  const rows = Object.values(shiftMap).map((row) => {
+    const shift = (state.shifts || []).find((s) => String(s.shift_id || "") === String(row.id || ""));
+    if (shift) {
+      const roundProgress = computeRoundProgressByCounter(shift, logCounterByShiftCp[row.id] || {});
+      row.rounds_total = Number(roundProgress.total || row.rounds_total || 0);
+      row.rounds_done = Number(roundProgress.done || 0);
+    }
+    row.done = row.expected > 0 && row.checked >= row.expected;
+    return row;
+  });
+  const doneShifts = rows.filter((x) => x.done).length;
+  return { rows, doneShifts };
+}
+
+function computeRoundProgressByCounter(shift, counterMap) {
+  const checkpoints = Array.isArray(shift && shift.checkpoints) ? shift.checkpoints.slice() : [];
+  if (!checkpoints.length) return { done: 0, total: 0 };
+
+  checkpoints.sort((a, b) =>
+    Number(a.round_no || 1) - Number(b.round_no || 1) ||
+    Number(a.seq_no || 0) - Number(b.seq_no || 0)
+  );
+
+  const remaining = {};
+  Object.keys(counterMap || {}).forEach((cpId) => {
+    remaining[String(cpId)] = Number(counterMap[cpId] || 0);
+  });
+
+  const roundCounter = {};
+  checkpoints.forEach((cp) => {
+    const roundNo = Number(cp.round_no || 1);
+    const cpId = String(cp.checkpoint_id || "");
+    if (!roundCounter[roundNo]) roundCounter[roundNo] = { total: 0, done: 0 };
+    roundCounter[roundNo].total += 1;
+
+    if (cpId && Number(remaining[cpId] || 0) > 0) {
+      roundCounter[roundNo].done += 1;
+      remaining[cpId] = Number(remaining[cpId] || 0) - 1;
+    }
+  });
+
+  const rounds = Object.keys(roundCounter).map((k) => roundCounter[k]);
+  const total = rounds.length;
+  const done = rounds.filter((r) => Number(r.total || 0) > 0 && Number(r.done || 0) >= Number(r.total || 0)).length;
+  return { done, total };
+}
+
 function refreshQueueBanner() {
-  if (el.dbQueueCount) el.dbQueueCount.textContent = String(state.queue.length);
-  if (el.dbLastSync) el.dbLastSync.textContent = state.lastSync;
+  // Queue runs in background; no dashboard KPI card for queue/sync anymore.
+}
+
+function invalidateGuardSummaryCache() {
+  state.summaryCacheDate = "";
+  state.summaryCache = null;
+}
+
+function isDashboardVisible() {
+  return !!(el["view-dashboard"] && el["view-dashboard"].classList.contains("active"));
 }
 
 async function loadGps() {
@@ -424,14 +640,14 @@ async function loadGps() {
     setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
     updateActionCardsState();
   } catch (err) {
-    setText(el.gpsText, `โหลด GPS ไม่สำเร็จ: ${err.message}`);
+    setText(el.gpsText, `à¹‚à¸«à¸¥à¸” GPS à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
 async function onCapturePhotoCard() {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อน");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™");
     return;
   }
   if (el.photoInput) {
@@ -442,7 +658,7 @@ async function onCapturePhotoCard() {
 
 function captureGps() {
   if (!navigator.geolocation) {
-    return Promise.reject(new Error("อุปกรณ์ไม่รองรับ GPS"));
+    return Promise.reject(new Error("à¸­à¸¸à¸›à¸à¸£à¸“à¹Œà¹„à¸¡à¹ˆà¸£à¸­à¸‡à¸£à¸±à¸š GPS"));
   }
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -463,23 +679,23 @@ async function onSubmitCheckpoint() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจจากรายการก่อนส่ง");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸ˆà¸²à¸à¸£à¸²à¸¢à¸à¸²à¸£à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.checkpointStatus, "กรุณากด Card 1 เพื่อสแกน QR ก่อน");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¸à¸” Card 1 à¹€à¸žà¸·à¹ˆà¸­à¸ªà¹à¸à¸™ QR à¸à¹ˆà¸­à¸™");
     return;
   }
 
   if (!state.gps) {
-    setText(el.checkpointStatus, "กรุณาโหลด GPS ก่อนส่ง");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹‚à¸«à¸¥à¸” GPS à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡");
     return;
   }
 
   if (!state.checkpointPhoto) {
-    setText(el.checkpointStatus, "กรุณาแนบรูปถ่ายก่อนส่ง");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹à¸™à¸šà¸£à¸¹à¸›à¸–à¹ˆà¸²à¸¢à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡");
     return;
   }
 
@@ -494,7 +710,7 @@ async function onSubmitCheckpoint() {
   };
 
   try {
-    setText(el.checkpointStatus, "กำลังส่งข้อมูล...");
+    setText(el.checkpointStatus, "à¸à¸³à¸¥à¸±à¸‡à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥...");
     const res = await callApi("submitCheckpoint", { payload });
     await showCheckpointResultSwal(res, selectedItem);
 
@@ -509,19 +725,23 @@ async function onSubmitCheckpoint() {
       state.selectedPlanKey = "";
       renderCheckpointList();
       refreshStats();
+      invalidateGuardSummaryCache();
+      if (isDashboardVisible()) await loadGuardDashboardSummary(true);
 
       if (String(selectedItem.checkpoint_id || "") !== String(res.checkpoint_id || "")) {
-        setText(el.checkpointStatus, "บันทึกแล้ว แต่จุดที่สแกนไม่ตรงกับจุดที่เลือก");
+        setText(el.checkpointStatus, "à¸šà¸±à¸™à¸—à¸¶à¸à¹à¸¥à¹‰à¸§ à¹à¸•à¹ˆà¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸ªà¹à¸à¸™à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸šà¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¹€à¸¥à¸·à¸­à¸");
       } else {
-        setText(el.checkpointStatus, `ส่งข้อมูลสำเร็จ (${res.status})`);
+        setText(el.checkpointStatus, `à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (${res.status})`);
       }
     } else {
-      setText(el.checkpointStatus, `ส่งข้อมูลสำเร็จ (${res.status})`);
+      setText(el.checkpointStatus, `à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (${res.status})`);
+      invalidateGuardSummaryCache();
+      if (isDashboardVisible()) await loadGuardDashboardSummary(true);
     }
     clearCheckpointDraft();
   } catch (err) {
     enqueueAction("submitCheckpoint", { payload });
-    setText(el.checkpointStatus, `ส่งไม่สำเร็จ: บันทึกคิวออฟไลน์แล้ว (${err.message})`);
+    setText(el.checkpointStatus, `à¸ªà¹ˆà¸‡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: à¸šà¸±à¸™à¸—à¸¶à¸à¸„à¸´à¸§à¸­à¸­à¸Ÿà¹„à¸¥à¸™à¹Œà¹à¸¥à¹‰à¸§ (${err.message})`);
     clearCheckpointDraft();
   }
 }
@@ -530,28 +750,28 @@ async function onSubmitIncident() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.incidentStatus, "กรุณาเลือกจุดตรวจก่อน");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.incidentStatus, "กรุณาสแกน QR ก่อน");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸ªà¹à¸à¸™ QR à¸à¹ˆà¸­à¸™");
     return;
   }
   if (!state.gps) {
-    setText(el.incidentStatus, "กรุณาโหลด GPS ก่อน");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¹‚à¸«à¸¥à¸” GPS à¸à¹ˆà¸­à¸™");
     return;
   }
   if (!state.checkpointPhoto) {
-    setText(el.incidentStatus, "กรุณาถ่ายรูปก่อน");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸–à¹ˆà¸²à¸¢à¸£à¸¹à¸›à¸à¹ˆà¸­à¸™");
     return;
   }
 
   const hasAbnormal = state.incidentMode === "HAS";
   const detail = (el.incidentDetail ? el.incidentDetail.value : "").trim();
   if (hasAbnormal && !detail) {
-    setText(el.incidentStatus, "กรุณากรอกรายละเอียด");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”");
     return;
   }
 
@@ -562,11 +782,11 @@ async function onSubmitIncident() {
     gps_lat: state.gps.lat,
     gps_lng: state.gps.lng,
     photo_url: state.checkpointPhoto,
-    remark: hasAbnormal ? `[มีเหตุ] ${detail}` : "ไม่มีเหตุผิดปกติ"
+    remark: hasAbnormal ? `[à¸¡à¸µà¹€à¸«à¸•à¸¸] ${detail}` : "à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸«à¸•à¸¸à¸œà¸´à¸”à¸›à¸à¸•à¸´"
   };
 
   try {
-    setText(el.incidentStatus, "กำลังบันทึกจุดตรวจ...");
+    setText(el.incidentStatus, "à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆ...");
     const checkpointRes = await callApi("submitCheckpoint", { payload: checkpointPayload });
     await showCheckpointResultSwal(checkpointRes, selectedItem);
 
@@ -580,9 +800,9 @@ async function onSubmitIncident() {
         severity: "MEDIUM"
       };
       const incidentRes = await callApi("submitIncident", { payload: incidentPayload });
-      setText(el.incidentStatus, `บันทึกสำเร็จ และแจ้งเหตุแล้ว (${incidentRes.incident_id})`);
+      setText(el.incidentStatus, `à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ à¹à¸¥à¸°à¹à¸ˆà¹‰à¸‡à¹€à¸«à¸•à¸¸à¹à¸¥à¹‰à¸§ (${incidentRes.incident_id})`);
     } else {
-      setText(el.incidentStatus, `บันทึกสำเร็จ (${checkpointRes.status || "OK"})`);
+      setText(el.incidentStatus, `à¸šà¸±à¸™à¸—à¸¶à¸à¸ªà¸³à¹€à¸£à¹‡à¸ˆ (${checkpointRes.status || "OK"})`);
     }
 
     if (checkpointRes && checkpointRes.checkpoint_id) {
@@ -597,6 +817,8 @@ async function onSubmitIncident() {
     state.selectedPlanKey = "";
     renderCheckpointList();
     refreshStats();
+    invalidateGuardSummaryCache();
+    if (isDashboardVisible()) await loadGuardDashboardSummary(true);
     clearIncidentDraft();
     clearCheckpointDraft();
   } catch (err) {
@@ -613,7 +835,7 @@ async function onSubmitIncident() {
         }
       });
     }
-    setText(el.incidentStatus, `ส่งไม่สำเร็จ: บันทึกคิวออฟไลน์แล้ว (${err.message})`);
+    setText(el.incidentStatus, `à¸ªà¹ˆà¸‡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: à¸šà¸±à¸™à¸—à¸¶à¸à¸„à¸´à¸§à¸­à¸­à¸Ÿà¹„à¸¥à¸™à¹Œà¹à¸¥à¹‰à¸§ (${err.message})`);
     clearIncidentDraft();
     clearCheckpointDraft();
   }
@@ -626,6 +848,7 @@ async function refreshShiftPlan() {
   const date = toYmd(new Date());
   const activeShiftId = state.activeShift ? state.activeShift.shift_id : loadSession().activeShiftId;
   await loadGuardBootstrap(state.guard.guard_id, date);
+  invalidateGuardSummaryCache();
   renderShiftList();
   renderDashboard();
   await openAssignedRouteOrFallback(activeShiftId);
@@ -687,7 +910,7 @@ async function syncQueue(showMessage) {
   }
 
   if (showMessage && success > 0) {
-    await showSwalMessage("success", "ซิงก์ข้อมูลสำเร็จ", `ส่งข้อมูลสำเร็จ ${success} รายการ`);
+    await showSwalMessage("success", "à¸‹à¸´à¸‡à¸à¹Œà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ", `à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ ${success} à¸£à¸²à¸¢à¸à¸²à¸£`);
   }
 }
 
@@ -716,7 +939,7 @@ async function callApi(action, payload = {}) {
     });
   } catch (err) {
     stopLoading();
-    throw new Error(`เครือข่ายมีปัญหา: ${err.message}`);
+    throw new Error(`à¹€à¸„à¸£à¸·à¸­à¸‚à¹ˆà¸²à¸¢à¸¡à¸µà¸›à¸±à¸à¸«à¸²: ${err.message}`);
   }
 
   try {
@@ -727,7 +950,7 @@ async function callApi(action, payload = {}) {
     const text = await response.text();
     const json = JSON.parse(text);
     if (!json.ok) {
-      throw new Error(json.error || "API ผิดพลาด");
+      throw new Error(json.error || "API à¸œà¸´à¸”à¸žà¸¥à¸²à¸”");
     }
 
     return json.data;
@@ -784,7 +1007,7 @@ function clearCheckpointDraft() {
   state.checkpointPhoto = "";
 
   if (el.manualQr) el.manualQr.value = "";
-  setText(el.gpsText, "ยังไม่โหลด GPS");
+  setText(el.gpsText, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸” GPS");
   if (el.checkpointRemark) el.checkpointRemark.value = "";
   el.photoInput.value = "";
   el.photoPreview.classList.add("hidden");
@@ -800,659 +1023,4 @@ function clearIncidentDraft() {
   if (el.incidentPhotoPreview) el.incidentPhotoPreview.classList.add("hidden");
   setIncidentMode("NONE");
 }
-
-function saveSession(obj) {
-  localStorage.setItem(STORAGE.SESSION, JSON.stringify(obj || {}));
-}
-
-function loadSession() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE.SESSION) || "{}");
-  } catch (_) {
-    return {};
-  }
-}
-
-function clearSession() {
-  localStorage.removeItem(STORAGE.SESSION);
-}
-
-function readQueryParam(key) {
-  try {
-    const params = new URLSearchParams(window.location.search || "");
-    return String(params.get(key) || "").trim();
-  } catch (_) {
-    return "";
-  }
-}
-
-function clearQueryString() {
-  try {
-    const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
-    window.history.replaceState({}, document.title, cleanUrl);
-  } catch (_) {
-    // ignore
-  }
-}
-
-function saveQueue(queue) {
-  localStorage.setItem(STORAGE.QUEUE, JSON.stringify(queue || []));
-}
-
-function loadQueue() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE.QUEUE) || "[]");
-  } catch (_) {
-    return [];
-  }
-}
-
-function saveSyncMeta(meta) {
-  localStorage.setItem(STORAGE.SYNC_META, JSON.stringify(meta || {}));
-}
-
-function loadSyncMeta() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE.SYNC_META) || "{}");
-  } catch (_) {
-    return {};
-  }
-}
-
-function makeId() {
-  return `Q-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-}
-
-function setText(node, text) {
-  if (node) node.textContent = text;
-}
-
-function showLoginLoadingSwal() {
-  if (!window.Swal) return;
-  Swal.fire({
-    title: "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25...",
-    text: "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e2d\u0e2a\u0e31\u0e01\u0e04\u0e23\u0e39\u0e48",
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    didOpen: () => Swal.showLoading()
-  });
-}
-
-async function showSwalMessage(icon, title, text) {
-  if (!window.Swal) return;
-  await Swal.fire({
-    icon: icon || "info",
-    title: title || "",
-    text: text || "",
-    confirmButtonText: "\u0e15\u0e01\u0e25\u0e07"
-  });
-}
-function startLoading() {
-  if (state.suppressLoading) return;
-  loadingCount += 1;
-  if (loadingCount > 1) return;
-  if (!window.Swal) return;
-
-  Swal.fire({
-    title: "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25...",
-    text: "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e2d\u0e2a\u0e31\u0e01\u0e04\u0e23\u0e39\u0e48",
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    didOpen: () => Swal.showLoading()
-  });
-}
-
-function stopLoading() {
-  if (state.suppressLoading) return;
-  loadingCount = Math.max(0, loadingCount - 1);
-  if (loadingCount !== 0) return;
-  if (!window.Swal) return;
-  Swal.close();
-}
-
-function toYmd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatDate(date) {
-  return date.toLocaleDateString("th-TH", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-}
-
-function getPlanItemKey(item) {
-  return `${String(item.checkpoint_id || "")}__${Number(item._occurrence || 0)}__${Number(item.round_no || 1)}`;
-}
-
-function isPlanItemDone(item) {
-  const doneCount = Number(state.doneCheckpointCounter[String(item.checkpoint_id || "")] || 0);
-  return doneCount >= Number(item._occurrence || 0);
-}
-
-function getSelectedPlanItem() {
-  const planItems = buildPlanWithOccurrence(state.activePlan);
-  const currentItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
-  return currentItems.find((x) => getPlanItemKey(x) === state.selectedPlanKey) || null;
-}
-
-function detectFirstRound(plan) {
-  const rounds = getRoundNumbers(Array.isArray(plan) ? plan : []);
-  return rounds[0] || 1;
-}
-
-function getRoundNumbers(planItems) {
-  const set = {};
-  (Array.isArray(planItems) ? planItems : []).forEach((x) => {
-    const r = Number(x.round_no || 1);
-    if (Number.isFinite(r) && r > 0) set[r] = true;
-  });
-
-  const required = Number(state.activeShift && state.activeShift.rounds_required);
-  if (Number.isFinite(required) && required > 0) {
-    for (let i = 1; i <= required; i += 1) set[i] = true;
-  }
-
-  const rounds = Object.keys(set)
-    .map((k) => Number(k))
-    .filter((n) => Number.isFinite(n) && n > 0)
-    .sort((a, b) => a - b);
-
-  return rounds.length ? rounds : [1];
-}
-
-function renderRoundTabs(rounds) {
-  if (!el.roundTabs) return;
-  el.roundTabs.innerHTML = rounds.map((r, idx) => {
-    const active = Number(r) === Number(state.currentRound) ? "chip active" : "chip";
-    let locked = false;
-    if (idx > 0) {
-      const prevRound = Number(rounds[idx - 1]);
-      locked = !isRoundDone(prevRound);
-    }
-    return `<button type="button" class="${active}" data-round="${r}" ${locked ? "disabled" : ""}>\u0e23\u0e2d\u0e1a ${r}</button>`;
-  }).join("");
-  Array.from(el.roundTabs.querySelectorAll("[data-round]")).forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.disabled) return;
-      state.currentRound = Number(btn.getAttribute("data-round") || 1);
-      state.selectedPlanKey = "";
-      renderCheckpointList();
-      refreshStats();
-    });
-  });
-}
-
-function buildPlanWithOccurrence(plan) {
-  const seenCounter = {};
-  return (plan || []).map((cp) => {
-    const checkpointId = String(cp.checkpoint_id || "");
-    seenCounter[checkpointId] = Number(seenCounter[checkpointId] || 0) + 1;
-    return { ...cp, _occurrence: seenCounter[checkpointId] };
-  });
-}
-
-function moveToNextRoundIfCurrentDone() {
-  const planItems = buildPlanWithOccurrence(state.activePlan);
-  const rounds = getRoundNumbers(planItems);
-  const currentItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
-  if (!currentItems.length) return;
-  const doneAll = currentItems.every((item) => {
-    const doneCount = Number(state.doneCheckpointCounter[String(item.checkpoint_id || "")] || 0);
-    return doneCount >= Number(item._occurrence || 0);
-  });
-  if (!doneAll) return;
-  const idx = rounds.indexOf(Number(state.currentRound));
-  if (idx >= 0 && idx < rounds.length - 1) {
-    state.currentRound = rounds[idx + 1];
-  }
-}
-
-function isRoundDone(roundNo) {
-  const planItems = buildPlanWithOccurrence(state.activePlan).filter((x) => Number(x.round_no || 1) === Number(roundNo));
-  if (!planItems.length) return false;
-  return planItems.every((item) => isPlanItemDone(item));
-}
-
-function getCheckpointStatusMeta({ done, locked, isSelected }) {
-  if (done) return { type: "ok", label: "\u0e15\u0e23\u0e27\u0e08\u0e41\u0e25\u0e49\u0e27", cls: "ok" };
-  if (locked) return { type: "wait", label: "\u0e23\u0e2d\u0e01\u0e48\u0e2d\u0e19", cls: "wait" };
-  if (isSelected) return { type: "focus", label: "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e08\u0e38\u0e14\u0e19\u0e35\u0e49", cls: "focus" };
-  return { type: "ready", label: "\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e15\u0e23\u0e27\u0e08", cls: "ready" };
-}
-
-function renderStatusIcon(type) {
-  if (type === "ok") {
-    return '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7 9 18l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-  if (type === "wait") {
-    return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-  if (type === "focus") {
-    return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>';
-  }
-  return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-}
-
-function toggleCheckinActionPanel(show) {
-  if (!el.checkinActionPanel) return;
-  el.checkinActionPanel.classList.toggle("hidden", !show);
-  if (el.checkpointListPanel) el.checkpointListPanel.classList.toggle("hidden", show);
-  if (el.backToCheckpointListBtn) el.backToCheckpointListBtn.classList.toggle("hidden", !show);
-  if (!show) hideAllActionDetails();
-}
-
-function updateActionCardsState() {
-  const selectedItem = getSelectedPlanItem();
-  const hasSelected = !!selectedItem;
-  const hasQr = !!String(state.scannedQr || "").trim();
-  const hasGps = !!state.gps;
-  const hasPhoto = !!state.checkpointPhoto;
-
-  setCardEnabled(el.actionQrCard, hasSelected && !hasQr);
-  setCardEnabled(el.actionGpsCard, hasSelected);
-  setCardEnabled(el.actionIncidentCard, hasSelected);
-  setCardDone(el.actionQrCard, hasQr);
-  setCardDone(el.actionGpsCard, hasPhoto);
-
-  setText(el.qrStepStatus, hasQr ? "สแกนแล้ว" : "ยังไม่สแกน");
-  setText(el.gpsStepStatus, hasPhoto ? "ถ่ายแล้ว" : "ยังไม่ถ่าย");
-  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "พร้อมยืนยัน" : "รอข้อมูลให้ครบ");
-}
-
-function setCardEnabled(node, enabled) {
-  if (!node) return;
-  node.disabled = !enabled;
-  node.classList.toggle("disabled", !enabled);
-}
-
-function setCardDone(node, done) {
-  if (!node) return;
-  node.classList.toggle("done", !!done);
-}
-
-function openActionDetail(name) {
-  const selectedItem = getSelectedPlanItem();
-  if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อน");
-    return;
-  }
-  hideAllActionDetails();
-  if (name === "gps" && el.detailGpsPhoto) el.detailGpsPhoto.classList.remove("hidden");
-  if (name === "incident" && el.detailIncident) {
-    if (el.quickActionCards) el.quickActionCards.classList.add("hidden");
-    el.detailIncident.classList.remove("hidden");
-    setIncidentMode(state.incidentMode || "NONE");
-  }
-}
-
-function hideAllActionDetails() {
-  if (el.quickActionCards) el.quickActionCards.classList.remove("hidden");
-  if (el.detailGpsPhoto) el.detailGpsPhoto.classList.add("hidden");
-  if (el.detailIncident) el.detailIncident.classList.add("hidden");
-}
-
-function setIncidentMode(mode) {
-  state.incidentMode = mode === "HAS" ? "HAS" : "NONE";
-  if (el.incidentChoiceNone) el.incidentChoiceNone.classList.toggle("active", state.incidentMode === "NONE");
-  if (el.incidentChoiceHas) el.incidentChoiceHas.classList.toggle("active", state.incidentMode === "HAS");
-  if (el.incidentExtraFields) el.incidentExtraFields.classList.toggle("hidden", state.incidentMode !== "HAS");
-}
-
-
-async function showCheckpointResultSwal(res, selectedItem) {
-  if (!window.Swal || !res) return;
-
-  const status = String(res.status || "").toUpperCase();
-  const isWrongPoint = String((selectedItem && selectedItem.checkpoint_id) || "") !== String(res.checkpoint_id || "");
-
-  let icon = "success";
-  let title = "บันทึกข้อมูลสำเร็จ";
-  let text = "ตรวจจุดเรียบร้อย";
-
-  if (status === "INVALID_GPS") {
-    icon = "error";
-    title = "สแกนสำเร็จ แต่ตำแหน่งไม่ถูกต้อง";
-    text = "GPS ไม่อยู่ในรัศมีจุดตรวจ กรุณาไปที่จุดตรวจจริงแล้วสแกนใหม่";
-  } else if (status === "INVALID_QR" || isWrongPoint) {
-    icon = "error";
-    title = "สแกน QR ไม่ตรงจุด";
-    text = "QR ที่สแกนไม่ตรงกับจุดตรวจที่เลือก กรุณาตรวจสอบแล้วสแกนใหม่";
-  } else if (status === "LATE") {
-    icon = "warning";
-    title = "บันทึกสำเร็จ (ช้า)";
-    text = "ตรวจจุดสำเร็จ แต่เกินเวลาที่กำหนด";
-  } else if (status === "ONTIME") {
-    icon = "success";
-    title = "บันทึกสำเร็จ";
-    text = "ตรวจจุดสำเร็จตามเวลา";
-  } else if (status) {
-    icon = "info";
-    title = "บันทึกสำเร็จ";
-    text = "สถานะ: " + status;
-  }
-
-  await Swal.fire({
-    icon,
-    title,
-    text,
-    confirmButtonText: "ตกลง"
-  });
-}
-async function openQrScanCard() {
-  const selectedItem = getSelectedPlanItem();
-  if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อนสแกน QR");
-    return;
-  }
-  if (!window.Swal || !window.Html5Qrcode) {
-    setText(el.checkpointStatus, "อุปกรณ์ไม่รองรับสแกนกล้อง");
-    return;
-  }
-
-  const readerId = "swalQrReader";
-  let scanner = null;
-  await Swal.fire({
-    title: "สแกน QR จุดตรวจ",
-    html: `<div id="${readerId}" style="min-height:280px;border-radius:10px;overflow:hidden;background:#0a1f37"></div>`,
-    showCancelButton: true,
-    confirmButtonText: "ปิด",
-    cancelButtonText: "ยกเลิก",
-    didOpen: () => {
-      scanner = new Html5Qrcode(readerId);
-      scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 230, height: 230 } },
-        (decodedText) => {
-          const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
-          const actualQr = String(decodedText || "").trim();
-          if (expectedQr && actualQr !== expectedQr) {
-            setText(el.checkpointStatus, "สแกน QR ไม่ตรงจุด");
-            if (navigator && typeof navigator.vibrate === "function") {
-              navigator.vibrate([180, 120, 180]);
-            }
-            if (window.Swal && Swal.isVisible()) {
-              Swal.showValidationMessage("สแกน QR ไม่ตรงจุด");
-              const vm = Swal.getValidationMessage ? Swal.getValidationMessage() : null;
-              if (vm) {
-                vm.style.fontSize = "1.06rem";
-                vm.style.fontWeight = "800";
-                vm.style.color = "#b91c1c";
-                vm.style.background = "#fee2e2";
-                vm.style.border = "1px solid #fecaca";
-                vm.style.borderRadius = "10px";
-                vm.style.padding = "10px 12px";
-                vm.style.marginTop = "10px";
-              }
-            }
-            return;
-          }
-          state.scannedQr = actualQr;
-          if (el.manualQr) el.manualQr.value = decodedText;
-          setText(el.qrStepStatus, `สแกนแล้ว: ${decodedText}`);
-          updateActionCardsState();
-          Swal.close();
-        },
-        () => {}
-      ).catch(() => {
-        setText(el.checkpointStatus, "เปิดกล้องไม่สำเร็จ");
-      });
-    },
-    willClose: () => {
-      if (!scanner) return;
-      scanner.stop().catch(() => {}).finally(() => {
-        scanner.clear();
-      });
-    }
-  });
-}
-
-function getExpectedQrForSelectedPoint(selectedItem) {
-  if (!selectedItem) return "";
-  const cpId = String(selectedItem.checkpoint_id || "").trim();
-  if (!cpId) return "";
-  return String(state.checkpointQrMap[cpId] || cpId).trim();
-}
-
-async function openAssignedRouteOrFallback(activeShiftId) {
-  if (!state.shifts.length) {
-    switchView("shifts");
-    return;
-  }
-
-  if (activeShiftId) {
-    const idx = state.shifts.findIndex((s) => String(s.shift_id) === String(activeShiftId));
-    if (idx >= 0) {
-      await openShift(idx);
-      return;
-    }
-  }
-
-  const openIndex = state.shifts.findIndex((s) => String(s.status || "").toUpperCase() !== "CLOSED");
-  await openShift(openIndex >= 0 ? openIndex : 0);
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString("th-TH", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
-}
-
-function formatShiftWindow(shift) {
-  const dateRaw = shift && shift.date ? shift.date : "";
-  const dateParts = extractDateParts(dateRaw);
-  const dd = dateParts ? dateParts.dd : "--";
-  const monthText = dateParts ? toThaiMonthShort(dateParts.mm) : "--";
-  const yy = dateParts ? dateParts.yy : "--";
-  const start = String((shift && shift.start_time) || "-").slice(0, 5);
-  const end = String((shift && shift.end_time) || "-").slice(0, 5);
-  return `${dd} ${monthText} ${yy} ${start} - ${end}`;
-}
-
-function toThaiMonthShort(mm) {
-  const m = Number(mm);
-  const months = ["\u0e21.\u0e04.", "\u0e01.\u0e1e.", "\u0e21\u0e35.\u0e04.", "\u0e40\u0e21.\u0e22.", "\u0e1e.\u0e04.", "\u0e21\u0e34.\u0e22.", "\u0e01.\u0e04.", "\u0e2a.\u0e04.", "\u0e01.\u0e22.", "\u0e15.\u0e04.", "\u0e1e.\u0e22.", "\u0e18.\u0e04."];
-  if (!Number.isFinite(m) || m < 1 || m > 12) return "--";
-  return months[m - 1];
-}
-
-function extractDateParts(value) {
-  if (!value) return null;
-
-  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
-    const y = String(value.getFullYear());
-    const m = String(value.getMonth() + 1).padStart(2, "0");
-    const d = String(value.getDate()).padStart(2, "0");
-    return { dd: d, mm: m, yy: y.slice(2) };
-  }
-
-  const raw = String(value).trim();
-  const ymd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (ymd) {
-    return { dd: ymd[3], mm: ymd[2], yy: ymd[1].slice(2) };
-  }
-
-  const dmy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-  if (dmy) {
-    return { dd: dmy[1], mm: dmy[2], yy: dmy[3].slice(2) };
-  }
-
-  // ISO datetime (e.g. 2026-04-20T17:00:00.000Z) should be converted to local date.
-  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
-    const isoDate = new Date(raw);
-    if (!isNaN(isoDate.getTime())) {
-      const y = String(isoDate.getFullYear());
-      const m = String(isoDate.getMonth() + 1).padStart(2, "0");
-      const day = String(isoDate.getDate()).padStart(2, "0");
-      return { dd: day, mm: m, yy: y.slice(2) };
-    }
-  }
-
-  const d = new Date(raw);
-  if (!isNaN(d.getTime())) {
-    const y = String(d.getFullYear());
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return { dd: day, mm: m, yy: y.slice(2) };
-  }
-
-  return null;
-}
-
-function updateTodayText() {
-  const now = new Date();
-  el.todayText.textContent = `\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49 ${formatDate(now)} ${formatTime(now)}`;
-}
-
-function fmtDateTimeLocal(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${d} ${hh}:${mm}`;
-}
-
-function normalizeTime(value) {
-  const s = String(value || "").trim();
-  if (!s) return "00:00:00";
-  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (!m) return s;
-  const hh = String(Math.min(23, Math.max(0, Number(m[1])))).padStart(2, "0");
-  const mm = String(Math.min(59, Math.max(0, Number(m[2])))).padStart(2, "0");
-  const ss = String(Math.min(59, Math.max(0, Number(m[3] || 0)))).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
-}
-
-function parseGuardIdsLocal(raw) {
-  const uniq = {};
-  return String(raw || "")
-    .split(",")
-    .map((x) => String(x || "").trim())
-    .filter((id) => {
-      if (!id || uniq[id]) return false;
-      uniq[id] = true;
-      return true;
-    });
-}
-
-function makeShiftIdFromTemplate(templateId, dateStr, guardId) {
-  const d = String(dateStr || "").replace(/-/g, "");
-  const g = String(guardId || "").trim();
-  if (g) return `${String(templateId)}-${g}-${d}`;
-  return `${String(templateId)}-${d}`;
-}
-
-function escapeHtml(input) {
-  return String(input ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function escapeAttr(input) {
-  return escapeHtml(input).replaceAll("`", "");
-}
-
-async function fileToDataUrl(file, maxSize, quality) {
-  const dataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("ไม่สามารถอ่านไฟล์ได้"));
-    reader.readAsDataURL(file);
-  });
-
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("ไม่สามารถประมวลผลรูปได้"));
-    im.src = dataUrl;
-  });
-
-  const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
-  const w = Math.max(1, Math.round(img.width * ratio));
-  const h = Math.max(1, Math.round(img.height * ratio));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", quality);
-}
-
-async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
-  const dataUrl = await fileToDataUrl(file, maxSize, quality);
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("ไม่สามารถประมวลผลรูปได้"));
-    im.src = dataUrl;
-  });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, img.width, img.height);
-
-  const dt = meta && meta.timestamp ? meta.timestamp : new Date();
-  const dateText = dt.toLocaleString("th-TH", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
-  const lat = Number(meta && meta.lat);
-  const lng = Number(meta && meta.lng);
-  const gpsText = Number.isFinite(lat) && Number.isFinite(lng)
-    ? `Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)}`
-    : "Lat - | Lng -";
-
-  const lines = [`วันที่ ${dateText}`, gpsText];
-  const pad = Math.max(10, Math.round(canvas.width * 0.018));
-  const fontSize = Math.max(14, Math.round(canvas.width * 0.03));
-  const lineGap = Math.max(6, Math.round(fontSize * 0.4));
-  const boxHeight = pad * 2 + lines.length * fontSize + (lines.length - 1) * lineGap;
-  const boxY = canvas.height - boxHeight - pad;
-
-  ctx.fillStyle = "rgba(9, 22, 35, 0.62)";
-  ctx.fillRect(pad, boxY, canvas.width - pad * 2, boxHeight);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `600 ${fontSize}px "Segoe UI", "Noto Sans Thai", sans-serif`;
-  ctx.textBaseline = "top";
-
-  let y = boxY + pad;
-  lines.forEach((line) => {
-    ctx.fillText(line, pad * 2, y);
-    y += fontSize + lineGap;
-  });
-
-  return canvas.toDataURL("image/jpeg", quality);
-}
-
-
-
-
-
-
-
-
-
-
 

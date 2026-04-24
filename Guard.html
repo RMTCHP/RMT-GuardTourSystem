@@ -11,13 +11,14 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://unpkg.com/html5-qrcode" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="guard.helpers.js" defer></script>
   <script src="app.js" defer></script>
 </head>
-<body>
+<body class="guard-theme">
   <main id="appRoot" class="mobile-app">
     <header id="appHeader" class="topbar hidden">
       <div class="topbar-main">
-        <p class="topbar-label">GUARD TOUR SYSTEM</p>
+        <p class="topbar-label">ระบบตรวจรอบ</p>
         <h1 class="topbar-title">ระบบตรวจรอบ รปภ</h1>
         <p id="todayText" class="topbar-sub"></p>
       </div>
@@ -44,7 +45,9 @@
       <div class="panel">
         <div class="panel-head">
           <h2 id="tourTitle">รอบตรวจ</h2>
-          <button id="backToCheckpointListBtn" class="tour-head-icon hidden" type="button" aria-label="กลับไปรายการจุด" title="กลับไปรายการจุด">←</button>
+          <button id="backToCheckpointListBtn" class="tour-head-icon hidden" type="button" aria-label="กลับไปรายการจุด" title="กลับไปรายการจุด">
+            <span class="material-symbols-outlined">arrow_back_ios_new</span>
+          </button>
         </div>
 
         <div class="kpi-row">
@@ -69,17 +72,17 @@
 
           <div id="quickActionCards" class="quick-grid">
             <button id="actionQrCard" type="button" class="quick-card">
-              <span class="quick-icon">▦</span>
+              <span class="quick-icon material-symbols-outlined">qr_code_scanner</span>
               <span class="quick-title">สแกน QR</span>
               <span id="qrStepStatus" class="quick-sub">ยังไม่สแกน</span>
             </button>
             <button id="actionGpsCard" type="button" class="quick-card">
-              <span class="quick-icon">📷</span>
+              <span class="quick-icon material-symbols-outlined">photo_camera</span>
               <span class="quick-title">ถ่ายรูป</span>
               <span id="gpsStepStatus" class="quick-sub">ยังไม่ถ่าย</span>
             </button>
             <button id="actionIncidentCard" type="button" class="quick-card">
-              <span class="quick-icon">!</span>
+              <span class="quick-icon material-symbols-outlined">warning</span>
               <span class="quick-title">แจ้งเหตุ</span>
               <span id="incidentStepStatus" class="quick-sub">รอข้อมูลให้ครบ</span>
             </button>
@@ -97,11 +100,11 @@
             <h3>ยืนยันจุดตรวจ / แจ้งเหตุ</h3>
             <div class="incident-choice-row">
               <button id="incidentChoiceNone" type="button" class="incident-choice-card active">
-                <span class="incident-choice-icon">✔</span>
+                <span class="incident-choice-icon material-symbols-outlined">task_alt</span>
                 <span class="incident-choice-text">ไม่มี</span>
               </button>
               <button id="incidentChoiceHas" type="button" class="incident-choice-card">
-                <span class="incident-choice-icon">⚠</span>
+                <span class="incident-choice-icon material-symbols-outlined">warning</span>
                 <span class="incident-choice-text">มี</span>
               </button>
             </div>
@@ -120,14 +123,6 @@
       <div class="panel">
         <div class="panel-head">
           <h2>สรุปงาน</h2>
-          <button id="syncNowBtn" class="btn btn-soft">ซิงก์ข้อมูล</button>
-        </div>
-
-        <div class="kpi-row">
-          <div class="kpi-card"><span>กะงานวันนี้</span><strong id="dbShiftTotal">0</strong></div>
-          <div class="kpi-card"><span>ปิดแล้ว</span><strong id="dbShiftClosed">0</strong></div>
-          <div class="kpi-card"><span>คิวออฟไลน์</span><strong id="dbQueueCount">0</strong></div>
-          <div class="kpi-card"><span>ซิงก์ล่าสุด</span><strong id="dbLastSync">-</strong></div>
         </div>
 
         <div id="dashboardList" class="shift-cards"></div>
@@ -137,8 +132,6 @@
     <nav id="bottomNav" class="bottom-nav hidden">
       <button id="navTour" class="nav-btn active" disabled>ตรวจสอบ</button>
       <button id="navDashboard" class="nav-btn">สรุป</button>
-      <button id="openDashboardBtn" class="hidden" aria-hidden="true"></button>
-      <button id="backFromDashboardBtn" class="hidden" aria-hidden="true"></button>
     </nav>
   </main>
 </body>

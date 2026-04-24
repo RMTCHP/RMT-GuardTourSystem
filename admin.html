@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Guard Tour Supervisor</title>
   <link rel="stylesheet" href="admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
   <script src="admin.shared.js" defer></script>
@@ -83,12 +84,48 @@
           </div>
 
           <div class="kpi-grid">
-            <div class="kpi-card"><span>Total Shifts</span><strong id="kpiShifts">0</strong></div>
-            <div class="kpi-card"><span>Checked Points</span><strong id="kpiChecked">0</strong></div>
-            <div class="kpi-card"><span>Late Points</span><strong id="kpiLate">0</strong></div>
-            <div class="kpi-card"><span>Missed Points</span><strong id="kpiMissed">0</strong></div>
-            <div class="kpi-card"><span>Incidents</span><strong id="kpiIncidents">0</strong></div>
-            <div class="kpi-card"><span>Avg Compliance</span><strong id="kpiCompliance">0%</strong></div>
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon material-symbols-outlined">event_note</span>
+                <span class="kpi-label">Total Shifts</span>
+              </div>
+              <strong id="kpiShifts">0</strong>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon material-symbols-outlined">verified</span>
+                <span class="kpi-label">Checked Points</span>
+              </div>
+              <strong id="kpiChecked">0</strong>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon material-symbols-outlined">schedule</span>
+                <span class="kpi-label">Late Points</span>
+              </div>
+              <strong id="kpiLate">0</strong>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon material-symbols-outlined">error</span>
+                <span class="kpi-label">Missed Points</span>
+              </div>
+              <strong id="kpiMissed">0</strong>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon material-symbols-outlined">warning</span>
+                <span class="kpi-label">Incidents</span>
+              </div>
+              <strong id="kpiIncidents">0</strong>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-head">
+                <span class="kpi-icon material-symbols-outlined">monitoring</span>
+                <span class="kpi-label">Avg Compliance</span>
+              </div>
+              <strong id="kpiCompliance">0%</strong>
+            </div>
           </div>
 
           <div class="chart-toolbar">

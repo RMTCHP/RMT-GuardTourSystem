@@ -1,4 +1,4 @@
-﻿async function loadDashboard(silentMode) {
+async function loadDashboard(silentMode, forceReload) {
   if (!state.supervisor) return;
 
   const date = el.reportDate.value || toYmd(new Date());
@@ -7,7 +7,7 @@
 
   try {
     const [snapshot, chartData] = await Promise.all([
-      buildDailyDashboardSnapshot(date),
+      buildDailyDashboardSnapshot(date, forceReload),
       callApi("getDashboardCharts", {
         supervisorId: state.supervisor.supervisor_id,
         endDate: date,
@@ -131,8 +131,12 @@ function renderIncidents(rows) {
   `;
 }
 
-async function buildDailyDashboardSnapshot(date) {
+async function buildDailyDashboardSnapshot(date, forceReload) {
   const supervisorId = state.supervisor?.supervisor_id || "";
+  const cacheKey = `${supervisorId}|${date}`;
+  if (!forceReload && state.dashboardSnapshotCache && state.dashboardSnapshotCache[cacheKey]) {
+    return state.dashboardSnapshotCache[cacheKey];
+  }
   const [shifts, logs, incidents, templates] = await Promise.all([
     callApi("listShifts", { date, supervisorId }),
     callApi("listCheckLogs", { supervisorId, date, guardId: "", status: "" }),
@@ -170,21 +174,41 @@ async function buildDailyDashboardSnapshot(date) {
 
   const snapshotShifts = Object.values(shiftMapById);
 
-  const routeResults = await Promise.allSettled(
-    snapshotShifts.map((shift) => callApi("listShiftCheckpoints", { shiftId: shift.shift_id }))
-  );
-
   const guardMap = {};
   (state.guards || []).forEach((g) => {
     guardMap[String(g.guard_id || "")] = g;
   });
 
   const routeMap = {};
-  snapshotShifts.forEach((shift, index) => {
-    const result = routeResults[index];
-    routeMap[String(shift.shift_id || "")] = result.status === "fulfilled" && Array.isArray(result.value)
-      ? result.value
-      : [];
+  const missingShiftIds = [];
+  snapshotShifts.forEach((shift) => {
+    const shiftId = String(shift.shift_id || "");
+    const cached = state.shiftCheckpoints ? state.shiftCheckpoints[shiftId] : null;
+    if (Array.isArray(cached) && !forceReload) {
+      routeMap[shiftId] = cached;
+      return;
+    }
+    missingShiftIds.push(shiftId);
+  });
+
+  if (missingShiftIds.length) {
+    const routeResults = await Promise.allSettled(
+      missingShiftIds.map((shiftId) => callApi("listShiftCheckpoints", { shiftId }))
+    );
+    routeResults.forEach((result, index) => {
+      const shiftId = missingShiftIds[index];
+      const rows = result.status === "fulfilled" && Array.isArray(result.value)
+        ? result.value
+        : [];
+      if (!state.shiftCheckpoints) state.shiftCheckpoints = {};
+      state.shiftCheckpoints[shiftId] = rows;
+      routeMap[shiftId] = rows;
+    });
+  }
+
+  snapshotShifts.forEach((shift) => {
+    const shiftId = String(shift.shift_id || "");
+    if (!routeMap[shiftId]) routeMap[shiftId] = [];
   });
 
   const logsByShift = {};
@@ -288,7 +312,7 @@ async function buildDailyDashboardSnapshot(date) {
     ? summaryRows.reduce((sum, row) => sum + Number(row.compliance_pct || 0), 0) / summaryRows.length
     : 0;
 
-  return {
+  const snapshot = {
     kpi: {
       total_shifts: totalShifts,
       total_checked_points: totalChecked,
@@ -300,6 +324,9 @@ async function buildDailyDashboardSnapshot(date) {
     summaryRows,
     incidents: incidentTableRows
   };
+  if (!state.dashboardSnapshotCache) state.dashboardSnapshotCache = {};
+  state.dashboardSnapshotCache[cacheKey] = snapshot;
+  return snapshot;
 }
 
 function formatGuardDisplay(guardId, guardName) {

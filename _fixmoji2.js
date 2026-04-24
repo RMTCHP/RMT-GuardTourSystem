@@ -1,0 +1,10 @@
+﻿const fs=require("fs");
+const srcPath="D:/Projects/RMT-GuardTourSystem/app.js";
+const outPath="D:/Projects/RMT-GuardTourSystem/app.convert-test2.js";
+let src=fs.readFileSync(srcPath,"utf8").replace(/^\uFEFF/,"");
+const th=[];
+src=src.replace(/[\u0E00-\u0E7F]+/g,(m)=>{const id=`__THAI_${th.length}__`; th.push(m); return id;});
+src=Buffer.from(src,"latin1").toString("utf8");
+src=src.replace(/__THAI_(\d+)__/g,(_,i)=>th[Number(i)]||"");
+fs.writeFileSync(outPath,src,"utf8");
+console.log("done",th.length);

@@ -1,4 +1,4 @@
-﻿window.addEventListener("DOMContentLoaded", async () => {
+window.addEventListener("DOMContentLoaded", async () => {
   bindElements();
   bindEvents();
 
@@ -71,12 +71,12 @@ function bindElements() {
 }
 
 function bindEvents() {
-  el.loadBtn.addEventListener("click", loadDashboard);
-  el.liveRefreshBtn.addEventListener("click", loadLiveLogs);
-  el.liveDate.addEventListener("change", loadLiveLogs);
-  el.liveGuardFilter.addEventListener("change", loadLiveLogs);
-  el.liveStatusFilter.addEventListener("change", loadLiveLogs);
-  el.chartRangeDays.addEventListener("change", loadDashboard);
+  el.loadBtn.addEventListener("click", () => loadDashboard(false, true));
+  el.liveRefreshBtn.addEventListener("click", () => loadLiveLogs(true));
+  el.liveDate.addEventListener("change", () => loadLiveLogs(true));
+  el.liveGuardFilter.addEventListener("change", () => loadLiveLogs(true));
+  el.liveStatusFilter.addEventListener("change", () => loadLiveLogs(true));
+  el.chartRangeDays.addEventListener("change", () => loadDashboard(false, false));
   el.topLogoutBtn.addEventListener("click", logout);
   el.topUserBtn.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -171,6 +171,9 @@ function logout() {
   state.checkpointsLoaded = false;
   state.templates = [];
   state.templatesLoaded = false;
+  state.templateRouteCache = {};
+  state.liveLogsCache = {};
+  state.dashboardSnapshotCache = {};
   state.shiftCheckpoints = {};
   destroyAllCharts();
   clearSession();
@@ -217,7 +220,7 @@ function switchFuncPanel(panelName) {
     return;
   }
   if (panelName === "live") {
-    ensureGuardsLoaded().finally(() => loadLiveLogs());
+    ensureGuardsLoaded().finally(() => loadLiveLogs(false));
   }
 }
 

@@ -1,28 +1,42 @@
-﻿async function openAddAdminSwal(existingAdmin) {
+async function openAddAdminSwal(existingAdmin) {
   const isEdit = !!existingAdmin;
   if (!window.Swal) return;
   const result = await Swal.fire({
     title: isEdit ? "Edit Admin" : "Add Admin",
-    width: 520,
-    customClass: { popup: "swal-user-popup" },
+    width: 640,
     html: `
-      <div style="display:grid;gap:8px;text-align:left">
-        <label>Supervisor ID</label>
-        <input id="swalSupervisorId" class="swal2-input" placeholder="e.g. S002" value="${escapeAttr(isEdit ? (existingAdmin.supervisor_id || "") : "")}" ${isEdit ? "disabled" : ""}>
-        <label>Name</label>
-        <input id="swalSupervisorName" class="swal2-input" placeholder="Admin name" value="${escapeAttr(isEdit ? (existingAdmin.name || "") : "")}">
-        <label>Email</label>
-        <input id="swalSupervisorEmail" class="swal2-input" placeholder="Email" value="${escapeAttr(isEdit ? (existingAdmin.email || "") : "")}">
-        <label>Status</label>
-        <select id="swalSupervisorStatus" class="swal2-select">
-          <option value="active" ${(isEdit ? String(existingAdmin.status || "active") : "active").toLowerCase() === "active" ? "selected" : ""}>active</option>
-          <option value="inactive" ${(isEdit ? String(existingAdmin.status || "") : "").toLowerCase() === "inactive" ? "selected" : ""}>inactive</option>
-        </select>
+      <div class="swal-form-grid">
+        <div class="swal-form-field">
+          <label>Supervisor ID</label>
+          <input id="swalSupervisorId" class="swal2-input" placeholder="e.g. S002" value="${escapeAttr(isEdit ? (existingAdmin.supervisor_id || "") : "")}" ${isEdit ? "disabled" : ""}>
+        </div>
+        <div class="swal-form-field">
+          <label>Name</label>
+          <input id="swalSupervisorName" class="swal2-input" placeholder="Admin name" value="${escapeAttr(isEdit ? (existingAdmin.name || "") : "")}">
+        </div>
+        <div class="swal-form-field">
+          <label>Email</label>
+          <input id="swalSupervisorEmail" class="swal2-input" placeholder="Email" value="${escapeAttr(isEdit ? (existingAdmin.email || "") : "")}">
+        </div>
+        <div class="swal-form-field">
+          <label>Status</label>
+          <select id="swalSupervisorStatus" class="swal2-select">
+            <option value="active" ${(isEdit ? String(existingAdmin.status || "active") : "active").toLowerCase() === "active" ? "selected" : ""}>active</option>
+            <option value="inactive" ${(isEdit ? String(existingAdmin.status || "") : "").toLowerCase() === "inactive" ? "selected" : ""}>inactive</option>
+          </select>
+        </div>
+        <div class="swal-form-note">* Supervisor ID และ Name จำเป็นต้องกรอก</div>
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: isEdit ? "Save" : "Add",
     cancelButtonText: "Cancel",
+    buttonsStyling: false,
+    customClass: {
+      popup: "swal-user-popup",
+      confirmButton: "swal-btn swal-btn-primary",
+      cancelButton: "swal-btn swal-btn-secondary"
+    },
     preConfirm: () => {
       const supervisor_id = document.getElementById("swalSupervisorId").value.trim();
       const name = document.getElementById("swalSupervisorName").value.trim();
@@ -51,6 +65,11 @@
   }
 }
 
+function invalidateAdminCaches() {
+  state.liveLogsCache = {};
+  state.dashboardSnapshotCache = {};
+}
+
 async function openAddUserSwal(existingGuard) {
   if (!state.supervisor) return;
   const isEdit = !!existingGuard;
@@ -58,28 +77,44 @@ async function openAddUserSwal(existingGuard) {
   if (!window.Swal) return;
   const result = await Swal.fire({
     title: isEdit ? "Edit User" : "Add User",
-    width: 520,
-    customClass: { popup: "swal-user-popup" },
+    width: 640,
     html: `
-      <div style="display:grid;gap:8px;text-align:left">
-        <label>Guard ID</label>
-        <input id="swalGuardId" class="swal2-input" placeholder="e.g. G002" value="${escapeAttr(isEdit ? existingGuard.guard_id : "")}" ${isEdit ? "disabled" : ""}>
-        <label>Name</label>
-        <input id="swalGuardName" class="swal2-input" placeholder="Guard name" value="${escapeAttr(isEdit ? (existingGuard.name || "") : "")}">
-        <label>Phone</label>
-        <input id="swalGuardPhone" class="swal2-input" placeholder="Phone" value="${escapeAttr(isEdit ? (existingGuard.phone || "") : "")}">
-        <label>Email</label>
-        <input id="swalGuardEmail" class="swal2-input" placeholder="Email" value="${escapeAttr(isEdit ? (existingGuard.email || "") : "")}">
-        <label>Status</label>
-        <select id="swalGuardStatus" class="swal2-select">
-          <option value="active" ${(isEdit ? String(existingGuard.status || "") : "active") === "active" ? "selected" : ""}>active</option>
-          <option value="inactive" ${(isEdit ? String(existingGuard.status || "") : "") === "inactive" ? "selected" : ""}>inactive</option>
-        </select>
+      <div class="swal-form-grid">
+        <div class="swal-form-field">
+          <label>Guard ID</label>
+          <input id="swalGuardId" class="swal2-input" placeholder="e.g. G002" value="${escapeAttr(isEdit ? existingGuard.guard_id : "")}" ${isEdit ? "disabled" : ""}>
+        </div>
+        <div class="swal-form-field">
+          <label>Name</label>
+          <input id="swalGuardName" class="swal2-input" placeholder="Guard name" value="${escapeAttr(isEdit ? (existingGuard.name || "") : "")}">
+        </div>
+        <div class="swal-form-field">
+          <label>Phone</label>
+          <input id="swalGuardPhone" class="swal2-input" placeholder="Phone" value="${escapeAttr(isEdit ? (existingGuard.phone || "") : "")}">
+        </div>
+        <div class="swal-form-field">
+          <label>Email</label>
+          <input id="swalGuardEmail" class="swal2-input" placeholder="Email" value="${escapeAttr(isEdit ? (existingGuard.email || "") : "")}">
+        </div>
+        <div class="swal-form-field swal-form-field-full">
+          <label>Status</label>
+          <select id="swalGuardStatus" class="swal2-select">
+            <option value="active" ${(isEdit ? String(existingGuard.status || "") : "active") === "active" ? "selected" : ""}>active</option>
+            <option value="inactive" ${(isEdit ? String(existingGuard.status || "") : "") === "inactive" ? "selected" : ""}>inactive</option>
+          </select>
+        </div>
+        <div class="swal-form-note">* Guard ID และ Name จำเป็นต้องกรอก</div>
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: isEdit ? "Save" : "Add",
     cancelButtonText: "Cancel",
+    buttonsStyling: false,
+    customClass: {
+      popup: "swal-user-popup",
+      confirmButton: "swal-btn swal-btn-primary",
+      cancelButton: "swal-btn swal-btn-secondary"
+    },
     preConfirm: () => {
       const guardId = document.getElementById("swalGuardId").value.trim();
       const name = document.getElementById("swalGuardName").value.trim();
@@ -100,8 +135,9 @@ async function openAddUserSwal(existingGuard) {
       ...result.value
     };
     await callApi("upsertGuard", { payload });
+    invalidateAdminCaches();
     notify("บันทึกข้อมูล Guard สำเร็จ");
-    await ensureGuardsLoaded(true);
+    await ensureGuardsLoaded(true, true);
   } catch (err) {
     notify(`บันทึกข้อมูล Guard ไม่สำเร็จ: ${err.message}`);
   }
@@ -120,7 +156,11 @@ async function openCheckpointSwal(existingCheckpoint) {
   const result = await Swal.fire({
     title: isEdit ? "Edit Checkpoint" : "Add Checkpoint",
     width: "92vw",
-    customClass: { popup: "swal-checkpoint-popup" },
+    customClass: {
+      popup: "swal-checkpoint-popup",
+      confirmButton: "swal-btn swal-btn-primary",
+      cancelButton: "swal-btn swal-btn-secondary"
+    },
     html: `
       <div class="cp-form-grid">
         <div class="cp-field">
@@ -174,6 +214,7 @@ async function openCheckpointSwal(existingCheckpoint) {
     showCancelButton: true,
     confirmButtonText: isEdit ? "Save" : "Add",
     cancelButtonText: "Cancel",
+    buttonsStyling: false,
     didOpen: async () => {
       const initialLat = Number(isEdit ? existingCheckpoint.lat : 0);
       const initialLng = Number(isEdit ? existingCheckpoint.lng : 0);
@@ -205,8 +246,9 @@ async function openCheckpointSwal(existingCheckpoint) {
 
   try {
     await callApi("upsertCheckpoint", { payload: result.value });
+    invalidateAdminCaches();
     notify("บันทึกข้อมูล Checkpoint สำเร็จ");
-    await ensureCheckpointsLoaded(true);
+    await ensureCheckpointsLoaded(true, true);
   } catch (err) {
     notify(`บันทึกข้อมูล Checkpoint ไม่สำเร็จ: ${err.message}`);
   }
@@ -316,9 +358,10 @@ async function confirmDeleteGuard(guard) {
 
   try {
     await callApi("deleteGuard", { guardId: guard.guard_id });
+    invalidateAdminCaches();
     notify("ลบ Guard สำเร็จ");
     state.guardsLoaded = false;
-    await ensureGuardsLoaded(true);
+    await ensureGuardsLoaded(true, true);
   } catch (err) {
     notify(`ลบ Guard ไม่สำเร็จ: ${err.message}`);
   }
@@ -446,9 +489,10 @@ async function confirmDeleteCheckpoint(checkpoint) {
 
   try {
     await callApi("deleteCheckpoint", { checkpointId: checkpoint.checkpoint_id });
+    invalidateAdminCaches();
     notify("ลบ Checkpoint สำเร็จ");
     state.checkpointsLoaded = false;
-    await ensureCheckpointsLoaded(true);
+    await ensureCheckpointsLoaded(true, true);
   } catch (err) {
     notify(`ลบ Checkpoint ไม่สำเร็จ: ${err.message}`);
   }
@@ -568,27 +612,38 @@ async function confirmDeleteTemplate(template) {
 
   try {
     await callApi("deleteShiftTemplate", { templateId: template.template_id });
+    if (state.templateRouteCache) {
+      delete state.templateRouteCache[String(template.template_id || "")];
+    }
+    invalidateAdminCaches();
     notify("ลบ Template สำเร็จ");
     state.templatesLoaded = false;
-    await ensureTemplatesLoaded(true);
+    await ensureTemplatesLoaded(true, true);
   } catch (err) {
     notify(`ลบ Template ไม่สำเร็จ: ${err.message}`);
   }
+}
+
+async function fetchTemplateCheckpointsQuick(templateId) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "listTemplateCheckpoints", templateId })
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const text = await response.text();
+  const json = JSON.parse(text);
+  if (!json.ok) throw new Error(json.error || "API error");
+  return Array.isArray(json.data) ? json.data : [];
 }
 
 async function openTemplateSwal(existingTemplate) {
   const isEdit = !!existingTemplate;
   const defaultTemplateId = isEdit ? String(existingTemplate.template_id || "") : generateNextTemplateId();
   const selectedGuardIds = parseGuardIdsLocal(isEdit ? (existingTemplate.guard_ids || existingTemplate.guard_id || "") : "");
-  let initialRouteRows = [];
-  if (isEdit) {
-    try {
-      const route = await callApi("listTemplateCheckpoints", { templateId: defaultTemplateId });
-      initialRouteRows = Array.isArray(route) ? route : [];
-    } catch (_) {
-      initialRouteRows = [];
-    }
-  }
+  const templateCache = state.templateRouteCache || (state.templateRouteCache = {});
+  const cachedRoute = isEdit ? templateCache[defaultTemplateId] : null;
+  let initialRouteRows = Array.isArray(cachedRoute) ? cachedRoute : [];
+  let needFetchRoute = Boolean(isEdit && !Array.isArray(cachedRoute));
 
   const cpOptions = (state.checkpoints || []).map((cp) => {
     return `<option value="${escapeAttr(cp.checkpoint_id)}">${escapeHtml(cp.checkpoint_id)} - ${escapeHtml(cp.checkpoint_name || "-")}</option>`;
@@ -609,10 +664,19 @@ async function openTemplateSwal(existingTemplate) {
   const result = await Swal.fire({
     title: isEdit ? "Edit Template" : "Add Template",
     width: "94vw",
-    customClass: { popup: "swal-user-popup" },
+    customClass: {
+      popup: "swal-user-popup swal-template-popup",
+      confirmButton: "swal-btn swal-btn-primary",
+      cancelButton: "swal-btn swal-btn-secondary"
+    },
     html: `
+      <div class="template-popup-top-note">ตั้งค่าเทมเพลต, เส้นทางจุดตรวจ และผู้รับผิดชอบในหน้าต่างเดียว</div>
       <div class="template-popup-layout">
-        <div class="template-form-grid">
+        <section class="template-column template-meta-panel">
+          <div class="template-panel-head">
+            <h4>Template Settings</h4>
+          </div>
+          <div class="template-form-grid">
           <div class="template-field">
             <label>Template ID</label>
             <input id="swalTemplateId" class="swal2-input" value="${escapeAttr(defaultTemplateId)}" readonly>
@@ -640,41 +704,44 @@ async function openTemplateSwal(existingTemplate) {
             <label>End Time</label>
             <input id="swalTemplateEnd" class="swal2-input" type="time" value="${escapeAttr(toHm(isEdit ? existingTemplate.end_time : "17:00"))}">
           </div>
-        </div>
-        <div class="template-route-panel">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <label style="margin:0">Route Checkpoints</label>
+          </div>
+        </section>
+        <section class="template-column template-route-panel">
+          <div class="template-panel-head">
+            <h4>Route Checkpoints</h4>
             <button id="swalTemplateAddRouteRow" type="button" class="btn template-add-route-btn">+ Add</button>
           </div>
-          <div class="table-wrap" style="max-height:34vh;overflow:auto">
-            <table class="data-table" style="min-width:360px">
+          <div class="table-wrap template-table-wrap">
+            <table class="data-table template-route-table">
               <thead>
                 <tr><th>Seq</th><th>Checkpoint</th><th>Action</th></tr>
               </thead>
               <tbody id="swalTemplateRouteBody"></tbody>
             </table>
           </div>
-        </div>
-        <div class="template-guard-panel">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <label style="margin:0">Guards</label>
+        </section>
+        <section class="template-column template-guard-panel">
+          <div class="template-panel-head">
+            <h4>Guards</h4>
             <button id="swalTemplateAddGuardRow" type="button" class="btn template-add-route-btn">+ Add</button>
           </div>
-          <div class="table-wrap" style="max-height:34vh;overflow:auto">
-            <table class="data-table" style="min-width:300px">
+          <div class="table-wrap template-table-wrap">
+            <table class="data-table template-guard-table">
               <thead>
                 <tr><th>Guard</th><th>Action</th></tr>
               </thead>
               <tbody id="swalTemplateGuardBody"></tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: isEdit ? "Save" : "Add",
     cancelButtonText: "Cancel",
+    buttonsStyling: false,
     didOpen: () => {
+      let routeLoading = needFetchRoute;
       const syncRowsFromDom = () => {
         const seqEls = Array.from(document.querySelectorAll(".route-seq"));
         const cpEls = Array.from(document.querySelectorAll(".route-cp"));
@@ -695,17 +762,18 @@ async function openTemplateSwal(existingTemplate) {
       };
 
       const tableHtml = () => {
+        if (routeLoading && !routeRows.length) return '<tr><td colspan="3">Loading route checkpoints...</td></tr>';
         if (!routeRows.length) return '<tr><td colspan="3">No checkpoints in route</td></tr>';
         return routeRows.map((r, i) => `
           <tr>
-            <td><input class="swal2-input route-seq" data-idx="${i}" type="number" min="1" value="${r.seq_no}" style="width:90px;margin:0!important"></td>
+            <td><input class="swal2-input route-seq route-seq-input" data-idx="${i}" type="number" min="1" value="${r.seq_no}"></td>
             <td>
-              <select class="swal2-select route-cp" data-idx="${i}" style="width:100%;margin:0!important">
+              <select class="swal2-select route-cp route-select-input" data-idx="${i}">
                 <option value="">Select checkpoint</option>
                 ${cpOptions.replace(`value="${escapeAttr(r.checkpoint_id)}"`, `value="${escapeAttr(r.checkpoint_id)}" selected`)}
               </select>
             </td>
-            <td><button type="button" class="btn row-btn btn-danger-soft route-del" data-idx="${i}">Delete</button></td>
+            <td><button type="button" class="btn row-btn btn-danger-soft route-del template-row-del-btn" data-idx="${i}">Delete</button></td>
           </tr>
         `).join("");
       };
@@ -715,12 +783,12 @@ async function openTemplateSwal(existingTemplate) {
         return guardRows.map((r, i) => `
           <tr>
             <td>
-              <select class="swal2-select guard-select" data-idx="${i}" style="width:100%;margin:0!important">
+              <select class="swal2-select guard-select guard-select-input" data-idx="${i}">
                 <option value="">Select guard</option>
                 ${guardOptions.replace(`value="${escapeAttr(r.guard_id)}"`, `value="${escapeAttr(r.guard_id)}" selected`)}
               </select>
             </td>
-            <td><button type="button" class="btn row-btn btn-danger-soft guard-del" data-idx="${i}">Delete</button></td>
+            <td><button type="button" class="btn row-btn btn-danger-soft guard-del template-row-del-btn" data-idx="${i}">Delete</button></td>
           </tr>
         `).join("");
       };
@@ -757,6 +825,12 @@ async function openTemplateSwal(existingTemplate) {
       };
 
       const addBtn = document.getElementById("swalTemplateAddRouteRow");
+      const confirmBtn = Swal.getConfirmButton();
+      const setLoadingState = (loading) => {
+        routeLoading = !!loading;
+        if (addBtn) addBtn.disabled = !!loading;
+        if (confirmBtn) confirmBtn.disabled = !!loading;
+      };
       if (addBtn) {
         addBtn.addEventListener("click", () => {
           syncRowsFromDom();
@@ -774,6 +848,26 @@ async function openTemplateSwal(existingTemplate) {
       }
       rerender();
       rerenderGuards();
+      if (needFetchRoute) {
+        setLoadingState(true);
+        fetchTemplateCheckpointsQuick(defaultTemplateId)
+          .then((route) => {
+            const rows = (Array.isArray(route) ? route : []).map((r) => ({
+              seq_no: Number(r.seq_no || 1),
+              checkpoint_id: String(r.checkpoint_id || "")
+            }));
+            routeRows.splice(0, routeRows.length, ...rows);
+            templateCache[defaultTemplateId] = rows.map((x) => ({ ...x }));
+          })
+          .catch((err) => {
+            notify(`โหลด Route ของ Template ไม่สำเร็จ: ${err.message}`, "error");
+          })
+          .finally(() => {
+            needFetchRoute = false;
+            setLoadingState(false);
+            rerender();
+          });
+      }
     },
     preConfirm: () => {
       const template_id = document.getElementById("swalTemplateId").value.trim();
@@ -840,6 +934,13 @@ async function openTemplateSwal(existingTemplate) {
       templateId: result.value.payload.template_id,
       items: result.value.routeItems
     });
+    const templateId = String(result.value.payload.template_id || "");
+    if (!state.templateRouteCache) state.templateRouteCache = {};
+    state.templateRouteCache[templateId] = (result.value.routeItems || []).map((x) => ({
+      seq_no: Number(x.seq_no || 1),
+      checkpoint_id: String(x.checkpoint_id || "")
+    }));
+    invalidateAdminCaches();
     await loadTemplateData();
     notify("บันทึกข้อมูล Template สำเร็จ");
   } catch (err) {

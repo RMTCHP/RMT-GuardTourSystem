@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -8,6 +8,9 @@ const state = {
   guards: [],
   checkpoints: [],
   templates: [],
+  templateRouteCache: {},
+  liveLogsCache: {},
+  dashboardSnapshotCache: {},
   liveLogs: [],
   shiftCheckpoints: {},
   charts: {},
