@@ -1,0 +1,145 @@
+﻿<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ระบบตรวจรอบ รปภ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main id="appRoot" class="mobile-app">
+    <header id="appHeader" class="topbar hidden">
+      <div class="topbar-main">
+        <p class="topbar-label">GUARD TOUR SYSTEM</p>
+        <h1 class="topbar-title">ระบบตรวจรอบ รปภ</h1>
+        <p id="todayText" class="topbar-sub"></p>
+      </div>
+      <div id="guardBadge" class="guard-badge hidden">
+        <div id="guardAvatar" class="guard-avatar">ร</div>
+        <div class="guard-meta">
+          <strong id="guardNameText">เจ้าหน้าที่</strong>
+        </div>
+      </div>
+    </header>
+
+    <section id="view-shifts" class="screen active">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>เส้นทางของฉันวันนี้</h2>
+          <button id="logoutBtn" class="icon-btn" title="ออกจากระบบ" aria-label="ออกจากระบบ">⎋</button>
+        </div>
+        <p class="hint">ระบบจะแสดงเทมเพลตที่ผูกกับรหัส รปภ อัตโนมัติ</p>
+        <div id="shiftList" class="shift-cards"></div>
+      </div>
+    </section>
+
+    <section id="view-tour" class="screen">
+      <div class="panel">
+        <div class="panel-head">
+          <h2 id="tourTitle">รอบตรวจ</h2>
+          <button id="backToCheckpointListBtn" class="tour-head-icon hidden" type="button" aria-label="กลับไปรายการจุด" title="กลับไปรายการจุด">←</button>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <span>ทั้งหมด</span>
+            <strong id="statTotal">0</strong>
+          </div>
+          <div class="kpi-card">
+            <span>ตรวจแล้ว</span>
+            <strong id="statDone">0</strong>
+          </div>
+        </div>
+
+        <div id="checkpointListPanel" class="step-card">
+          <h3>รายการจุดตรวจ</h3>
+          <div id="roundTabs" class="chips"></div>
+          <div id="checkpointList" class="checkpoint-list"></div>
+        </div>
+
+        <div id="checkinActionPanel" class="hidden">
+          <p id="currentPointText" class="hint">เลือกจุดตรวจจากรายการด้านล่างก่อน</p>
+
+          <div id="quickActionCards" class="quick-grid">
+            <button id="actionQrCard" type="button" class="quick-card">
+              <span class="quick-icon">▦</span>
+              <span class="quick-title">สแกน QR</span>
+              <span id="qrStepStatus" class="quick-sub">ยังไม่สแกน</span>
+            </button>
+            <button id="actionGpsCard" type="button" class="quick-card">
+              <span class="quick-icon">📷</span>
+              <span class="quick-title">ถ่ายรูป</span>
+              <span id="gpsStepStatus" class="quick-sub">ยังไม่ถ่าย</span>
+            </button>
+            <button id="actionIncidentCard" type="button" class="quick-card">
+              <span class="quick-icon">!</span>
+              <span class="quick-title">แจ้งเหตุ</span>
+              <span id="incidentStepStatus" class="quick-sub">รอข้อมูลให้ครบ</span>
+            </button>
+          </div>
+
+          <div id="detailGpsPhoto" class="step-card hidden">
+            <h3>ถ่ายรูป</h3>
+            <button id="gpsBtn" class="btn btn-soft">ใช้ตำแหน่งปัจจุบัน</button>
+            <p id="gpsText" class="hint">ยังไม่โหลด GPS</p>
+            <input id="photoInput" type="file" accept="image/*" capture="environment">
+            <img id="photoPreview" class="preview hidden" alt="ภาพตัวอย่าง">
+          </div>
+
+          <div id="detailIncident" class="step-card hidden">
+            <h3>ยืนยันจุดตรวจ / แจ้งเหตุ</h3>
+            <div class="incident-choice-row">
+              <button id="incidentChoiceNone" type="button" class="incident-choice-card active">
+                <span class="incident-choice-icon">✔</span>
+                <span class="incident-choice-text">ไม่มี</span>
+              </button>
+              <button id="incidentChoiceHas" type="button" class="incident-choice-card">
+                <span class="incident-choice-icon">⚠</span>
+                <span class="incident-choice-text">มี</span>
+              </button>
+            </div>
+            <div id="incidentExtraFields" class="hidden">
+              <textarea id="incidentDetail" rows="3" placeholder="รายละเอียด"></textarea>
+            </div>
+            <button id="submitIncidentBtn" class="btn btn-warning">ยืนยันและบันทึก</button>
+            <p id="incidentStatus" class="status-text"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="view-dashboard" class="screen">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>สรุปงาน</h2>
+          <button id="syncNowBtn" class="btn btn-soft">ซิงก์ข้อมูล</button>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-card"><span>กะงานวันนี้</span><strong id="dbShiftTotal">0</strong></div>
+          <div class="kpi-card"><span>ปิดแล้ว</span><strong id="dbShiftClosed">0</strong></div>
+          <div class="kpi-card"><span>คิวออฟไลน์</span><strong id="dbQueueCount">0</strong></div>
+          <div class="kpi-card"><span>ซิงก์ล่าสุด</span><strong id="dbLastSync">-</strong></div>
+        </div>
+
+        <div id="dashboardList" class="shift-cards"></div>
+      </div>
+    </section>
+
+    <nav id="bottomNav" class="bottom-nav hidden">
+      <button id="navTour" class="nav-btn active" disabled>ตรวจสอบ</button>
+      <button id="navDashboard" class="nav-btn">สรุป</button>
+      <button id="openDashboardBtn" class="hidden" aria-hidden="true"></button>
+      <button id="backFromDashboardBtn" class="hidden" aria-hidden="true"></button>
+    </nav>
+  </main>
+</body>
+</html>

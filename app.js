@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxw8wvK5QKiAfgoXM7bSZry9j9nPI37i9z9PzzYs39b259FlcAp0aPKVntD8I4iZWU/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -9,6 +9,7 @@ const STORAGE = {
 const state = {
   guard: null,
   shifts: [],
+  shiftProgressMap: {},
   activeShift: null,
   activePlan: [],
   currentRound: 1,
@@ -40,19 +41,25 @@ window.addEventListener("DOMContentLoaded", async () => {
   refreshQueueBanner();
 
   if (!navigator.onLine) {
-    setText(el.loginStatus, "อุปกรณ์ออฟไลน์: บันทึกคิวไว้ก่อน แล้วซิงก์ภายหลังได้");
+    console.warn("อุปกรณ์ออฟไลน์: บันทึกคิวไว้ก่อน แล้วซิงก์ภายหลังได้");
   }
 
-  clearSession();
+  const guardIdFromUrl = readQueryParam("guardId");
+  if (guardIdFromUrl) {
+    saveSession({ guardId: guardIdFromUrl, activeShiftId: "" });
+    clearQueryString();
+  }
+
   hideGuardHeader();
-  switchView("login");
+  state.suppressLoading = true;
+  showLoginLoadingSwal();
+  await restoreSession();
 });
 
 function bindElements() {
   [
     "appRoot", "appHeader", "todayText", "guardBadge", "guardAvatar", "guardNameText", "guardIdText",
-    "guardId", "loginBtn", "loginStatus",
-    "view-login", "view-shifts", "view-tour", "view-dashboard",
+    "view-shifts", "view-tour", "view-dashboard",
     "logoutBtn", "shiftList", "tourTitle",
     "dbShiftTotal", "dbShiftClosed", "dbQueueCount", "dbLastSync", "dashboardList", "syncNowBtn",
     "statTotal", "statDone", "qrReader", "manualQr",
@@ -73,7 +80,6 @@ function bindElements() {
 }
 
 function bindEvents() {
-  el.loginBtn.addEventListener("click", onLogin);
   el.logoutBtn.addEventListener("click", onLogout);
 
   el.navTour.addEventListener("click", () => {
@@ -155,63 +161,26 @@ function bindEvents() {
 async function restoreSession() {
   const session = loadSession();
   if (!session.guardId) {
-    switchView("login");
+    state.suppressLoading = false;
+    if (window.Swal) Swal.close();
+    window.location.href = "index.html";
     return;
   }
 
-  el.guardId.value = session.guardId;
-
   try {
-    const loginRes = await callApi("loginGuard", { guardId: session.guardId });
-    state.guard = loginRes;
-    setGuardHeader(loginRes);
-    await loadCheckpointCatalog();
-
     const date = toYmd(new Date());
-    state.shifts = await loadShiftPlanWithFallback(session.guardId, date);
+    await loadGuardBootstrap(session.guardId, date);
     renderShiftList();
     renderDashboard();
-    openAssignedRouteOrFallback(session.activeShiftId);
+    await openAssignedRouteOrFallback(session.activeShiftId);
+    state.suppressLoading = false;
+    if (window.Swal) Swal.close();
   } catch (err) {
-    setText(el.loginStatus, `กู้คืนเซสชันไม่สำเร็จ: ${err.message}`);
     clearSession();
-    switchView("login");
-  }
-}
-
-async function onLogin() {
-  const guardId = el.guardId.value.trim();
-  if (!guardId) {
-    setText(el.loginStatus, "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e23\u0e2b\u0e31\u0e2a \u0e23\u0e1b\u0e20");
-    await showSwalMessage("warning", "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e23\u0e2b\u0e31\u0e2a \u0e23\u0e1b\u0e20", "\u0e42\u0e1b\u0e23\u0e14\u0e23\u0e30\u0e1a\u0e38\u0e23\u0e2b\u0e31\u0e2a\u0e01\u0e48\u0e2d\u0e19\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a");
-    return;
-  }
-
-  try {
-    state.suppressLoading = true;
-    showLoginLoadingSwal();
-    setText(el.loginStatus, "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a...");
-    const loginRes = await callApi("loginGuard", { guardId });
-    state.guard = loginRes;
-    setGuardHeader(loginRes);
-    await loadCheckpointCatalog();
-
-    const date = toYmd(new Date());
-    state.shifts = await loadShiftPlanWithFallback(guardId, date);
-    saveSession({ guardId, activeShiftId: "" });
-    renderShiftList();
-    renderDashboard();
-    setText(el.loginStatus, "");
-    openAssignedRouteOrFallback("");
-
     state.suppressLoading = false;
     if (window.Swal) Swal.close();
-    await showSwalMessage("success", "\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08", `\u0e22\u0e34\u0e19\u0e14\u0e35\u0e15\u0e49\u0e2d\u0e19\u0e23\u0e31\u0e1a ${loginRes.name || ("\u0e23\u0e2b\u0e31\u0e2a " + guardId)}`);
-  } catch (err) {
-    setText(el.loginStatus, `\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08: ${err.message}`);
-    state.suppressLoading = false;
-    if (window.Swal) Swal.close();
-    await showSwalMessage("error", "\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08", err.message || "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e2b\u0e31\u0e2a \u0e23\u0e1b\u0e20 \u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07");
+    await showSwalMessage("error", "เข้าสู่ระบบไม่สำเร็จ", `กู้คืนเซสชันไม่สำเร็จ: ${err.message}`);
+    window.location.href = "index.html";
   }
 }
 function onLogout() {
@@ -222,11 +191,9 @@ function onLogout() {
   state.activePlan = [];
   state.doneCheckpointCounter = {};
 
-  el.guardId.value = "";
-  setText(el.loginStatus, "");
   clearSession();
   hideGuardHeader();
-  switchView("login");
+  window.location.href = "index.html";
 }
 
 function setGuardHeader(guard) {
@@ -318,8 +285,7 @@ async function openShift(index) {
 
   el.tourTitle.textContent = `${getShiftProfile(shift)} (${formatShiftWindow(shift)})`;
   saveSession({ guardId: state.guard.guard_id, activeShiftId: shift.shift_id });
-
-  await hydrateShiftProgressFromLogs(shift);
+  state.doneCheckpointCounter = getShiftProgressCounter(shift);
 
   renderCheckpointList();
   refreshStats();
@@ -329,40 +295,14 @@ async function openShift(index) {
   switchView("tour");
 }
 
-async function hydrateShiftProgressFromLogs(shift) {
-  if (!shift || !state.guard) return;
-  let rows = [];
-  try {
-    rows = await callApi("listCheckLogs", {
-      guardId: state.guard.guard_id
-    });
-  } catch (_) {
-    try {
-      // Backward-compatible payload for older API versions.
-      rows = await callApi("listCheckLogs", {
-        supervisorId: state.guard.supervisor_id || "",
-        date: toYmd(new Date()),
-        guardId: state.guard.guard_id,
-        status: ""
-      });
-    } catch (_) {
-      rows = [];
-    }
-  }
-
-  const logs = (Array.isArray(rows) ? rows : []).filter((r) =>
-    String(r.shift_id || "") === String(shift.shift_id || "")
-  );
-
+function getShiftProgressCounter(shift) {
+  if (!shift) return {};
   const counter = {};
-  logs.forEach((r) => {
-    const status = String(r.status || "").toUpperCase();
-    if (status !== "ONTIME" && status !== "LATE") return;
-    const cpId = String(r.checkpoint_id || "").trim();
-    if (!cpId) return;
-    counter[cpId] = Number(counter[cpId] || 0) + 1;
+  const progress = state.shiftProgressMap[String(shift.shift_id || "")] || {};
+  Object.keys(progress).forEach((cpId) => {
+    counter[String(cpId)] = Number(progress[cpId] || 0);
   });
-  state.doneCheckpointCounter = counter;
+  return counter;
 }
 
 function renderCheckpointList() {
@@ -684,81 +624,24 @@ async function refreshShiftPlan() {
   if (!state.guard) return;
 
   const date = toYmd(new Date());
-  state.shifts = await loadShiftPlanWithFallback(state.guard.guard_id, date);
+  const activeShiftId = state.activeShift ? state.activeShift.shift_id : loadSession().activeShiftId;
+  await loadGuardBootstrap(state.guard.guard_id, date);
   renderShiftList();
   renderDashboard();
+  await openAssignedRouteOrFallback(activeShiftId);
 }
 
-async function loadShiftPlanWithFallback(guardId, date) {
+async function loadGuardBootstrap(guardId, date) {
   const gid = String(guardId || "").trim();
   if (!gid || !date) return [];
 
-  let shifts = await callApi("getShiftPlan", { guardId: gid, date });
-  if (Array.isArray(shifts) && shifts.length) return shifts;
-
-  try {
-    await callApi("generateShiftsFromTemplates", { date });
-    shifts = await callApi("getShiftPlan", { guardId: gid, date });
-  } catch (_) {
-    // ignore
-  }
-
-  if (Array.isArray(shifts) && shifts.length) return shifts;
-
-  try {
-    await provisionShiftsFromTemplateForGuard(gid, date);
-    shifts = await callApi("getShiftPlan", { guardId: gid, date });
-  } catch (_) {
-    // ignore
-  }
-
-  return Array.isArray(shifts) ? shifts : [];
-}
-
-async function provisionShiftsFromTemplateForGuard(guardId, date) {
-  const templates = await callApi("listShiftTemplates", {});
-  const templateRows = Array.isArray(templates) ? templates : [];
-  const matched = templateRows.filter((t) => {
-    if (String(t.status || "ACTIVE").toUpperCase() === "INACTIVE") return false;
-    const ids = parseGuardIdsLocal(t.guard_ids || t.guard_id || "");
-    return ids.includes(String(guardId));
-  });
-
-  for (const t of matched) {
-    const shiftId = makeShiftIdFromTemplate(t.template_id, date, guardId);
-    await callApi("upsertShift", {
-      payload: {
-        shift_id: shiftId,
-        date,
-        guard_id: String(guardId),
-        shift_name: t.shift_name || t.template_name || t.template_id,
-        start_time: normalizeTime(t.start_time || "08:00"),
-        end_time: normalizeTime(t.end_time || "17:00"),
-        rounds_required: Math.max(1, Number(t.rounds_per_shift || 1)),
-        template_id: t.template_id,
-        status: "OPEN"
-      }
-    });
-
-    const route = await callApi("listTemplateCheckpoints", { templateId: t.template_id });
-    const baseRows = Array.isArray(route) ? route : [];
-    const rounds = Math.max(1, Number(t.rounds_per_shift || 1));
-    const items = [];
-    for (let round = 1; round <= rounds; round++) {
-      baseRows.forEach((r) => {
-        items.push({
-          seq_no: Number(r.seq_no || 0),
-          round_no: round,
-          checkpoint_id: String(r.checkpoint_id || ""),
-          planned_time: "",
-          sla_min: 0
-        });
-      });
-    }
-    if (items.length) {
-      await callApi("replaceShiftCheckpoints", { shiftId, items });
-    }
-  }
+  const data = await callApi("guardBootstrap", { guardId: gid, date });
+  state.guard = data && data.guard ? data.guard : null;
+  state.shifts = Array.isArray(data && data.shifts) ? data.shifts : [];
+  state.shiftProgressMap = data && data.progress_by_shift ? data.progress_by_shift : {};
+  state.checkpointQrMap = data && data.checkpoint_qr_map ? data.checkpoint_qr_map : {};
+  if (state.guard) setGuardHeader(state.guard);
+  return state.shifts;
 }
 
 async function syncQueue(showMessage) {
@@ -801,6 +684,10 @@ async function syncQueue(showMessage) {
     } catch (_) {
       // ignore
     }
+  }
+
+  if (showMessage && success > 0) {
+    await showSwalMessage("success", "ซิงก์ข้อมูลสำเร็จ", `ส่งข้อมูลสำเร็จ ${success} รายการ`);
   }
 }
 
@@ -860,19 +747,17 @@ function stopQrScanner() {
 }
 
 function switchView(name) {
-  ["login", "shifts", "tour", "dashboard"].forEach((v) => {
-    el[`view-${v}`].classList.toggle("active", v === name);
+  ["shifts", "tour", "dashboard"].forEach((v) => {
+    if (el[`view-${v}`]) {
+      el[`view-${v}`].classList.toggle("active", v === name);
+    }
   });
   if (el.appRoot) {
-    el.appRoot.classList.toggle("login-mode", name === "login");
+    el.appRoot.classList.toggle("login-mode", false);
   }
 
   if (name !== "tour") {
     stopQrScanner();
-  }
-
-  if (name === "login") {
-    hideGuardHeader();
   }
 
   setNavActive(name);
@@ -930,6 +815,24 @@ function loadSession() {
 
 function clearSession() {
   localStorage.removeItem(STORAGE.SESSION);
+}
+
+function readQueryParam(key) {
+  try {
+    const params = new URLSearchParams(window.location.search || "");
+    return String(params.get(key) || "").trim();
+  } catch (_) {
+    return "";
+  }
+}
+
+function clearQueryString() {
+  try {
+    const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
+    window.history.replaceState({}, document.title, cleanUrl);
+  } catch (_) {
+    // ignore
+  }
 }
 
 function saveQueue(queue) {
@@ -1310,21 +1213,6 @@ async function openQrScanCard() {
   });
 }
 
-async function loadCheckpointCatalog() {
-  try {
-    const rows = await callApi("listCheckpoints", {});
-    const map = {};
-    (Array.isArray(rows) ? rows : []).forEach((r) => {
-      const id = String(r.checkpoint_id || "").trim();
-      if (!id) return;
-      map[id] = String(r.qr_text || id).trim();
-    });
-    state.checkpointQrMap = map;
-  } catch (_) {
-    state.checkpointQrMap = {};
-  }
-}
-
 function getExpectedQrForSelectedPoint(selectedItem) {
   if (!selectedItem) return "";
   const cpId = String(selectedItem.checkpoint_id || "").trim();
@@ -1332,23 +1220,22 @@ function getExpectedQrForSelectedPoint(selectedItem) {
   return String(state.checkpointQrMap[cpId] || cpId).trim();
 }
 
-function openAssignedRouteOrFallback(activeShiftId) {
+async function openAssignedRouteOrFallback(activeShiftId) {
   if (!state.shifts.length) {
     switchView("shifts");
-    setText(el.loginStatus, "ไม่พบเส้นทางที่ผูกกับผู้ใช้งานนี้");
     return;
   }
 
   if (activeShiftId) {
     const idx = state.shifts.findIndex((s) => String(s.shift_id) === String(activeShiftId));
     if (idx >= 0) {
-      openShift(idx);
+      await openShift(idx);
       return;
     }
   }
 
   const openIndex = state.shifts.findIndex((s) => String(s.status || "").toUpperCase() !== "CLOSED");
-  openShift(openIndex >= 0 ? openIndex : 0);
+  await openShift(openIndex >= 0 ? openIndex : 0);
 }
 
 function formatTime(date) {

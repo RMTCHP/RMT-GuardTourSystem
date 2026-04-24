@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #eef2f7;
   --surface: #ffffff;
   --surface-soft: #f6f9fc;
@@ -232,11 +232,12 @@ body {
   font-size: .95rem;
   font-weight: 800;
   cursor: pointer;
-  transition: background-color .15s ease, transform .12s ease, opacity .12s ease;
+  transition: background-color .15s ease, transform .12s ease, opacity .12s ease, box-shadow .18s ease;
 }
 
 .auth-v2-btn:hover {
   background: #11365b;
+  box-shadow: 0 12px 28px rgba(15, 47, 78, 0.18);
 }
 
 .auth-v2-btn:active {
@@ -263,6 +264,190 @@ body {
   gap: 6px;
   padding: 4px 6px;
 }
+
+.gateway-shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(circle at top left, rgba(24, 125, 140, 0.14), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(15, 47, 78, 0.14), transparent 32%),
+    linear-gradient(180deg, #eef5fc 0%, #e7f0fb 100%);
+}
+
+.gateway-stage {
+  width: 100%;
+  max-width: 1100px;
+}
+
+.gateway-auth-wrap {
+  min-height: auto;
+}
+
+.gateway-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.gateway-hero {
+  display: none;
+  padding: 28px;
+  border: 1px solid rgba(160, 184, 208, 0.55);
+  background:
+    linear-gradient(150deg, rgba(255,255,255,0.96), rgba(245,249,255,0.92)),
+    linear-gradient(135deg, #0f2f4e, #187d8c);
+}
+
+.gateway-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(15, 47, 78, 0.08);
+  color: #0f2f4e;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.gateway-hero-title {
+  margin: 18px 0 10px;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: 1.05;
+  color: #12314f;
+}
+
+.gateway-hero-copy {
+  margin: 0 0 24px;
+  max-width: 560px;
+  color: #49637d;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.gateway-hero-points {
+  display: grid;
+  gap: 14px;
+}
+
+.gateway-point {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(177, 195, 214, 0.68);
+}
+
+.gateway-point .material-symbols-outlined {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #e7f2ff;
+  color: #0f2f4e;
+  font-size: 26px;
+}
+
+.gateway-point strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f2f4e;
+  font-size: 1rem;
+}
+
+.gateway-point span:last-child {
+  color: #5f738d;
+  line-height: 1.55;
+}
+
+.gateway-login-stack {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.gateway-login-head {
+  margin-bottom: 6px;
+}
+
+.gateway-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.gateway-login-footer {
+  margin-top: 2px;
+}
+
+@media (min-width: 900px) {
+  .gateway-shell {
+    padding: 32px 24px;
+  }
+
+  .gateway-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(380px, 430px);
+    gap: 28px;
+  }
+
+  .gateway-hero {
+    display: block;
+    min-height: 640px;
+  }
+
+  .gateway-login-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: none;
+  }
+
+  .gateway-card {
+    padding: 24px 20px 18px;
+    border-radius: 18px;
+  }
+
+  .auth-v2-logo {
+    width: 78px;
+    height: 78px;
+    border-radius: 18px;
+  }
+
+  .auth-v2-title {
+    font-size: 1.55rem;
+  }
+
+  .auth-v2-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .auth-v2-input-wrap input,
+  .auth-v2-btn {
+    height: 54px;
+  }
+}
+
+@media (max-width: 899px) {
+  .gateway-shell {
+    padding: 18px 14px;
+  }
+
+  .gateway-stage {
+    max-width: 430px;
+  }
+
+  .auth-v2-wrap {
+    min-height: calc(100dvh - 40px);
+  }
+}
+
 
 h2 {
   margin: 0 0 10px;
@@ -806,3 +991,4 @@ input:focus, textarea:focus, select:focus {
   .guard-avatar { width: 34px; height: 34px; }
   .guard-meta strong { max-width: 98px; font-size: .95rem; }
 }
+

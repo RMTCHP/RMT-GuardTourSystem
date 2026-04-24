@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="admin.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+  <script src="admin.shared.js" defer></script>
+  <script src="admin.data.js" defer></script>
+  <script src="admin.dashboard.js" defer></script>
+  <script src="admin.management.js" defer></script>
   <script src="admin.js" defer></script>
 </head>
 <body>
@@ -34,18 +38,7 @@
       </div>
     </header>
 
-    <section id="view-login" class="login-wrap active">
-      <div class="login-card">
-        <h2>Admin Login</h2>
-        <p class="login-subtitle">Sign in to manage users, checkpoints, templates, and reports.</p>
-        <label for="supervisorId">ID</label>
-        <input id="supervisorId" type="text" placeholder="e.g. A001" autocomplete="off">
-        <button id="loginBtn" class="btn">Login</button>
-        <p id="loginStatus" class="muted"></p>
-      </div>
-    </section>
-
-    <section id="view-dashboard" class="dashboard-wrap">
+    <section id="view-dashboard" class="dashboard-wrap active">
       <aside class="left-nav">
         <button class="menu-item active" data-panel="overview" title="Overview" aria-label="Overview">
           <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -117,16 +110,8 @@
               <canvas id="chartOperations"></canvas>
             </section>
             <section class="panel-box chart-box">
-              <h3>Incidents by Severity</h3>
-              <canvas id="chartSeverity"></canvas>
-            </section>
-            <section class="panel-box chart-box">
-              <h3>Day vs Night Performance</h3>
+              <h3>Day / Night Performance</h3>
               <canvas id="chartShiftType"></canvas>
-            </section>
-            <section class="panel-box chart-box chart-box-wide">
-              <h3>Top Problem Checkpoints</h3>
-              <canvas id="chartTopCheckpoints"></canvas>
             </section>
           </div>
 
