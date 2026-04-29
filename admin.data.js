@@ -1,6 +1,6 @@
-﻿async function ensureGuardsLoaded(silentMode) {
+async function ensureGuardsLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
-  if (state.guardsLoaded) {
+  if (state.guardsLoaded && !forceReload) {
     renderGuardsTable(state.guards || []);
     renderAdminTable();
     renderLiveGuardFilter();
@@ -25,9 +25,9 @@
   }
 }
 
-async function ensureCheckpointsLoaded(silentMode) {
+async function ensureCheckpointsLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
-  if (state.checkpointsLoaded) {
+  if (state.checkpointsLoaded && !forceReload) {
     renderCheckpointsTable(state.checkpoints || []);
     return state.checkpoints || [];
   }
@@ -47,9 +47,9 @@ async function ensureCheckpointsLoaded(silentMode) {
   }
 }
 
-async function ensureTemplatesLoaded(silentMode) {
+async function ensureTemplatesLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
-  if (state.templatesLoaded) {
+  if (state.templatesLoaded && !forceReload) {
     renderTemplatesTable(state.templates || []);
     return state.templates || [];
   }
@@ -83,11 +83,18 @@ function renderLiveGuardFilter() {
   if (prev) el.liveGuardFilter.value = prev;
 }
 
-async function loadLiveLogs() {
+async function loadLiveLogs(forceReload) {
   if (!state.supervisor) return;
   const date = el.liveDate && el.liveDate.value ? el.liveDate.value : toYmd(new Date());
   const guardId = String(el.liveGuardFilter ? el.liveGuardFilter.value : "").trim();
   const status = String(el.liveStatusFilter ? el.liveStatusFilter.value : "").trim();
+  const cacheKey = `${state.supervisor?.supervisor_id || ""}|${date}|${guardId}|${status}`;
+  if (!forceReload && state.liveLogsCache && Array.isArray(state.liveLogsCache[cacheKey])) {
+    state.liveLogs = state.liveLogsCache[cacheKey];
+    renderLiveLogs(state.liveLogs);
+    return;
+  }
+
   try {
     const rows = await callApi("listCheckLogs", {
       supervisorId: state.supervisor && state.supervisor.supervisor_id ? state.supervisor.supervisor_id : "",
@@ -96,6 +103,8 @@ async function loadLiveLogs() {
       status
     });
     state.liveLogs = Array.isArray(rows) ? rows : [];
+    if (!state.liveLogsCache) state.liveLogsCache = {};
+    state.liveLogsCache[cacheKey] = state.liveLogs;
     renderLiveLogs(state.liveLogs);
   } catch (err) {
     renderLiveLogs([]);
@@ -134,4 +143,3 @@ async function loadTemplateData() {
   const rows = await ensureTemplatesLoaded(true);
   if (rows.length) notify("โหลดข้อมูล Template สำเร็จ");
 }
-
