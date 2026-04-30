@@ -251,18 +251,14 @@ function updateActionCardsState() {
   const selectedItem = getSelectedPlanItem();
   const hasSelected = !!selectedItem;
   const hasQr = !!String(state.scannedQr || "").trim();
-  const hasGps = !!state.gps;
-  const hasPhoto = !!state.checkpointPhoto;
+  const hasCheckin = !!state.checkinPassed;
 
   setCardEnabled(el.actionQrCard, hasSelected && !hasQr);
-  setCardEnabled(el.actionGpsCard, hasSelected);
-  setCardEnabled(el.actionIncidentCard, hasSelected);
+  setCardEnabled(el.actionGpsCard, hasSelected && hasQr && !hasCheckin);
+  setCardEnabled(el.actionIncidentCard, hasSelected && hasQr && hasCheckin);
   setCardDone(el.actionQrCard, hasQr);
-  setCardDone(el.actionGpsCard, hasPhoto);
-
-  setText(el.qrStepStatus, hasQr ? "สแกนแล้ว" : "ยังไม่สแกน");
-  setText(el.gpsStepStatus, hasPhoto ? "ถ่ายแล้ว" : "ยังไม่ถ่าย");
-  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "พร้อมยืนยัน" : "รอข้อมูลให้ครบ");
+  setCardDone(el.actionGpsCard, hasCheckin);
+  setCardDone(el.actionIncidentCard, false);
 }
 
 function setCardEnabled(node, enabled) {
@@ -280,6 +276,10 @@ function openActionDetail(name) {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
     setText(el.checkpointStatus, "กรุณาเลือกจุดตรวจก่อน");
+    return;
+  }
+  if (name === "incident" && !state.checkinPassed) {
+    setText(el.checkpointStatus, "กรุณา Check in ให้ผ่านก่อน");
     return;
   }
   hideAllActionDetails();
@@ -568,14 +568,14 @@ async function fileToDataUrl(file, maxSize, quality) {
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¹„à¸”à¹‰"));
+    reader.onerror = () => reject(new Error("ไม่สามารถอ่านไฟล์ได้"));
     reader.readAsDataURL(file);
   });
 
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸›à¸£à¸°à¸¡à¸§à¸¥à¸œà¸¥à¸£à¸¹à¸›à¹„à¸”à¹‰"));
+    im.onerror = () => reject(new Error("ไม่สามารถประมวลผลรูปได้"));
     im.src = dataUrl;
   });
 
@@ -596,7 +596,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸›à¸£à¸°à¸¡à¸§à¸¥à¸œà¸¥à¸£à¸¹à¸›à¹„à¸”à¹‰"));
+    im.onerror = () => reject(new Error("ไม่สามารถประมวลผลรูปได้"));
     im.src = dataUrl;
   });
 
@@ -622,7 +622,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
     ? `Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)}`
     : "Lat - | Lng -";
 
-  const lines = [`à¸§à¸±à¸™à¸—à¸µà¹ˆ ${dateText}`, gpsText];
+  const lines = [`วันที่ ${dateText}`, gpsText];
   const pad = Math.max(10, Math.round(canvas.width * 0.018));
   const fontSize = Math.max(14, Math.round(canvas.width * 0.03));
   const lineGap = Math.max(6, Math.round(fontSize * 0.4));

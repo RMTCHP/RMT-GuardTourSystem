@@ -212,7 +212,7 @@ function switchFuncPanel(panelName) {
     return;
   }
   if (panelName === "templates") {
-    loadTemplateData();
+    loadTemplateData(true);
     return;
   }
   if (panelName === "live") {

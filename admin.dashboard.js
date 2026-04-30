@@ -360,6 +360,10 @@ function renderDashboardCharts(data, snapshot, dateYmd) {
     },
     options: baseChartOptions({
       cutout: "62%",
+      scales: {
+        x: { display: false, grid: { display: false }, ticks: { display: false } },
+        y: { display: false, grid: { display: false }, ticks: { display: false } }
+      },
       plugins: {
         legend: { position: "bottom" }
       }

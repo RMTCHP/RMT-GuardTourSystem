@@ -545,9 +545,9 @@ async function openChangePasswordSwal() {
   }
 }
 
-async function loadTemplateData() {
+async function loadTemplateData(forceReload) {
   if (!state.supervisor) return;
-  const rows = await ensureTemplatesLoaded(true);
+  const rows = await ensureTemplatesLoaded(true, !!forceReload);
   if (rows.length) notify("โหลดข้อมูล Template สำเร็จ");
 }
 
@@ -941,7 +941,7 @@ async function openTemplateSwal(existingTemplate) {
       checkpoint_id: String(x.checkpoint_id || "")
     }));
     invalidateAdminCaches();
-    await loadTemplateData();
+    await loadTemplateData(true);
     notify("บันทึกข้อมูล Template สำเร็จ");
   } catch (err) {
     notify(`บันทึกข้อมูล Template ไม่สำเร็จ: ${err.message}`);

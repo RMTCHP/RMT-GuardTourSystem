@@ -74,26 +74,21 @@
             <button id="actionQrCard" type="button" class="quick-card">
               <span class="quick-icon material-symbols-outlined">qr_code_scanner</span>
               <span class="quick-title">สแกน QR</span>
-              <span id="qrStepStatus" class="quick-sub">ยังไม่สแกน</span>
             </button>
             <button id="actionGpsCard" type="button" class="quick-card">
-              <span class="quick-icon material-symbols-outlined">photo_camera</span>
-              <span class="quick-title">ถ่ายรูป</span>
-              <span id="gpsStepStatus" class="quick-sub">ยังไม่ถ่าย</span>
+              <span class="quick-icon material-symbols-outlined">my_location</span>
+              <span class="quick-title">Check in</span>
             </button>
             <button id="actionIncidentCard" type="button" class="quick-card">
               <span class="quick-icon material-symbols-outlined">warning</span>
               <span class="quick-title">แจ้งเหตุ</span>
-              <span id="incidentStepStatus" class="quick-sub">รอข้อมูลให้ครบ</span>
             </button>
           </div>
 
           <div id="detailGpsPhoto" class="step-card hidden">
-            <h3>ถ่ายรูป</h3>
-            <button id="gpsBtn" class="btn btn-soft">ใช้ตำแหน่งปัจจุบัน</button>
+            <h3>Check in</h3>
+            <button id="gpsBtn" class="btn btn-soft">ตรวจสอบตำแหน่งปัจจุบัน</button>
             <p id="gpsText" class="hint">ยังไม่โหลด GPS</p>
-            <input id="photoInput" type="file" accept="image/*" capture="environment">
-            <img id="photoPreview" class="preview hidden" alt="ภาพตัวอย่าง">
           </div>
 
           <div id="detailIncident" class="step-card hidden">
@@ -110,9 +105,11 @@
             </div>
             <div id="incidentExtraFields" class="hidden">
               <textarea id="incidentDetail" rows="3" placeholder="รายละเอียด"></textarea>
+              <button id="incidentPhotoBtn" type="button" class="btn btn-soft">ถ่ายภาพ</button>
+              <input id="incidentPhotoInput" type="file" accept="image/*" capture="environment" class="hidden">
+              <img id="incidentPhotoPreview" class="preview hidden" alt="ภาพแจ้งเหตุ">
             </div>
             <button id="submitIncidentBtn" class="btn btn-warning">ยืนยันและบันทึก</button>
-            <p id="incidentStatus" class="status-text"></p>
           </div>
         </div>
 

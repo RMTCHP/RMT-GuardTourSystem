@@ -1,33 +1,29 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbz4Ztsb_gtS6c_dJkbpiVHicUaLi7AsJDq17tEp7A_PuAxApvGMOLaxcHHiVsJFnRs/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbwv90Jc3klv-TM6cJd88lWkpuru7hYDZRQ_s-zey13-GBWByV3JaoPSc8OqHuWqadQ/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
 window.addEventListener("DOMContentLoaded", () => {
   const userIdInput = document.getElementById("userId");
   const loginBtn = document.getElementById("loginBtn");
-  const loginStatus = document.getElementById("loginStatus");
+  if (!userIdInput || !loginBtn) return;
 
-  if (!userIdInput || !loginBtn || !loginStatus) return;
-
-  loginBtn.addEventListener("click", () => handleLogin(userIdInput, loginStatus));
+  loginBtn.addEventListener("click", () => handleLogin(userIdInput));
   userIdInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      handleLogin(userIdInput, loginStatus);
+      handleLogin(userIdInput);
     }
   });
 });
 
-async function handleLogin(userIdInput, loginStatus) {
+async function handleLogin(userIdInput) {
   const userId = String(userIdInput.value || "").trim();
   if (!userId) {
-    setStatus(loginStatus, "??????????????????????");
-    await showMessage("warning", "??????????????????????", "???????????????????????????");
+    await showMessage("warning", "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™", "à¹‚à¸›à¸£à¸”à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ª à¸£à¸›à¸  à¸«à¸£à¸·à¸­ Admin à¸à¹ˆà¸­à¸™à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸š");
     return;
   }
 
   showLoading();
-  setStatus(loginStatus, "??????????????????...");
 
   try {
     const [adminResult, guardResult] = await Promise.allSettled([
@@ -43,7 +39,7 @@ async function handleLogin(userIdInput, loginStatus) {
         name: adminResult.value.name || "",
         email: adminResult.value.email || ""
       }));
-      setStatus(loginStatus, "??????????? Admin ??????");
+      await showMessage("success", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹ƒà¸™à¸ªà¸´à¸—à¸˜à¸´à¹Œ Admin");
       window.location.href = `admin.html?supervisorId=${encodeURIComponent(userId)}`;
       return;
     }
@@ -53,7 +49,7 @@ async function handleLogin(userIdInput, loginStatus) {
         guardId: guardResult.value.guard_id || userId,
         activeShiftId: ""
       }));
-      setStatus(loginStatus, "??????????? ??? ??????");
+      await showMessage("success", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹ƒà¸™à¸ªà¸´à¸—à¸˜à¸´à¹Œ à¸£à¸›à¸ ");
       window.location.href = `Guard.html?guardId=${encodeURIComponent(userId)}`;
       return;
     }
@@ -62,8 +58,7 @@ async function handleLogin(userIdInput, loginStatus) {
     throw new Error(errorMessage);
   } catch (err) {
     if (window.Swal) Swal.close();
-    setStatus(loginStatus, `????????????????????: ${err.message}`);
-    await showMessage("error", "????????????????????", err.message || "????????????????????????");
+    await showMessage("error", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", err.message || "à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹„à¸”à¹‰");
   }
 }
 
@@ -96,7 +91,7 @@ function extractErrorMessage(adminResult, guardResult) {
   if (adminMessage && !/Guard not found or inactive/i.test(adminMessage)) {
     return adminMessage;
   }
-  return "????????????????????????";
+  return "à¹„à¸¡à¹ˆà¸žà¸šà¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¹ƒà¸™à¸£à¸°à¸šà¸š";
 }
 
 function clearStoredSessions() {
@@ -104,15 +99,11 @@ function clearStoredSessions() {
   localStorage.removeItem(ADMIN_SESSION_KEY);
 }
 
-function setStatus(node, message) {
-  if (node) node.textContent = message || "";
-}
-
 function showLoading() {
   if (!window.Swal) return;
   Swal.fire({
-    title: "????????????????",
-    text: "?????????????",
+    title: "à¸à¸³à¸¥à¸±à¸‡à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥...",
+    text: "à¹‚à¸›à¸£à¸”à¸£à¸­à¸ªà¸±à¸à¸„à¸£à¸¹à¹ˆ",
     allowOutsideClick: false,
     allowEscapeKey: false,
     didOpen: () => Swal.showLoading()
@@ -125,6 +116,7 @@ async function showMessage(icon, title, text) {
     icon,
     title,
     text,
-    confirmButtonText: "????"
+    confirmButtonText: "à¸•à¸à¸¥à¸‡"
   });
 }
+
