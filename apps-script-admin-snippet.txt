@@ -1765,7 +1765,7 @@ function buildShiftReportMailBody_(payload) {
     : '';
   return `
     <h3>Guard Tour Shift Summary</h3>
-    <p>Supervisor: <b>${escapeHtml_(payload.supervisor.name || payload.supervisor.supervisor_id)}</b></p>
+    <p>Dear: <b>${escapeHtml_(payload.supervisor.name || payload.supervisor.supervisor_id)}</b></p>
     <p>Shift: <b>${escapeHtml_(payload.shiftType)}</b> | Date: <b>${escapeHtml_(payload.targetDate)}</b></p>
     ${noDataNote}
     <ul>
@@ -1776,7 +1776,7 @@ function buildShiftReportMailBody_(payload) {
       <li>Compliance: <b>${Number(k.compliance_pct || 0).toFixed(2)}%</b></li>
       <li>Incidents: <b>${Number(k.incidents_count || 0)}</b></li>
     </ul>
-    <p>See attached PDF report for full detail.</p>
+    <p>See attached PDF report for full detail and login system link https://rmtchp.github.io/RMT-GuardTourSystem/</p>
   `;
 }
 

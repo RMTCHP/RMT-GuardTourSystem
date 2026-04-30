@@ -1189,6 +1189,41 @@ input:focus, textarea:focus, select:focus {
   color: #24405e;
 }
 
+.incident-photo-icon-btn {
+  width: 56px;
+  height: 56px;
+  border: 1px solid #b8c8dc;
+  border-radius: 14px;
+  background: #f7fbff;
+  color: #1d4f7f;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background-color .14s ease, color .14s ease;
+  margin: 6px 0 8px;
+}
+
+.incident-photo-icon-btn .material-symbols-outlined {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.incident-photo-icon-btn:hover {
+  transform: translateY(-1px);
+  border-color: #8fb1d8;
+  box-shadow: 0 8px 16px rgba(15, 47, 85, .12);
+}
+
+.incident-photo-icon-btn:active {
+  transform: translateY(0);
+  background: #eaf3ff;
+}
+
+.incident-photo-icon-btn:focus-visible {
+  outline: 2px solid #1d4f7f;
+  outline-offset: 2px;
+}
+
 
 .qr-box {
   min-height: 230px;

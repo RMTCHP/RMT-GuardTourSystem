@@ -1,4 +1,4 @@
-window.addEventListener("DOMContentLoaded", async () => {
+﻿window.addEventListener("DOMContentLoaded", async () => {
   bindElements();
   bindEvents();
 
@@ -207,6 +207,10 @@ function switchFuncPanel(panelName) {
     ensureGuardsLoaded();
     return;
   }
+  if (panelName === "overview") {
+    loadDashboard(false, true);
+    return;
+  }
   if (panelName === "checkpoints") {
     ensureCheckpointsLoaded();
     return;
@@ -227,4 +231,5 @@ function switchUserTab(tabName) {
   el.userPaneAdmin.classList.toggle("active", state.userTab === "admin");
   el.userPaneGuards.classList.toggle("active", state.userTab === "guards");
 }
+
 

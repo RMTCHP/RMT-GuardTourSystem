@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbwv90Jc3klv-TM6cJd88lWkpuru7hYDZRQ_s-zey13-GBWByV3JaoPSc8OqHuWqadQ/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbzSi8i6gnSWbPrvd9DWMkO_bCTSYUhRm9GB79GnqxXIQxgJ57dIi47jwExJCp-Q-UQ/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
@@ -19,7 +19,7 @@ window.addEventListener("DOMContentLoaded", () => {
 async function handleLogin(userIdInput) {
   const userId = String(userIdInput.value || "").trim();
   if (!userId) {
-    await showMessage("warning", "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™", "à¹‚à¸›à¸£à¸”à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ª à¸£à¸›à¸  à¸«à¸£à¸·à¸­ Admin à¸à¹ˆà¸­à¸™à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸š");
+    await showMessage("warning", "กรุณากรอกรหัสผู้ใช้งาน", "โปรดกรอกรหัส รปภ หรือ Admin ก่อนเข้าสู่ระบบ");
     return;
   }
 
@@ -39,7 +39,7 @@ async function handleLogin(userIdInput) {
         name: adminResult.value.name || "",
         email: adminResult.value.email || ""
       }));
-      await showMessage("success", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹ƒà¸™à¸ªà¸´à¸—à¸˜à¸´à¹Œ Admin");
+      await showMessage("success", "เข้าสู่ระบบสำเร็จ", "เข้าสู่ระบบในสิทธิ์ Admin");
       window.location.href = `admin.html?supervisorId=${encodeURIComponent(userId)}`;
       return;
     }
@@ -49,7 +49,7 @@ async function handleLogin(userIdInput) {
         guardId: guardResult.value.guard_id || userId,
         activeShiftId: ""
       }));
-      await showMessage("success", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹ƒà¸™à¸ªà¸´à¸—à¸˜à¸´à¹Œ à¸£à¸›à¸ ");
+      await showMessage("success", "เข้าสู่ระบบสำเร็จ", "เข้าสู่ระบบในสิทธิ์ รปภ");
       window.location.href = `Guard.html?guardId=${encodeURIComponent(userId)}`;
       return;
     }
@@ -58,7 +58,7 @@ async function handleLogin(userIdInput) {
     throw new Error(errorMessage);
   } catch (err) {
     if (window.Swal) Swal.close();
-    await showMessage("error", "à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ", err.message || "à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸‚à¹‰à¸²à¸ªà¸¹à¹ˆà¸£à¸°à¸šà¸šà¹„à¸”à¹‰");
+    await showMessage("error", "เข้าสู่ระบบไม่สำเร็จ", err.message || "ไม่สามารถเข้าสู่ระบบได้");
   }
 }
 
@@ -91,7 +91,7 @@ function extractErrorMessage(adminResult, guardResult) {
   if (adminMessage && !/Guard not found or inactive/i.test(adminMessage)) {
     return adminMessage;
   }
-  return "à¹„à¸¡à¹ˆà¸žà¸šà¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¹ƒà¸™à¸£à¸°à¸šà¸š";
+  return "ไม่พบรหัสผู้ใช้งานในระบบ";
 }
 
 function clearStoredSessions() {
@@ -102,8 +102,8 @@ function clearStoredSessions() {
 function showLoading() {
   if (!window.Swal) return;
   Swal.fire({
-    title: "à¸à¸³à¸¥à¸±à¸‡à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥...",
-    text: "à¹‚à¸›à¸£à¸”à¸£à¸­à¸ªà¸±à¸à¸„à¸£à¸¹à¹ˆ",
+    title: "กำลังตรวจสอบข้อมูล...",
+    text: "โปรดรอสักครู่",
     allowOutsideClick: false,
     allowEscapeKey: false,
     didOpen: () => Swal.showLoading()
@@ -116,7 +116,8 @@ async function showMessage(icon, title, text) {
     icon,
     title,
     text,
-    confirmButtonText: "à¸•à¸à¸¥à¸‡"
+    confirmButtonText: "ตกลง"
   });
 }
+
 

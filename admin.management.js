@@ -1,4 +1,4 @@
-async function openAddAdminSwal(existingAdmin) {
+﻿async function openAddAdminSwal(existingAdmin) {
   const isEdit = !!existingAdmin;
   if (!window.Swal) return;
   const result = await Swal.fire({
@@ -539,9 +539,9 @@ async function openChangePasswordSwal() {
       supervisorId: state.supervisor.supervisor_id,
       newPassword: result.value.newPassword
     });
-    notify("Ã Â¹â‚¬Ã Â¸â€ºÃ Â¸Â¥Ã Â¸ÂµÃ Â¹Ë†Ã Â¸Â¢Ã Â¸â„¢Ã Â¸Â£Ã Â¸Â«Ã Â¸Â±Ã Â¸ÂªÃ Â¸Å“Ã Â¹Ë†Ã Â¸Â²Ã Â¸â„¢Ã Â¸ÂªÃ Â¸Â³Ã Â¹â‚¬Ã Â¸Â£Ã Â¹â€¡Ã Â¸Ë†");
+    notify("เปลี่ยนรหัสผ่านสำเร็จ");
   } catch (err) {
-    notify(`Ã Â¹â‚¬Ã Â¸â€ºÃ Â¸Â¥Ã Â¸ÂµÃ Â¹Ë†Ã Â¸Â¢Ã Â¸â„¢Ã Â¸Â£Ã Â¸Â«Ã Â¸Â±Ã Â¸ÂªÃ Â¸Å“Ã Â¹Ë†Ã Â¸Â²Ã Â¸â„¢Ã Â¹â€žÃ Â¸Â¡Ã Â¹Ë†Ã Â¸ÂªÃ Â¸Â³Ã Â¹â‚¬Ã Â¸Â£Ã Â¹â€¡Ã Â¸Ë†: ${err.message}`);
+    notify(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -952,5 +952,6 @@ async function openTemplateRouteSwal(template) {
 
   notify("จัดการ Route ผ่านหน้าจอ Edit Template", "warning");
 }
+
 
 

@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbwv90Jc3klv-TM6cJd88lWkpuru7hYDZRQ_s-zey13-GBWByV3JaoPSc8OqHuWqadQ/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbzSi8i6gnSWbPrvd9DWMkO_bCTSYUhRm9GB79GnqxXIQxgJ57dIi47jwExJCp-Q-UQ/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -34,7 +34,7 @@ async function callApi(action, payload = {}) {
     });
   } catch (err) {
     stopLoading();
-    throw new Error(`à¹€à¸„à¸£à¸·à¸­à¸‚à¹ˆà¸²à¸¢à¸¡à¸µà¸›à¸±à¸à¸«à¸²: ${err.message}`);
+    throw new Error(`เครือข่ายมีปัญหา: ${err.message}`);
   }
 
   try {
@@ -102,7 +102,7 @@ function notify(message, icon) {
   const autoIcon = icon || (
     lower.includes("failed") ||
     lower.includes("error") ||
-    lower.includes("ÃƒÂ Ã‚Â¹Ã¢â‚¬Å¾ÃƒÂ Ã‚Â¸Ã‚Â¡ÃƒÂ Ã‚Â¹Ã‹â€ ÃƒÂ Ã‚Â¸Ã‚ÂªÃƒÂ Ã‚Â¸Ã‚Â³ÃƒÂ Ã‚Â¹Ã¢â€šÂ¬ÃƒÂ Ã‚Â¸Ã‚Â£ÃƒÂ Ã‚Â¹Ã¢â‚¬Â¡ÃƒÂ Ã‚Â¸Ã‹â€ ") ||
+    lower.includes("ไม่สำเร็จ") ||
     lower.includes("not found")
       ? "error"
       : "success"
@@ -124,8 +124,8 @@ function startLoading(title, text) {
   if (loadingCount > 1) return;
   if (!window.Swal) return;
   Swal.fire({
-    title: title || "à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥...",
-    text: text || "à¹‚à¸›à¸£à¸”à¸£à¸­à¸ªà¸±à¸à¸„à¸£à¸¹à¹ˆ",
+    title: title || "กำลังโหลดข้อมูล...",
+    text: text || "โปรดรอสักครู่",
     allowOutsideClick: false,
     allowEscapeKey: false,
     showConfirmButton: false,
@@ -370,6 +370,7 @@ function generateNextCheckpointId() {
   const next = maxId + 1;
   return `CP${String(next).padStart(3, "0")}`;
 }
+
 
 
 

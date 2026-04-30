@@ -2,7 +2,7 @@
   if (!state.supervisor) return;
 
   const date = el.reportDate.value || toYmd(new Date());
-  if (!silentMode) notify("à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸” Dashboard...");
+  if (!silentMode) notify("กำลังโหลด Dashboard...");
 
   try {
     const [snapshot, chartData] = await Promise.all([
@@ -25,9 +25,9 @@
 
     const chartDataMerged = mergeSnapshotIntoCharts(chartData || {}, snapshot, date);
     renderDashboardCharts(chartDataMerged, snapshot, date);
-    if (!silentMode) notify("à¹‚à¸«à¸¥à¸” Dashboard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    if (!silentMode) notify("โหลด Dashboard สำเร็จ");
   } catch (err) {
-    notify(`à¹‚à¸«à¸¥à¸” Dashboard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`โหลด Dashboard ไม่สำเร็จ: ${err.message}`);
   }
 }
 
