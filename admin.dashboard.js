@@ -1,9 +1,8 @@
-async function loadDashboard(silentMode, forceReload) {
+﻿async function loadDashboard(silentMode, forceReload) {
   if (!state.supervisor) return;
 
   const date = el.reportDate.value || toYmd(new Date());
-  const days = Number(el.chartRangeDays.value || 30);
-  if (!silentMode) notify("กำลังโหลด Dashboard...");
+  if (!silentMode) notify("à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸” Dashboard...");
 
   try {
     const [snapshot, chartData] = await Promise.all([
@@ -11,33 +10,24 @@ async function loadDashboard(silentMode, forceReload) {
       callApi("getDashboardCharts", {
         supervisorId: state.supervisor.supervisor_id,
         endDate: date,
-        days
+        days: 30
       })
     ]);
 
     const kpi = snapshot.kpi || {};
     el.kpiShifts.textContent = String(kpi.total_shifts || 0);
     el.kpiChecked.textContent = String(kpi.total_checked_points || 0);
-    el.kpiLate.textContent = String(kpi.total_late_points || 0);
     el.kpiMissed.textContent = String(kpi.total_missed_points || 0);
     el.kpiIncidents.textContent = String(kpi.total_incidents || 0);
-    el.kpiCompliance.textContent = `${Number(kpi.avg_compliance_pct || 0).toFixed(2)}%`;
 
     renderSummary(snapshot.summaryRows || []);
     renderIncidents(snapshot.incidents || []);
 
-    const hasApiCharts = hasDashboardChartData(chartData);
-    if (hasApiCharts) {
-      renderDashboardCharts(chartData || {});
-      if (!silentMode) notify("โหลด Dashboard สำเร็จ");
-      return;
-    }
-
-    const fallback = await buildFallbackDashboardFromLogs(date, days);
-    renderDashboardCharts(fallback.charts || {});
-    if (!silentMode) notify("โหลด Dashboard สำเร็จ");
+    const chartDataMerged = mergeSnapshotIntoCharts(chartData || {}, snapshot, date);
+    renderDashboardCharts(chartDataMerged, snapshot, date);
+    if (!silentMode) notify("à¹‚à¸«à¸¥à¸” Dashboard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
   } catch (err) {
-    notify(`โหลด Dashboard ไม่สำเร็จ: ${err.message}`);
+    notify(`à¹‚à¸«à¸¥à¸” Dashboard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
@@ -322,7 +312,8 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
       avg_compliance_pct: Number(avgCompliancePct.toFixed(2))
     },
     summaryRows,
-    incidents: incidentTableRows
+    incidents: incidentTableRows,
+    logs: logRows
   };
   if (!state.dashboardSnapshotCache) state.dashboardSnapshotCache = {};
   state.dashboardSnapshotCache[cacheKey] = snapshot;
@@ -345,76 +336,212 @@ function formatShiftTimeRange(startTime, endTime) {
   return `${start} - ${end}`;
 }
 
-function renderDashboardCharts(data) {
+function renderDashboardCharts(data, snapshot, dateYmd) {
   if (!window.Chart) return;
 
-  const complianceTrend = Array.isArray(data.compliance_trend) ? data.compliance_trend : [];
-  const dailyOps = Array.isArray(data.daily_operations) ? data.daily_operations : [];
-  const byShiftType = Array.isArray(data.shift_type_performance) ? data.shift_type_performance : [];
+  const analytics = buildTodayChartAnalytics(data, snapshot, dateYmd);
 
   upsertChart("compliance", el.chartCompliance, {
-    type: "line",
+    type: "doughnut",
     data: {
-      labels: complianceTrend.map((x) => String(x.date || "").slice(5)),
+      labels: ["ตรวจตรงเวลา", "ตรวจช้า", "ตกหล่น", "ไม่ผ่าน (ผิดจุด/พิกัด)"],
       datasets: [{
-        label: "Compliance %",
-        data: complianceTrend.map((x) => Number(x.compliance_pct || 0)),
-        borderColor: "#1b9aaa",
-        backgroundColor: "rgba(27,154,170,0.16)",
-        tension: 0.3,
-        fill: true
+        label: "จำนวนจุด",
+        data: [
+          analytics.today.ontime,
+          analytics.today.late,
+          analytics.today.missed,
+          analytics.today.invalid
+        ],
+        backgroundColor: ["#2a9d8f", "#f4a261", "#e76f51", "#9b5de5"],
+        borderWidth: 0,
+        hoverOffset: 10
       }]
     },
     options: baseChartOptions({
-      scales: { y: { beginAtZero: true, max: 100 } }
+      cutout: "62%",
+      plugins: {
+        legend: { position: "bottom" }
+      }
     })
   });
 
   upsertChart("ops", el.chartOperations, {
     type: "bar",
     data: {
-      labels: dailyOps.map((x) => String(x.date || "").slice(5)),
+      labels: analytics.byGuard.map((x) => x.guard),
       datasets: [
-        { label: "Checked", data: dailyOps.map((x) => Number(x.checked || 0)), backgroundColor: "#2e8b57" },
-        { label: "Missed", data: dailyOps.map((x) => Number(x.missed || 0)), backgroundColor: "#e76f51" },
-        { label: "Invalid", data: dailyOps.map((x) => Number(x.invalid || 0)), backgroundColor: "#f4a261" }
+        {
+          label: "ตรวจตรงเวลา",
+          data: analytics.byGuard.map((x) => x.ontime),
+          backgroundColor: "#2a9d8f",
+          borderRadius: 6,
+          maxBarThickness: 26
+        },
+        {
+          label: "ตรวจช้า",
+          data: analytics.byGuard.map((x) => x.late),
+          backgroundColor: "#f4a261",
+          borderRadius: 6,
+          maxBarThickness: 26
+        },
+        {
+          label: "ตกหล่น",
+          data: analytics.byGuard.map((x) => x.missed),
+          backgroundColor: "#e76f51",
+          borderRadius: 6,
+          maxBarThickness: 26
+        }
       ]
     },
     options: baseChartOptions({
+      indexAxis: "y",
       scales: {
-        x: { stacked: true },
-        y: { stacked: true, beginAtZero: true }
+        x: { stacked: true, beginAtZero: true, grid: { color: "rgba(26,57,92,0.08)" } },
+        y: { stacked: true, grid: { display: false } }
+      },
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            footer(items) {
+              const row = analytics.byGuard[items[0]?.dataIndex] || { ontime: 0, late: 0, missed: 0 };
+              const total = Number(row.ontime || 0) + Number(row.late || 0) + Number(row.missed || 0);
+              return `รวม: ${total} จุด`;
+            }
+          }
+        }
       }
     })
   });
 
   upsertChart("shiftType", el.chartShiftType, {
-    type: "bar",
+    type: "line",
     data: {
-      labels: byShiftType.map((x) => x.shift_type || "UNKNOWN"),
+      labels: analytics.byHour.map((x) => x.hour),
       datasets: [
         {
-          label: "Avg Compliance %",
-          data: byShiftType.map((x) => Number(x.avg_compliance_pct || 0)),
-          backgroundColor: "#4c78a8"
+          label: "สแกนทั้งหมด",
+          data: analytics.byHour.map((x) => x.total),
+          borderColor: "#1b9aaa",
+          backgroundColor: "rgba(27,154,170,0.12)",
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.35,
+          fill: true
         },
         {
-          label: "Incidents",
-          data: byShiftType.map((x) => Number(x.incidents || 0)),
-          backgroundColor: "#f58518"
+          label: "สแกนไม่ผ่าน",
+          data: analytics.byHour.map((x) => x.invalid),
+          borderColor: "#e76f51",
+          backgroundColor: "rgba(231,111,81,0.14)",
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.35,
+          fill: true
         }
       ]
     },
-    options: baseChartOptions({ scales: { y: { beginAtZero: true } } })
+    options: baseChartOptions({
+      scales: { y: { beginAtZero: true } }
+    })
   });
 }
 
-function hasDashboardChartData(data) {
-  if (!data || typeof data !== "object") return false;
-  if (Array.isArray(data.compliance_trend) && data.compliance_trend.length) return true;
-  if (Array.isArray(data.daily_operations) && data.daily_operations.length) return true;
-  if (Array.isArray(data.shift_type_performance) && data.shift_type_performance.length) return true;
-  return false;
+function buildTodayChartAnalytics(chartData, snapshot, dateYmd) {
+  const summaryRows = Array.isArray(snapshot?.summaryRows) ? snapshot.summaryRows : [];
+  const logs = Array.isArray(snapshot?.logs) ? snapshot.logs : [];
+  const targetDate = String(dateYmd || "").trim();
+
+  const today = {
+    ontime: 0,
+    late: 0,
+    missed: 0,
+    invalid: 0
+  };
+
+  summaryRows.forEach((row) => {
+    const checked = Number(row.checked_points || 0);
+    const late = Number(row.late_points || 0);
+    const missed = Number(row.missed_points || 0);
+    const invalid = Number(row.invalid_points || 0);
+    today.late += late;
+    today.ontime += Math.max(0, checked - late);
+    today.missed += missed;
+    today.invalid += invalid;
+  });
+
+  const guardAgg = {};
+  summaryRows.forEach((row) => {
+    const guardKey = formatGuardDisplay(row.guard_id, row.guard_name);
+    if (!guardAgg[guardKey]) {
+      guardAgg[guardKey] = { guard: guardKey, ontime: 0, late: 0, missed: 0 };
+    }
+    const checked = Number(row.checked_points || 0);
+    const late = Number(row.late_points || 0);
+    guardAgg[guardKey].late += late;
+    guardAgg[guardKey].ontime += Math.max(0, checked - late);
+    guardAgg[guardKey].missed += Number(row.missed_points || 0);
+  });
+
+  let byGuard = Object.values(guardAgg);
+  if (!byGuard.length) {
+    byGuard = [{ guard: "ไม่มีข้อมูล", ontime: 0, late: 0, missed: 0 }];
+  }
+
+  const hourMap = {};
+  for (let h = 0; h < 24; h += 1) {
+    const key = String(h).padStart(2, "0");
+    hourMap[key] = { hour: `${key}:00`, total: 0, invalid: 0 };
+  }
+
+  logs.forEach((log) => {
+    const scan = String(log.scan_time || "").trim();
+    if (!scan) return;
+    const d = targetDate ? toDateKey(scan) : "";
+    if (targetDate && d && d !== targetDate) return;
+    const hm = scan.match(/(\d{2}):(\d{2})(?::\d{2})?$/);
+    if (!hm) return;
+    const hh = hm[1];
+    if (!hourMap[hh]) return;
+    hourMap[hh].total += 1;
+    const status = String(log.status || "").toUpperCase();
+    if (status.startsWith("INVALID")) hourMap[hh].invalid += 1;
+  });
+
+  const byHour = Object.keys(hourMap)
+    .sort((a, b) => Number(a) - Number(b))
+    .map((k) => hourMap[k]);
+
+  return { today, byGuard, byHour, chartData };
+}
+
+function mergeSnapshotIntoCharts(chartData, snapshot, dateYmd) {
+  const data = chartData && typeof chartData === "object" ? chartData : {};
+  const out = {
+    ...data,
+    compliance_trend: Array.isArray(data.compliance_trend) ? data.compliance_trend.slice() : [],
+    daily_operations: Array.isArray(data.daily_operations) ? data.daily_operations.slice() : []
+  };
+
+  const rows = Array.isArray(snapshot?.summaryRows) ? snapshot.summaryRows : [];
+  const checked = rows.reduce((n, r) => n + Number(r.checked_points || 0), 0);
+  const missed = rows.reduce((n, r) => n + Number(r.missed_points || 0), 0);
+  const invalid = rows.reduce((n, r) => n + Number(r.invalid_points || 0), 0);
+  const total = rows.reduce((n, r) => n + Number(r.total_points || 0), 0);
+  const compliance = total > 0 ? Number(((checked / total) * 100).toFixed(2)) : 0;
+
+  const cIdx = out.compliance_trend.findIndex((x) => String(x?.date || "") === String(dateYmd));
+  if (cIdx >= 0) out.compliance_trend[cIdx] = { ...out.compliance_trend[cIdx], compliance_pct: compliance };
+  else out.compliance_trend.push({ date: dateYmd, compliance_pct: compliance });
+
+  const oIdx = out.daily_operations.findIndex((x) => String(x?.date || "") === String(dateYmd));
+  if (oIdx >= 0) out.daily_operations[oIdx] = { ...out.daily_operations[oIdx], checked, missed, invalid };
+  else out.daily_operations.push({ date: dateYmd, checked, missed, invalid });
+
+  out.compliance_trend.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  out.daily_operations.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  return out;
 }
 
 async function buildFallbackDashboardFromLogs(endDate, days) {
@@ -580,14 +707,62 @@ function upsertChart(key, canvasEl, config) {
 }
 
 function baseChartOptions(extra) {
-  return {
+  const base = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "bottom" }
+    animation: {
+      duration: 900,
+      easing: "easeOutQuart"
     },
-    ...extra
+    interaction: {
+      mode: "index",
+      intersect: false
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          color: "#24466d",
+          boxWidth: 16,
+          boxHeight: 10,
+          usePointStyle: true,
+          pointStyle: "roundedRect",
+          font: { size: 12, weight: "600" }
+        }
+      },
+      tooltip: {
+        backgroundColor: "rgba(20,44,74,0.96)",
+        titleColor: "#ffffff",
+        bodyColor: "#e6f1ff",
+        padding: 10
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: "#3c5f86", font: { size: 11 } },
+        grid: { color: "rgba(26,57,92,0.08)" }
+      },
+      y: {
+        ticks: { color: "#3c5f86", font: { size: 11 } },
+        grid: { color: "rgba(26,57,92,0.08)" }
+      }
+    }
   };
+  return deepMerge(base, extra || {});
+}
+
+function deepMerge(base, override) {
+  const output = { ...base };
+  Object.keys(override || {}).forEach((key) => {
+    const ov = override[key];
+    const bv = output[key];
+    if (ov && typeof ov === "object" && !Array.isArray(ov) && bv && typeof bv === "object" && !Array.isArray(bv)) {
+      output[key] = deepMerge(bv, ov);
+    } else {
+      output[key] = ov;
+    }
+  });
+  return output;
 }
 
 function destroyAllCharts() {
@@ -598,6 +773,11 @@ function destroyAllCharts() {
   });
   state.charts = {};
 }
+
+
+
+
+
 
 
 

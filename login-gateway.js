@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz4Ztsb_gtS6c_dJkbpiVHicUaLi7AsJDq17tEp7A_PuAxApvGMOLaxcHHiVsJFnRs/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
@@ -21,13 +21,13 @@ window.addEventListener("DOMContentLoaded", () => {
 async function handleLogin(userIdInput, loginStatus) {
   const userId = String(userIdInput.value || "").trim();
   if (!userId) {
-    setStatus(loginStatus, "กรุณากรอกรหัสผู้ใช้งาน");
-    await showMessage("warning", "กรุณากรอกรหัสผู้ใช้งาน", "โปรดระบุรหัสก่อนเข้าสู่ระบบ");
+    setStatus(loginStatus, "??????????????????????");
+    await showMessage("warning", "??????????????????????", "???????????????????????????");
     return;
   }
 
   showLoading();
-  setStatus(loginStatus, "กำลังตรวจสอบสิทธิ์...");
+  setStatus(loginStatus, "??????????????????...");
 
   try {
     const [adminResult, guardResult] = await Promise.allSettled([
@@ -43,7 +43,7 @@ async function handleLogin(userIdInput, loginStatus) {
         name: adminResult.value.name || "",
         email: adminResult.value.email || ""
       }));
-      setStatus(loginStatus, "เข้าสู่ระบบ Admin สำเร็จ");
+      setStatus(loginStatus, "??????????? Admin ??????");
       window.location.href = `admin.html?supervisorId=${encodeURIComponent(userId)}`;
       return;
     }
@@ -53,7 +53,7 @@ async function handleLogin(userIdInput, loginStatus) {
         guardId: guardResult.value.guard_id || userId,
         activeShiftId: ""
       }));
-      setStatus(loginStatus, "เข้าสู่ระบบ รปภ สำเร็จ");
+      setStatus(loginStatus, "??????????? ??? ??????");
       window.location.href = `Guard.html?guardId=${encodeURIComponent(userId)}`;
       return;
     }
@@ -62,8 +62,8 @@ async function handleLogin(userIdInput, loginStatus) {
     throw new Error(errorMessage);
   } catch (err) {
     if (window.Swal) Swal.close();
-    setStatus(loginStatus, `เข้าสู่ระบบไม่สำเร็จ: ${err.message}`);
-    await showMessage("error", "เข้าสู่ระบบไม่สำเร็จ", err.message || "ไม่พบรหัสผู้ใช้งานในระบบ");
+    setStatus(loginStatus, `????????????????????: ${err.message}`);
+    await showMessage("error", "????????????????????", err.message || "????????????????????????");
   }
 }
 
@@ -96,7 +96,7 @@ function extractErrorMessage(adminResult, guardResult) {
   if (adminMessage && !/Guard not found or inactive/i.test(adminMessage)) {
     return adminMessage;
   }
-  return "ไม่พบรหัสผู้ใช้งานในระบบ";
+  return "????????????????????????";
 }
 
 function clearStoredSessions() {
@@ -111,8 +111,8 @@ function setStatus(node, message) {
 function showLoading() {
   if (!window.Swal) return;
   Swal.fire({
-    title: "กำลังเข้าสู่ระบบ",
-    text: "โปรดรอสักครู่",
+    title: "????????????????",
+    text: "?????????????",
     allowOutsideClick: false,
     allowEscapeKey: false,
     didOpen: () => Swal.showLoading()
@@ -125,6 +125,6 @@ async function showMessage(icon, title, text) {
     icon,
     title,
     text,
-    confirmButtonText: "ตกลง"
+    confirmButtonText: "????"
   });
 }

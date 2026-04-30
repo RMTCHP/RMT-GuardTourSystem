@@ -64,6 +64,9 @@ function doPost(e) {
     else if (action === 'listTemplateCheckpoints') result = listTemplateCheckpoints(body.templateId);
     else if (action === 'replaceTemplateCheckpoints') result = replaceTemplateCheckpoints(body.templateId, body.items || []);
     else if (action === 'generateShiftsFromTemplates') result = generateShiftsFromTemplates(body.date, body.supervisorId);
+    else if (action === 'sendShiftPdfReportDay') result = sendShiftPdfReportDay(body.date);
+    else if (action === 'sendShiftPdfReportNight') result = sendShiftPdfReportNight(body.date);
+    else if (action === 'setupShiftPdfReportTriggers') result = setupShiftPdfReportTriggers();
     else if (action === 'testDriveWrite') result = testDriveWrite();
 
     else throw new Error('Unknown action');
@@ -1312,6 +1315,497 @@ function sendDailySummaryEmail() {
       });
     }
   });
+}
+
+/***** SHIFT PDF REPORT (08:00 NIGHT / 17:00 DAY) *****/
+function setupShiftPdfReportTriggers() {
+  const handlers = ['sendShiftPdfReportNightAuto', 'sendShiftPdfReportDayAuto'];
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(t => {
+    const fn = t.getHandlerFunction();
+    if (handlers.indexOf(fn) >= 0) ScriptApp.deleteTrigger(t);
+  });
+
+  ScriptApp.newTrigger('sendShiftPdfReportNightAuto')
+    .timeBased()
+    .everyDays(1)
+    .atHour(8)
+    .create();
+
+  ScriptApp.newTrigger('sendShiftPdfReportDayAuto')
+    .timeBased()
+    .everyDays(1)
+    .atHour(17)
+    .create();
+
+  return { ok: true, message: 'Created triggers at 08:00 and 17:00' };
+}
+
+function sendShiftPdfReportNightAuto() {
+  return sendShiftPdfReportNight(fmtDateOnly(new Date()));
+}
+
+function sendShiftPdfReportDayAuto() {
+  return sendShiftPdfReportDay(fmtDateOnly(new Date()));
+}
+
+function sendShiftPdfReportDay(dateStr) {
+  const targetDate = toDateKey(dateStr || fmtDateOnly(new Date()));
+  return sendShiftPdfReportsByType_('DAY', targetDate);
+}
+
+function sendShiftPdfReportNight(dateStr) {
+  // 08:00 should summarize previous night shift.
+  const anchor = parseDateOnly(dateStr || fmtDateOnly(new Date()));
+  const targetDate = fmtDateOnly(addDays(anchor, -1));
+  return sendShiftPdfReportsByType_('NIGHT', targetDate);
+}
+
+function sendShiftPdfReportsByType_(shiftType, targetDate) {
+  const allShifts = getRows(SHEET.SHIFTS).filter(s =>
+    toDateKey(s.date) === String(targetDate) &&
+    detectShiftTypeByRow_(s) === shiftType
+  );
+
+  const supervisors = getRows(SHEET.SUPERVISORS).filter(s =>
+    String(s.status || '').toLowerCase() !== 'inactive' && String(s.email || '').trim()
+  );
+  const guards = getRows(SHEET.GUARDS);
+  const guardMap = toMap(guards, 'guard_id');
+  const guardBySupervisor = {};
+  guards.forEach(g => {
+    const sid = String(g.supervisor_id || '').trim();
+    const gid = String(g.guard_id || '').trim();
+    if (!sid || !gid) return;
+    if (!guardBySupervisor[sid]) guardBySupervisor[sid] = {};
+    guardBySupervisor[sid][gid] = true;
+  });
+
+  const checkpointMap = toMap(getRows(SHEET.CHECKPOINTS), 'checkpoint_id');
+  const shiftCheckpointRows = getRows(SHEET.SHIFT_CHECKPOINTS);
+  const checkLogs = getRows(SHEET.CHECKLOGS);
+  const incidents = getRows(SHEET.INCIDENTS);
+
+  const out = { shift_type: shiftType, target_date: targetDate, sent: 0, failed: 0, skipped: 0, items: [] };
+
+  supervisors.forEach(sup => {
+    const sid = String(sup.supervisor_id || '').trim();
+    const allowed = guardBySupervisor[sid] || {};
+    const allowedKeys = Object.keys(allowed);
+
+    let shifts = allShifts.filter(s => allowed[String(s.guard_id || '')]);
+    if (!shifts.length && !allowedKeys.length) {
+      // Fallback for environments not mapping guard->supervisor.
+      shifts = allShifts.slice();
+    }
+
+    const shiftIds = {};
+    shifts.forEach(s => { shiftIds[String(s.shift_id || '')] = true; });
+
+    const routeRows = shiftCheckpointRows.filter(r => shiftIds[String(r.shift_id || '')]);
+    const logsRows = checkLogs.filter(r => shiftIds[String(r.shift_id || '')]);
+    const incRows = incidents.filter(r => shiftIds[String(r.shift_id || '')]);
+
+    const summaryRows = buildShiftSummaryRowsForPdf_(shifts, routeRows, logsRows, incRows, guardMap);
+    const kpi = buildShiftKpiForPdf_(summaryRows);
+    const photoUrls = pickReportPhotoUrls_(incRows, logsRows);
+
+    try {
+      const payload = {
+        supervisor: sup,
+        shiftType: shiftType,
+        targetDate: targetDate,
+        generatedAt: fmtDateTime(new Date()),
+        kpi: kpi,
+        summaryRows: summaryRows,
+        incidentRows: buildIncidentRowsForPdf_(incRows, shiftIds, shifts, guardMap, checkpointMap),
+        topCheckpoints: buildTopCheckpointIssuesForPdf_(summaryRows, routeRows, logsRows, checkpointMap),
+        photoUrls: photoUrls
+      };
+
+      const pdfBlob = buildShiftReportPdfBlob_(payload);
+      MailApp.sendEmail({
+        to: String(sup.email).trim(),
+        subject: buildShiftReportSubject_(payload),
+        htmlBody: buildShiftReportMailBody_(payload),
+        attachments: [pdfBlob]
+      });
+
+      out.sent += 1;
+      out.items.push({ supervisor_id: sid, email: sup.email, status: 'SENT', shifts: shifts.length });
+      appendShiftReportLog_(sup.email, shiftType, targetDate, kpi, 'SENT', '');
+    } catch (err) {
+      out.failed += 1;
+      out.items.push({ supervisor_id: sid, email: sup.email, status: 'FAILED', error: String(err.message || err) });
+      appendShiftReportLog_(sup.email, shiftType, targetDate, kpi, 'FAILED', String(err.message || err));
+    }
+  });
+
+  return out;
+}
+
+function detectShiftTypeByRow_(shiftRow) {
+  const start = normalizeTimeValue(shiftRow.start_time || '');
+  const end = normalizeTimeValue(shiftRow.end_time || '');
+  const hhStart = Number(String(start || '00:00:00').slice(0, 2));
+  const hhEnd = Number(String(end || '00:00:00').slice(0, 2));
+  const overnight = start && end && start >= end;
+  if (overnight) return 'NIGHT';
+  if (!isNaN(hhStart) && !isNaN(hhEnd) && (hhStart >= 18 || hhEnd <= 8)) return 'NIGHT';
+  return detectShiftType(shiftRow.shift_name || '');
+}
+
+function buildShiftSummaryRowsForPdf_(shifts, routeRows, logsRows, incRows, guardMap) {
+  const routeByShift = {};
+  routeRows.forEach(r => {
+    const sid = String(r.shift_id || '');
+    if (!routeByShift[sid]) routeByShift[sid] = [];
+    routeByShift[sid].push(r);
+  });
+
+  const logsByShift = {};
+  logsRows.forEach(l => {
+    const sid = String(l.shift_id || '');
+    if (!logsByShift[sid]) logsByShift[sid] = [];
+    logsByShift[sid].push(l);
+  });
+
+  const incByShift = {};
+  incRows.forEach(i => {
+    const sid = String(i.shift_id || '');
+    if (!incByShift[sid]) incByShift[sid] = [];
+    incByShift[sid].push(i);
+  });
+
+  return shifts.map(shift => {
+    const sid = String(shift.shift_id || '');
+    const route = routeByShift[sid] || [];
+    const logs = logsByShift[sid] || [];
+    const inc = incByShift[sid] || [];
+
+    const total = route.length;
+    const checked = logs.filter(x => {
+      const s = String(x.status || '').toUpperCase();
+      return s === 'ONTIME' || s === 'LATE';
+    }).length;
+    const late = logs.filter(x => String(x.status || '').toUpperCase() === 'LATE').length;
+    const invalid = logs.filter(x => String(x.status || '').toUpperCase().indexOf('INVALID') === 0).length;
+    const missed = Math.max(0, total - checked);
+    const ontime = Math.max(0, checked - late);
+    const compliance = total > 0 ? Math.round((checked / total) * 10000) / 100 : 0;
+    const gid = String(shift.guard_id || '');
+    const gname = guardMap[gid] ? guardMap[gid].name : '';
+
+    return {
+      shift_id: sid,
+      shift_name: shift.shift_name || sid,
+      guard_id: gid,
+      guard_name: gname,
+      rounds_required: Number(shift.rounds_required || 0),
+      total_points: total,
+      checked_points: checked,
+      ontime_points: ontime,
+      late_points: late,
+      missed_points: missed,
+      invalid_points: invalid,
+      incidents_count: inc.length,
+      compliance_pct: compliance,
+      start_time: normalizeTimeValue(shift.start_time || ''),
+      end_time: normalizeTimeValue(shift.end_time || '')
+    };
+  });
+}
+
+function buildShiftKpiForPdf_(summaryRows) {
+  const guards = {};
+  summaryRows.forEach(r => { guards[String(r.guard_id || '')] = true; });
+  const totalPoints = sum(summaryRows, 'total_points');
+  const checkedPoints = sum(summaryRows, 'checked_points');
+  const latePoints = sum(summaryRows, 'late_points');
+  const missedPoints = sum(summaryRows, 'missed_points');
+  const invalidPoints = sum(summaryRows, 'invalid_points');
+  const incidentsCount = sum(summaryRows, 'incidents_count');
+  const compliance = totalPoints > 0 ? Math.round((checkedPoints / totalPoints) * 10000) / 100 : 0;
+  return {
+    guard_count: Object.keys(guards).filter(x => x).length,
+    shift_count: summaryRows.length,
+    total_points: totalPoints,
+    checked_points: checkedPoints,
+    late_points: latePoints,
+    missed_points: missedPoints,
+    invalid_points: invalidPoints,
+    incidents_count: incidentsCount,
+    compliance_pct: compliance
+  };
+}
+
+function buildIncidentRowsForPdf_(incRows, shiftIds, shifts, guardMap, checkpointMap) {
+  const shiftsById = toMap(shifts, 'shift_id');
+  return incRows
+    .filter(i => shiftIds[String(i.shift_id || '')])
+    .sort((a, b) => toDateTimeMillis(b.incident_time) - toDateTimeMillis(a.incident_time))
+    .map(i => {
+      const shift = shiftsById[String(i.shift_id || '')];
+      const gid = String(i.guard_id || '');
+      const checkpointName = checkpointMap[String(i.type || '')]
+        ? checkpointMap[String(i.type || '')].checkpoint_name
+        : '';
+      return {
+        incident_time: normalizeDateTimeValue(i.incident_time || ''),
+        guard: [gid, guardMap[gid] ? guardMap[gid].name : ''].filter(Boolean).join(' - '),
+        shift_name: shift ? shift.shift_name : String(i.shift_id || ''),
+        checkpoint_name: checkpointName,
+        type: String(i.type || ''),
+        detail: String(i.detail || ''),
+        photo_url: String(i.photo_url || '')
+      };
+    });
+}
+
+function buildTopCheckpointIssuesForPdf_(summaryRows, routeRows, logsRows, checkpointMap) {
+  const expected = {};
+  routeRows.forEach(r => {
+    const cp = String(r.checkpoint_id || '');
+    if (!cp) return;
+    expected[cp] = Number(expected[cp] || 0) + 1;
+  });
+  const checked = {};
+  const invalid = {};
+  logsRows.forEach(l => {
+    const cp = String(l.checkpoint_id || '');
+    if (!cp) return;
+    const st = String(l.status || '').toUpperCase();
+    if (st === 'ONTIME' || st === 'LATE') checked[cp] = Number(checked[cp] || 0) + 1;
+    if (st.indexOf('INVALID') === 0) invalid[cp] = Number(invalid[cp] || 0) + 1;
+  });
+
+  return Object.keys(expected).map(cp => {
+    const missed = Math.max(0, Number(expected[cp] || 0) - Number(checked[cp] || 0));
+    const inv = Number(invalid[cp] || 0);
+    return {
+      checkpoint_id: cp,
+      checkpoint_name: checkpointMap[cp] ? checkpointMap[cp].checkpoint_name : '',
+      missed: missed,
+      invalid: inv,
+      total_issues: missed + inv
+    };
+  })
+  .filter(x => x.total_issues > 0)
+  .sort((a, b) => b.total_issues - a.total_issues)
+  .slice(0, 5);
+}
+
+function pickReportPhotoUrls_(incRows, logsRows) {
+  const out = [];
+  incRows.forEach(i => {
+    const u = String(i.photo_url || '').trim();
+    if (u) out.push(u);
+  });
+  logsRows.forEach(l => {
+    const u = String(l.photo_url || '').trim();
+    if (u) out.push(u);
+  });
+  const uniq = {};
+  return out.filter(u => {
+    if (uniq[u]) return false;
+    uniq[u] = true;
+    return true;
+  }).slice(0, 4);
+}
+
+function buildShiftReportPdfBlob_(payload) {
+  const title = `GuardTour_${payload.shiftType}_${payload.targetDate}_${payload.supervisor.supervisor_id}`;
+  const html = buildShiftReportHtml_(payload);
+  return Utilities.newBlob(html, 'text/html', `${title}.html`).getAs(MimeType.PDF).setName(`${title}.pdf`);
+}
+
+function buildShiftReportHtml_(payload) {
+  const k = payload.kpi || {};
+  const noData = !payload.summaryRows || !payload.summaryRows.length;
+  const summaryRows = payload.summaryRows || [];
+  const inc = payload.incidentRows || [];
+  const top = payload.topCheckpoints || [];
+  const photos = payload.photoUrls || [];
+
+  const photoBlocks = photos.map(u => {
+    const dataUrl = getPhotoDataUrlForPdf_(u);
+    if (dataUrl) {
+      return `<div class="photo"><img src="${dataUrl}" /><div class="cap">${escapeHtml_(u)}</div></div>`;
+    }
+    return `<div class="photo"><div class="cap"><a href="${escapeHtml_(u)}">${escapeHtml_(u)}</a></div></div>`;
+  }).join('');
+
+  return `<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><style>
+@page { size: A4; margin: 14mm; }
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;color:#172b4d;background:#fff;font-size:12px}
+.head{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;border-bottom:2px solid #dbe5f1;padding-bottom:10px;margin-bottom:12px}
+.brand{font-size:11px;color:#4f6481;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+h1{margin:4px 0 6px;font-size:24px;line-height:1.2;color:#0f2f55}
+.meta{font-size:12px;color:#415a77;line-height:1.5}
+.badge{background:#103963;color:#fff;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700}
+.warn{margin-top:8px;color:#b42318;font-weight:700}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.kpi{border:1px solid #d9e2ef;background:#f9fcff;border-radius:10px;padding:8px}
+.kpi .label{font-size:10px;color:#5f748f;font-weight:700}
+.kpi .val{font-size:20px;color:#103963;font-weight:800;margin-top:2px}
+.kpi .sub{font-size:10px;color:#7a8ea8}
+h2{margin:10px 0 6px;font-size:14px;color:#123860;border-left:4px solid #1b9aaa;padding-left:8px}
+table{width:100%;border-collapse:collapse;margin:8px 0 12px;font-size:11px}
+th,td{border:1px solid #d8e1ee;padding:6px;vertical-align:top}
+th{background:#eef4fb;color:#24466d;text-align:left;font-weight:700}
+.num{text-align:right}
+.photo{margin:8px 0}.photo img{max-width:280px;max-height:220px;border:1px solid #d3deea}.cap{font-size:10px;color:#567}
+.foot{margin-top:10px;border-top:1px dashed #c8d4e6;padding-top:8px;font-size:10px;color:#5e7390}
+</style></head><body>
+<header class="head">
+  <div>
+    <div class="brand">Guard Tour System</div>
+    <h1>รายงานสรุปผลตรวจรอบประจำกะ</h1>
+    <div class="meta">
+      Supervisor: <b>${escapeHtml_(payload.supervisor.supervisor_id)} - ${escapeHtml_(payload.supervisor.name || '-')}</b><br>
+      ช่วงเวลา: <b>${escapeHtml_(payload.shiftType)}</b> (${escapeHtml_(payload.targetDate)})<br>
+      วันที่ออกรายงาน: ${escapeHtml_(payload.generatedAt)}
+    </div>
+    ${noData ? '<div class="warn">ไม่พบข้อมูลการตรวจในกะนี้</div>' : ''}
+  </div>
+  <div class="badge">AUTO REPORT</div>
+</header>
+
+<section class="kpi-grid">
+  <div class="kpi"><div class="label">รปภ ที่ปฏิบัติงาน</div><div class="val">${Number(k.guard_count || 0)}</div><div class="sub">ตามข้อมูลกะ</div></div>
+  <div class="kpi"><div class="label">จุดตรวจทั้งหมด</div><div class="val">${Number(k.total_points || 0)}</div><div class="sub">ตามรอบที่กำหนด</div></div>
+  <div class="kpi"><div class="label">ตรวจสำเร็จ</div><div class="val">${Number(k.checked_points || 0)}</div><div class="sub">ONTIME + LATE</div></div>
+  <div class="kpi"><div class="label">Compliance</div><div class="val">${Number(k.compliance_pct || 0).toFixed(2)}%</div><div class="sub">เฉลี่ยทั้งกะ</div></div>
+  <div class="kpi"><div class="label">ตรวจช้า</div><div class="val">${Number(k.late_points || 0)}</div><div class="sub">LATE</div></div>
+  <div class="kpi"><div class="label">ตกหล่น</div><div class="val">${Number(k.missed_points || 0)}</div><div class="sub">MISSED</div></div>
+  <div class="kpi"><div class="label">ผิดจุด/พิกัด</div><div class="val">${Number(k.invalid_points || 0)}</div><div class="sub">INVALID</div></div>
+  <div class="kpi"><div class="label">เหตุผิดปกติ</div><div class="val">${Number(k.incidents_count || 0)}</div><div class="sub">Incidents</div></div>
+</section>
+
+<h2>1) สรุปผลราย รปภ</h2>
+<table><thead><tr><th>Guard</th><th>Shift</th><th class="num">Rounds</th><th class="num">Total</th><th class="num">Checked</th><th class="num">Late</th><th class="num">Missed</th><th class="num">Invalid</th><th class="num">Compliance</th><th>Status</th></tr></thead><tbody>
+${summaryRows.map(r => {
+  const status = Number(r.missed_points || 0) > 0 || Number(r.invalid_points || 0) > 0 ? 'FOLLOW_UP' : 'PASS';
+  return `<tr>
+    <td>${escapeHtml_([r.guard_id, r.guard_name].filter(Boolean).join(' - '))}</td>
+    <td>${escapeHtml_(r.shift_name || '')}</td>
+    <td class="num">${Number(r.rounds_required || 0)}</td>
+    <td class="num">${Number(r.total_points || 0)}</td>
+    <td class="num">${Number(r.checked_points || 0)}</td>
+    <td class="num">${Number(r.late_points || 0)}</td>
+    <td class="num">${Number(r.missed_points || 0)}</td>
+    <td class="num">${Number(r.invalid_points || 0)}</td>
+    <td class="num">${Number(r.compliance_pct || 0).toFixed(2)}%</td>
+    <td>${status}</td>
+  </tr>`;
+}).join('')}
+</tbody></table>
+
+<h2>2) รายการเหตุผิดปกติ</h2>
+${!inc.length ? '<div>ไม่พบเหตุผิดปกติ</div>' : `<table><thead><tr><th>Time</th><th>Guard</th><th>Shift</th><th>Type</th><th>Detail</th><th>Photo URL</th></tr></thead><tbody>
+${inc.map(r => `<tr>
+  <td>${escapeHtml_(r.incident_time || '')}</td>
+  <td>${escapeHtml_(r.guard || '')}</td>
+  <td>${escapeHtml_(r.shift_name || '')}</td>
+  <td>${escapeHtml_(r.type || '')}</td>
+  <td>${escapeHtml_(r.detail || '')}</td>
+  <td>${escapeHtml_(r.photo_url || '')}</td>
+</tr>`).join('')}
+</tbody></table>`}
+
+${top.length ? `<h2>3) จุดตรวจที่ต้องติดตาม</h2><table><thead><tr><th>Checkpoint</th><th class="num">Missed</th><th class="num">Invalid</th><th class="num">Issues</th></tr></thead><tbody>
+${top.map(x => `<tr><td>${escapeHtml_([x.checkpoint_id, x.checkpoint_name].filter(Boolean).join(' - '))}</td><td class="num">${Number(x.missed || 0)}</td><td class="num">${Number(x.invalid || 0)}</td><td class="num">${Number(x.total_issues || 0)}</td></tr>`).join('')}
+</tbody></table>` : ''}
+
+${photoBlocks ? `<h2>4) ภาพประกอบ</h2>${photoBlocks}` : ''}
+<div class="foot">Auto-generated by Guard Tour System</div>
+</body></html>`;
+}
+
+function getPhotoDataUrlForPdf_(url) {
+  const blob = getPhotoBlobForPdf_(url);
+  if (!blob) return '';
+  const base64 = Utilities.base64Encode(blob.getBytes());
+  const mime = blob.getContentType() || 'image/jpeg';
+  return `data:${mime};base64,${base64}`;
+}
+
+function getPhotoBlobForPdf_(url) {
+  const u = String(url || '').trim();
+  if (!u) return null;
+
+  const driveId = extractDriveFileIdFromUrl_(u);
+  if (driveId) {
+    try {
+      return DriveApp.getFileById(driveId).getBlob();
+    } catch (err) {}
+  }
+
+  try {
+    return UrlFetchApp.fetch(u, { muteHttpExceptions: true }).getBlob();
+  } catch (err) {
+    return null;
+  }
+}
+
+function extractDriveFileIdFromUrl_(url) {
+  const m1 = String(url).match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m1 && m1[1]) return m1[1];
+  const m2 = String(url).match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2 && m2[1]) return m2[1];
+  return '';
+}
+
+function buildShiftReportSubject_(payload) {
+  const label = payload.shiftType === 'NIGHT' ? 'Night Shift' : 'Day Shift';
+  return `[Guard Tour] ${label} Summary (${payload.targetDate})`;
+}
+
+function buildShiftReportMailBody_(payload) {
+  const k = payload.kpi || {};
+  const noDataNote = (!payload.summaryRows || !payload.summaryRows.length)
+    ? '<p><b>สถานะ:</b> ไม่พบข้อมูลการตรวจในกะนี้ (ระบบยังส่งรายงานตามรอบเวลา)</p>'
+    : '';
+  return `
+    <h3>Guard Tour Shift Summary</h3>
+    <p>Supervisor: <b>${escapeHtml_(payload.supervisor.name || payload.supervisor.supervisor_id)}</b></p>
+    <p>Shift: <b>${escapeHtml_(payload.shiftType)}</b> | Date: <b>${escapeHtml_(payload.targetDate)}</b></p>
+    ${noDataNote}
+    <ul>
+      <li>Total points: <b>${Number(k.total_points || 0)}</b></li>
+      <li>Checked: <b>${Number(k.checked_points || 0)}</b></li>
+      <li>Missed: <b>${Number(k.missed_points || 0)}</b></li>
+      <li>Invalid: <b>${Number(k.invalid_points || 0)}</b></li>
+      <li>Compliance: <b>${Number(k.compliance_pct || 0).toFixed(2)}%</b></li>
+      <li>Incidents: <b>${Number(k.incidents_count || 0)}</b></li>
+    </ul>
+    <p>See attached PDF report for full detail.</p>
+  `;
+}
+
+function appendShiftReportLog_(email, shiftType, targetDate, kpi, status, errorMessage) {
+  appendRow(SHEET.DAILY_EMAIL_LOG, {
+    log_date: targetDate,
+    send_time: fmtDateTime(new Date()),
+    recipient_email: email,
+    total_shifts: Number(kpi.shift_count || 0),
+    total_missed: Number(kpi.missed_points || 0),
+    total_late: Number(kpi.late_points || 0),
+    total_incidents: Number(kpi.incidents_count || 0),
+    status: status,
+    error_message: [shiftType, errorMessage].filter(Boolean).join(' | ')
+  });
+}
+
+function escapeHtml_(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /***** HELPERS *****/

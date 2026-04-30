@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -100,13 +100,6 @@
             </div>
             <div class="kpi-card">
               <div class="kpi-head">
-                <span class="kpi-icon material-symbols-outlined">schedule</span>
-                <span class="kpi-label">Late Points</span>
-              </div>
-              <strong id="kpiLate">0</strong>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-head">
                 <span class="kpi-icon material-symbols-outlined">error</span>
                 <span class="kpi-label">Missed Points</span>
               </div>
@@ -119,47 +112,31 @@
               </div>
               <strong id="kpiIncidents">0</strong>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-head">
-                <span class="kpi-icon material-symbols-outlined">monitoring</span>
-                <span class="kpi-label">Avg Compliance</span>
-              </div>
-              <strong id="kpiCompliance">0%</strong>
-            </div>
-          </div>
-
-          <div class="chart-toolbar">
-            <label for="chartRangeDays">Chart Range</label>
-            <select id="chartRangeDays">
-              <option value="7">Last 7 days</option>
-              <option value="14">Last 14 days</option>
-              <option value="30" selected>Last 30 days</option>
-            </select>
           </div>
 
           <div class="chart-grid">
             <section class="panel-box chart-box">
-              <h3>Compliance Trend</h3>
+              <h3>สถานะการตรวจวันนี้</h3>
               <canvas id="chartCompliance"></canvas>
             </section>
             <section class="panel-box chart-box">
-              <h3>Checked / Missed / Invalid</h3>
+              <h3>ผลงานราย รปภ (วันนี้)</h3>
               <canvas id="chartOperations"></canvas>
             </section>
-            <section class="panel-box chart-box">
-              <h3>Day / Night Performance</h3>
+            <section class="panel-box chart-box chart-box-wide">
+              <h3>กิจกรรมรายชั่วโมง (วันนี้)</h3>
               <canvas id="chartShiftType"></canvas>
             </section>
           </div>
 
           <div class="panel-grid">
             <section class="panel-box">
-              <h3>Shift Summary</h3>
+              <h3>สรุปผลกะงาน</h3>
               <div id="summaryList" class="list"></div>
             </section>
 
             <section class="panel-box">
-              <h3>Incidents</h3>
+              <h3>เหตุผิดปกติ</h3>
               <div id="incidentList" class="list"></div>
             </section>
           </div>
@@ -331,3 +308,5 @@
   </div>
 </body>
 </html>
+
+

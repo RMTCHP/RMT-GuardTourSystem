@@ -44,11 +44,8 @@ function bindElements() {
     "loadBtn",
     "kpiShifts",
     "kpiChecked",
-    "kpiLate",
     "kpiMissed",
     "kpiIncidents",
-    "kpiCompliance",
-    "chartRangeDays",
     "chartCompliance",
     "chartOperations",
     "chartShiftType",
@@ -76,7 +73,6 @@ function bindEvents() {
   el.liveDate.addEventListener("change", () => loadLiveLogs(true));
   el.liveGuardFilter.addEventListener("change", () => loadLiveLogs(true));
   el.liveStatusFilter.addEventListener("change", () => loadLiveLogs(true));
-  el.chartRangeDays.addEventListener("change", () => loadDashboard(false, false));
   el.topLogoutBtn.addEventListener("click", logout);
   el.topUserBtn.addEventListener("click", (event) => {
     event.stopPropagation();

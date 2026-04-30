@@ -321,7 +321,11 @@ body {
   display: flex;
   align-items: end;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: #f7fbff;
+  border: 1px solid #d8e5f3;
+  border-radius: 12px;
 }
 
 .shiftplan-toolbar {
@@ -408,16 +412,17 @@ select {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(150px, 1fr));
-  gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .kpi-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 14px rgba(31, 59, 96, 0.08);
 }
 
 .kpi-head {
@@ -430,14 +435,13 @@ select {
 .kpi-icon {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   color: #0f4a7c;
-  background: #e7f2ff;
-  border: 1px solid #c7d9ee;
+  background: transparent;
+  border: none;
 }
 
 .kpi-label {
@@ -448,14 +452,22 @@ select {
 }
 
 .kpi-card strong {
-  font-size: 1.24rem;
+  font-size: 1.5rem;
   color: #123860;
 }
 
 .panel-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
+}
+
+#panel-overview .panel-grid {
+  grid-template-columns: 1fr !important;
+}
+
+#panel-overview .panel-grid > .panel-box {
+  width: 100%;
 }
 
 .chart-toolbar {
@@ -471,18 +483,20 @@ select {
 
 .chart-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 10px;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(460px, 1.1fr);
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .chart-box {
-  min-height: 270px;
+  min-height: 300px;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(29, 52, 82, 0.08);
 }
 
 .chart-box canvas {
   width: 100% !important;
-  height: 210px !important;
+  height: 240px !important;
 }
 
 .chart-box-wide {
@@ -490,18 +504,21 @@ select {
 }
 
 .chart-box-wide canvas {
-  height: 260px !important;
+  height: 280px !important;
 }
 
 .panel-box {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 18px rgba(30, 53, 85, 0.06);
 }
 
 .panel-box h3 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  letter-spacing: 0.2px;
 }
 
 .list {
