@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbxtsnZc-dktCAdYEsMgsnldQ85v2SSWXy4XY4dhPKN4ckgo2wskfd6GlLDWCKHyTEQ/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -16,10 +16,12 @@ const state = {
   selectedPlanKey: "",
   scannedQr: "",
   gps: null,
+  checkinPassed: false,
   checkpointPhoto: "",
   incidentPhoto: "",
   incidentMode: "NONE",
   checkpointQrMap: {},
+  checkpointMetaMap: {},
   doneCheckpointCounter: {},
   scanner: null,
   queue: [],
@@ -43,7 +45,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   refreshQueueBanner();
 
   if (!navigator.onLine) {
-    console.warn("อุ�›กร�“�Œออ�Ÿ�„ล�™�Œ: �šั�™�—ึก�„ิว�„ว�‰ก�ˆอ�™ แล�‰ว�‹ิ�‡ก�Œภายหลั�‡�„�”�‰");
+    console.warn("à¸­à¸¸ï¿½â€ºà¸à¸£ï¿½â€œï¿½Å’à¸­à¸­ï¿½Å¸ï¿½â€žà¸¥ï¿½â„¢ï¿½Å’: ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸ï¿½â€žà¸´à¸§ï¿½â€žà¸§ï¿½â€°à¸ï¿½Ë†à¸­ï¿½â„¢ à¹à¸¥ï¿½â€°à¸§ï¿½â€¹à¸´ï¿½â€¡à¸ï¿½Å’à¸ à¸²à¸¢à¸«à¸¥à¸±ï¿½â€¡ï¿½â€žï¿½â€ï¿½â€°");
   }
 
   const guardIdFromUrl = readQueryParam("guardId");
@@ -65,14 +67,15 @@ function bindElements() {
     "logoutBtn", "shiftList", "tourTitle",
     "dbShiftTotal", "dbRoundProgress", "dbCheckedTotal", "dbIncidentTotal", "dashboardList", "syncNowBtn",
     "statTotal", "statDone", "qrReader", "manualQr",
-    "actionQrCard", "actionGpsCard", "actionIncidentCard", "qrStepStatus",
-    "gpsBtn", "gpsText", "photoInput", "photoPreview",
+    "actionQrCard", "actionGpsCard", "actionIncidentCard",
+    "gpsBtn", "gpsText",
     "checkpointRemark", "submitCheckpointBtn", "checkpointStatus",
     "currentPointText", "checkinActionPanel", "checkpointListPanel", "backToCheckpointListBtn", "quickActionCards",
     "detailGpsPhoto", "detailSubmit", "detailIncident",
-    "gpsStepStatus", "submitStepStatus", "incidentStepStatus",
+    "submitStepStatus",
     "roundTabs", "checkpointList", "incidentDetail",
     "incidentChoiceNone", "incidentChoiceHas", "incidentExtraFields",
+    "incidentPhotoBtn", "incidentPhotoInput", "incidentPhotoPreview",
     "submitIncidentBtn",
     "incidentStatus",
     "bottomNav", "navTour", "navDashboard"
@@ -98,11 +101,17 @@ function bindEvents() {
 
   el.gpsBtn.addEventListener("click", loadGps);
   if (el.actionQrCard) el.actionQrCard.addEventListener("click", openQrScanCard);
-  if (el.actionGpsCard) el.actionGpsCard.addEventListener("click", onCapturePhotoCard);
+  if (el.actionGpsCard) el.actionGpsCard.addEventListener("click", onCheckinCard);
   if (el.actionIncidentCard) el.actionIncidentCard.addEventListener("click", () => openActionDetail("incident"));
   if (el.incidentChoiceNone) el.incidentChoiceNone.addEventListener("click", () => setIncidentMode("NONE"));
   if (el.incidentChoiceHas) el.incidentChoiceHas.addEventListener("click", () => setIncidentMode("HAS"));
   el.submitIncidentBtn.addEventListener("click", onSubmitIncident);
+  if (el.incidentPhotoBtn && el.incidentPhotoInput) {
+    el.incidentPhotoBtn.addEventListener("click", () => {
+      el.incidentPhotoInput.value = "";
+      el.incidentPhotoInput.click();
+    });
+  }
   if (el.backToCheckpointListBtn) {
     el.backToCheckpointListBtn.addEventListener("click", () => {
       const inStepDetail = (el.detailIncident && !el.detailIncident.classList.contains("hidden"))
@@ -125,34 +134,20 @@ function bindEvents() {
     refreshQueueBanner();
   });
 
-  el.photoInput.addEventListener("change", async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    if (!state.gps) {
-      try {
-        setText(el.gpsText, "กำลั�‡�‚หล�”�•ำแห�™�ˆ�‡...");
-        await captureGps();
-        setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
-      } catch (err) {
-        setText(el.gpsText, `�‚หล�” GPS �„ม�ˆสำ�€ร�‡�ˆ: ${err.message}`);
-      }
-    }
-    state.checkpointPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
-      timestamp: new Date(),
-      lat: state.gps ? state.gps.lat : null,
-      lng: state.gps ? state.gps.lng : null
-    });
-    el.photoPreview.src = state.checkpointPhoto;
-    el.photoPreview.classList.remove("hidden");
-    setText(el.checkpointStatus, "�–�ˆายรู�›สำ�€ร�‡�ˆ และ�›ระ�—ั�šลาย�™�‰ำแล�‰ว");
-    updateActionCardsState();
-  });
-
   if (el.incidentPhotoInput) {
     el.incidentPhotoInput.addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
-      state.incidentPhoto = await fileToDataUrl(file, 1280, 0.75);
+      if (!state.gps) {
+        try {
+          await captureGps();
+        } catch (_) {}
+      }
+      state.incidentPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
+        timestamp: new Date(),
+        lat: state.gps ? state.gps.lat : null,
+        lng: state.gps ? state.gps.lng : null
+      });
       if (el.incidentPhotoPreview) {
         el.incidentPhotoPreview.src = state.incidentPhoto;
         el.incidentPhotoPreview.classList.remove("hidden");
@@ -182,7 +177,7 @@ async function restoreSession() {
     clearSession();
     state.suppressLoading = false;
     if (window.Swal) Swal.close();
-    await showSwalMessage("error", "�€�‚�‰าสู�ˆระ�š�š�„ม�ˆสำ�€ร�‡�ˆ", `กู�‰�„ื�™�€�‹ส�Šั�™�„ม�ˆสำ�€ร�‡�ˆ: ${err.message}`);
+    await showSwalMessage("error", "ï¿½â‚¬ï¿½â€šï¿½â€°à¸²à¸ªà¸¹ï¿½Ë†à¸£à¸°ï¿½Å¡ï¿½Å¡ï¿½â€žà¸¡ï¿½Ë†à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë†", `à¸à¸¹ï¿½â€°ï¿½â€žà¸·ï¿½â„¢ï¿½â‚¬ï¿½â€¹à¸ªï¿½Å à¸±ï¿½â„¢ï¿½â€žà¸¡ï¿½Ë†à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë†: ${err.message}`);
     window.location.href = "index.html";
   }
 }
@@ -202,8 +197,8 @@ function onLogout() {
 function setGuardHeader(guard) {
   if (!guard) return;
 
-  const guardName = guard.name || "�€�ˆ�‰าห�™�‰า�—ี�ˆ";
-  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "ร";
+  const guardName = guard.name || "ï¿½â‚¬ï¿½Ë†ï¿½â€°à¸²à¸«ï¿½â„¢ï¿½â€°à¸²ï¿½â€”à¸µï¿½Ë†";
+  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "à¸£";
 
   el.guardAvatar.textContent = initials;
   el.guardNameText.textContent = guardName;
@@ -221,21 +216,21 @@ function hideGuardHeader() {
 
 function getShiftProfile(shift) {
   return String(
-    shift.profile_name || shift.template_name || shift.shift_name || "�—ั�ˆว�„�›"
+    shift.profile_name || shift.template_name || shift.shift_name || "ï¿½â€žà¸¡ï¿½Ë†à¸£à¸°ï¿½Å¡à¸¸"
   ).trim();
 }
 
 function displayShiftStatus(status) {
   const code = String(status || "OPEN").toUpperCase();
-  if (code === "CLOSED") return "�›ิ�”แล�‰ว";
-  return "�€�›ิ�”อยู�ˆ";
+  if (code === "CLOSED") return "ï¿½â€ºà¸´ï¿½â€à¸à¸°à¹à¸¥ï¿½â€°à¸§";
+  return "à¸à¸³à¸¥à¸±ï¿½â€¡ï¿½â€¢à¸£à¸§ï¿½Ë†";
 }
 
 function renderShiftList() {
   const rows = state.shifts || [];
 
   if (!rows.length) {
-    el.shiftList.innerHTML = '<div class="shift-card">�„ม�ˆ�ž�š�€�—ม�€�žล�•�—ี�ˆ�œูกกั�šรหัส�™ี�‰ กรุ�“า�•รว�ˆสอ�š�ƒ�™ห�™�‰า Admin</div>';
+    el.shiftList.innerHTML = '<div class="shift-card">ï¿½â€žà¸¡ï¿½Ë†ï¿½Å¾ï¿½Å¡à¸à¸°ï¿½â€¡à¸²ï¿½â„¢ï¿½â€”à¸µï¿½Ë†ï¿½Å“à¸¹à¸à¸à¸±ï¿½Å¡à¸£à¸«à¸±à¸ªï¿½â„¢à¸µï¿½â€° à¸à¸£à¸¸ï¿½â€œà¸²ï¿½â€¢à¸£à¸§ï¿½Ë†à¸ªà¸­ï¿½Å¡ Template ï¿½Æ’ï¿½â„¢à¸«ï¿½â„¢ï¿½â€°à¸² Admin</div>';
     return;
   }
 
@@ -246,8 +241,8 @@ function renderShiftList() {
     return `
       <div class="shift-card">
         <h4>${escapeHtml(getShiftProfile(s))}</h4>
-        <p class="meta">�€วลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-        <p class="meta">รหัสกะ: ${escapeHtml(s.shift_id || "")}</p>
+        <p class="meta">ï¿½â‚¬à¸§à¸¥à¸² ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+        <p class="meta">à¸£à¸«à¸±à¸ªà¸à¸°: ${escapeHtml(s.shift_id || "")}</p>
         <span class="${statusClass}">${displayShiftStatus(status)}</span>
       </div>
     `;
@@ -266,23 +261,19 @@ async function openShift(index) {
   state.doneCheckpointCounter = {};
   state.scannedQr = "";
   state.gps = null;
+  state.checkinPassed = false;
   state.checkpointPhoto = "";
   state.incidentPhoto = "";
   state.incidentMode = "NONE";
 
   if (el.manualQr) el.manualQr.value = "";
-  el.photoInput.value = "";
   if (el.incidentPhotoInput) el.incidentPhotoInput.value = "";
-  el.photoPreview.classList.add("hidden");
   if (el.incidentPhotoPreview) el.incidentPhotoPreview.classList.add("hidden");
 
-  setText(el.gpsText, "ยั�‡�„ม�ˆ�‚หล�” GPS");
+  setText(el.gpsText, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸” GPS");
   setText(el.checkpointStatus, "");
   setText(el.incidentStatus, "");
-  setText(el.qrStepStatus, "ยั�‡�„ม�ˆสแก�™ QR");
-  setText(el.gpsStepStatus, "ยั�‡�„ม�ˆ�–�ˆาย");
-  setText(el.submitStepStatus, "รอ�‚�‰อมูล�ƒห�‰�„ร�š");
-  setText(el.incidentStepStatus, "รอ�‚�‰อมูล�ƒห�‰�„ร�š");
+  setText(el.submitStepStatus, "à¸£à¸­à¸à¸²à¸£à¸¢à¸·ï¿½â„¢à¸¢à¸±ï¿½â„¢");
   setIncidentMode("NONE");
   hideAllActionDetails();
 
@@ -311,11 +302,11 @@ function getShiftProgressCounter(shift) {
 function renderCheckpointList() {
   if (!state.activePlan.length) {
     el.roundTabs.innerHTML = "";
-    setText(el.currentPointText, "�„ม�ˆ�ž�š�ˆุ�”�•รว�ˆ�ƒ�™รอ�š�™ี�‰");
+    setText(el.currentPointText, "ï¿½â‚¬à¸¥à¸·à¸­à¸ï¿½Ë†à¸¸ï¿½â€ï¿½â€¢à¸£à¸§ï¿½Ë†ï¿½Ë†à¸²à¸à¸£à¸²à¸¢à¸à¸²à¸£ï¿½â€ï¿½â€°à¸²ï¿½â„¢à¸¥ï¿½Ë†à¸²ï¿½â€¡à¸ï¿½Ë†à¸­ï¿½â„¢");
     if (el.checkinActionPanel) el.checkinActionPanel.classList.add("hidden");
     if (el.checkpointListPanel) el.checkpointListPanel.classList.remove("hidden");
     stopQrScanner();
-    el.checkpointList.innerHTML = '<div class="checkpoint-card">�„ม�ˆมี�ˆุ�”�•รว�ˆ�ƒ�™กะ�™ี�‰</div>';
+    el.checkpointList.innerHTML = '<div class="checkpoint-card">ï¿½â€žà¸¡ï¿½Ë†ï¿½Å¾ï¿½Å¡ï¿½Ë†à¸¸ï¿½â€ï¿½â€¢à¸£à¸§ï¿½Ë†ï¿½Æ’ï¿½â„¢à¸£à¸­ï¿½Å¡ï¿½â„¢à¸µï¿½â€°</div>';
     return;
   }
 
@@ -398,29 +389,61 @@ function renderDashboard() {
     ? rows.reduce((sum, row) => sum + Number(row.rounds_total || 0), 0)
     : (state.shifts || []).reduce((sum, s) => sum + Number(s.rounds_required || 1), 0);
 
-  el.dbShiftTotal.textContent = String(total);
-  el.dbRoundProgress.textContent = `${roundsDone}/${roundsTotal} รอบ`;
-  el.dbCheckedTotal.textContent = String(checkedTotal);
-  el.dbIncidentTotal.textContent = String(incidentTotal);
+  if (el.dbShiftTotal) el.dbShiftTotal.textContent = String(total);
+  if (el.dbRoundProgress) el.dbRoundProgress.textContent = `${roundsDone}/${roundsTotal} à¸£à¸­ï¿½Å¡`;
+  if (el.dbCheckedTotal) el.dbCheckedTotal.textContent = String(checkedTotal);
+  if (el.dbIncidentTotal) el.dbIncidentTotal.textContent = String(incidentTotal);
 
   if (!state.shifts.length) {
-    el.dashboardList.innerHTML = '<div class="dashboard-card">ยังไม่มีกะงานวันนี้</div>';
+    el.dashboardList.innerHTML = `
+      <div class="dashboard-card dashboard-empty">
+        <h4>à¸¢à¸±ï¿½â€¡ï¿½â€žà¸¡ï¿½Ë†à¸¡à¸µà¸à¸°ï¿½â€¡à¸²ï¿½â„¢à¸ªà¸³à¸«à¸£à¸±ï¿½Å¡à¸§à¸±ï¿½â„¢ï¿½â„¢à¸µï¿½â€°</h4>
+        <p class="meta">à¸à¸£à¸¸ï¿½â€œà¸²ï¿½â€¢à¸£à¸§ï¿½Ë†à¸ªà¸­ï¿½Å¡à¸à¸²à¸£ï¿½Å“à¸¹à¸ Template à¸à¸±ï¿½Å¡à¸£à¸«à¸±à¸ª à¸£ï¿½â€ºà¸  ï¿½Æ’ï¿½â„¢à¸«ï¿½â„¢ï¿½â€°à¸² Admin</p>
+      </div>
+    `;
     return;
   }
 
   if (!rows.length) {
     el.dashboardList.innerHTML = state.shifts.map((s) => {
       const checkpointCount = Array.isArray(s.checkpoints) ? s.checkpoints.length : 0;
+      const roundsTotal = Number(s.rounds_required || 1);
       const status = String(s.status || "OPEN").toUpperCase();
       const statusClass = status === "CLOSED" ? "badge badge-closed" : "badge badge-open";
+      const roundPct = roundsTotal > 0 ? 0 : 0;
+      const checkPct = checkpointCount > 0 ? 0 : 0;
 
       return `
-        <div class="dashboard-card">
-          <h4>${escapeHtml(getShiftProfile(s))}</h4>
-          <p class="meta">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-          <p class="meta">รอบที่ทำแล้ว 0/${Number(s.rounds_required || 1)} รอบ</p>
-          <p class="meta">จุดตรวจทั้งหมด ${checkpointCount}</p>
-          <span class="${statusClass}">${displayShiftStatus(status)}</span>
+        <div class="dashboard-card dashboard-shift-card">
+          <div class="dashboard-head">
+            <h4>${escapeHtml(getShiftProfile(s))}</h4>
+            <span class="${statusClass}">${displayShiftStatus(status)}</span>
+          </div>
+          <p class="meta dashboard-time">ï¿½â‚¬à¸§à¸¥à¸² ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+
+          <div class="dashboard-progress-wrap">
+            <div class="dashboard-progress-head"><span>ï¿½â€žà¸§à¸²à¸¡ï¿½â€žà¸·ï¿½Å¡à¸«ï¿½â„¢ï¿½â€°à¸²à¸£à¸­ï¿½Å¡</span><strong>0/${roundsTotal}</strong></div>
+            <div class="dashboard-progress-bar"><i style="width:${roundPct}%"></i></div>
+          </div>
+          <div class="dashboard-progress-wrap">
+            <div class="dashboard-progress-head"><span>ï¿½Ë†à¸¸ï¿½â€ï¿½â€”à¸µï¿½Ë†ï¿½â€¢à¸£à¸§ï¿½Ë†à¹à¸¥ï¿½â€°à¸§</span><strong>0/${checkpointCount}</strong></div>
+            <div class="dashboard-progress-bar"><i style="width:${checkPct}%"></i></div>
+          </div>
+
+          <div class="dashboard-mini-grid">
+            <div class="dashboard-mini-card mini-incident">
+              <i class="material-symbols-outlined mini-icon" aria-hidden="true">notification_important</i>
+              <span>ï¿½â‚¬à¸«ï¿½â€¢à¸¸ï¿½Å“à¸´ï¿½â€ï¿½â€ºà¸ï¿½â€¢à¸´</span><strong>0</strong>
+            </div>
+            <div class="dashboard-mini-card mini-late">
+              <i class="material-symbols-outlined mini-icon" aria-hidden="true">schedule</i>
+              <span>ï¿½Å ï¿½â€°à¸²</span><strong>0</strong>
+            </div>
+            <div class="dashboard-mini-card mini-error">
+              <i class="material-symbols-outlined mini-icon" aria-hidden="true">gpp_bad</i>
+              <span>ï¿½â€žà¸¡ï¿½Ë†ï¿½Å“ï¿½Ë†à¸²ï¿½â„¢</span><strong>0</strong>
+            </div>
+          </div>
         </div>
       `;
     }).join("");
@@ -429,15 +452,46 @@ function renderDashboard() {
 
   el.dashboardList.innerHTML = rows.map((row) => {
     const statusClass = row.done ? "badge badge-closed" : "badge badge-open";
-    const statusText = row.done ? "ครบแล้ว" : "ยังไม่ครบ";
+    const statusText = row.done ? "ï¿½â‚¬à¸ªà¸£ï¿½â€¡ï¿½Ë†à¸ªà¸´ï¿½â€°ï¿½â„¢" : "à¸à¸³à¸¥à¸±ï¿½â€¡ï¿½â€à¸³ï¿½â‚¬ï¿½â„¢à¸´ï¿½â„¢à¸à¸²à¸£";
+    const roundsTotalLocal = Number(row.rounds_total || 0);
+    const expectedLocal = Number(row.expected || 0);
+    const roundPct = roundsTotalLocal > 0
+      ? Math.min(100, Math.round((Number(row.rounds_done || 0) / roundsTotalLocal) * 100))
+      : 0;
+    const checkPct = expectedLocal > 0
+      ? Math.min(100, Math.round((Number(row.checked || 0) / expectedLocal) * 100))
+      : 0;
     return `
-      <div class="dashboard-card">
+      <div class="dashboard-card dashboard-shift-card">
         <h4>${escapeHtml(row.name)}</h4>
-        <p class="meta">เวลา ${escapeHtml(row.start)} - ${escapeHtml(row.end)}</p>
-        <p class="meta">รอบที่ทำแล้ว ${row.rounds_done}/${row.rounds_total} รอบ</p>
-        <p class="meta">ตรวจแล้ว ${row.checked}/${row.expected} จุด</p>
-        <p class="meta">ช้า ${row.late} | ผิดพลาด ${row.invalid} | เหตุ ${row.incidents}</p>
-        <span class="${statusClass}">${statusText}</span>
+        <div class="dashboard-head">
+          <p class="meta dashboard-time">ï¿½â‚¬à¸§à¸¥à¸² ${escapeHtml(row.start)} - ${escapeHtml(row.end)}</p>
+          <span class="${statusClass}">${statusText}</span>
+        </div>
+
+        <div class="dashboard-progress-wrap">
+          <div class="dashboard-progress-head"><span>ï¿½â€žà¸§à¸²à¸¡ï¿½â€žà¸·ï¿½Å¡à¸«ï¿½â„¢ï¿½â€°à¸²à¸£à¸­ï¿½Å¡</span><strong>${row.rounds_done}/${row.rounds_total}</strong></div>
+          <div class="dashboard-progress-bar"><i style="width:${roundPct}%"></i></div>
+        </div>
+        <div class="dashboard-progress-wrap">
+          <div class="dashboard-progress-head"><span>ï¿½Ë†à¸¸ï¿½â€ï¿½â€”à¸µï¿½Ë†ï¿½â€¢à¸£à¸§ï¿½Ë†à¹à¸¥ï¿½â€°à¸§</span><strong>${row.checked}/${row.expected}</strong></div>
+          <div class="dashboard-progress-bar"><i style="width:${checkPct}%"></i></div>
+        </div>
+
+        <div class="dashboard-mini-grid">
+          <div class="dashboard-mini-card mini-incident">
+            <i class="material-symbols-outlined mini-icon" aria-hidden="true">notification_important</i>
+            <span>ï¿½â‚¬à¸«ï¿½â€¢à¸¸ï¿½Å“à¸´ï¿½â€ï¿½â€ºà¸ï¿½â€¢à¸´</span><strong>${row.incidents}</strong>
+          </div>
+          <div class="dashboard-mini-card mini-late">
+            <i class="material-symbols-outlined mini-icon" aria-hidden="true">schedule</i>
+            <span>ï¿½Å ï¿½â€°à¸²</span><strong>${row.late}</strong>
+          </div>
+          <div class="dashboard-mini-card mini-error">
+            <i class="material-symbols-outlined mini-icon" aria-hidden="true">gpp_bad</i>
+            <span>ï¿½â€žà¸¡ï¿½Ë†ï¿½Å“ï¿½Ë†à¸²ï¿½â„¢</span><strong>${row.invalid}</strong>
+          </div>
+        </div>
       </div>
     `;
   }).join("");
@@ -577,25 +631,67 @@ async function loadGps() {
     setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
     updateActionCardsState();
   } catch (err) {
-    setText(el.gpsText, `�‚หล�” GPS �„ม�ˆสำ�€ร�‡�ˆ: ${err.message}`);
+    setText(el.gpsText, `à¹‚à¸«à¸¥à¸” GPS à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
 
-async function onCapturePhotoCard() {
+async function onCheckinCard() {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�“า�€ลือก�ˆุ�”�•รว�ˆก�ˆอ�™");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸à¹ˆà¸­à¸™");
     return;
   }
-  if (el.photoInput) {
-    el.photoInput.value = "";
-    el.photoInput.click();
+  if (!state.scannedQr) {
+    if (window.Swal) await Swal.fire({ icon: "warning", title: "à¸à¸£à¸¸à¸“à¸²à¸ªà¹à¸à¸™ QR à¸à¹ˆà¸­à¸™", confirmButtonText: "à¸•à¸à¸¥à¸‡" });
+    return;
+  }
+
+  try {
+    await captureGps();
+    const check = validateGpsForSelectedCheckpoint(selectedItem, state.gps);
+    if (!check.ok) {
+      state.checkinPassed = false;
+      updateActionCardsState();
+      if (window.Swal) {
+        await Swal.fire({
+          icon: "error",
+          title: "à¸„à¸¸à¸“à¸­à¸¢à¸¹à¹ˆà¸™à¸­à¸à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š",
+          text: check.message || "à¸à¸£à¸¸à¸“à¸²à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¸£à¸±à¸¨à¸¡à¸µà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¹à¸¥à¹‰à¸§à¸¥à¸­à¸‡à¹ƒà¸«à¸¡à¹ˆà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡",
+          confirmButtonText: "à¸•à¸à¸¥à¸‡"
+        });
+      }
+      setText(el.gpsText, `à¸™à¸­à¸à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆ (${check.distanceM} à¸¡.)`);
+      return;
+    }
+    state.checkinPassed = true;
+    setText(el.gpsText, `à¸œà¹ˆà¸²à¸™à¸à¸²à¸£ Check in (${check.distanceM} à¸¡.)`);
+    updateActionCardsState();
+    if (window.Swal) {
+      await Swal.fire({
+        icon: "success",
+        title: "Check in à¸ªà¸³à¹€à¸£à¹‡à¸ˆ",
+        text: "à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆà¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¹à¸¥à¹‰à¸§",
+        timer: 1400,
+        showConfirmButton: false
+      });
+    }
+  } catch (err) {
+    state.checkinPassed = false;
+    updateActionCardsState();
+    if (window.Swal) {
+      await Swal.fire({
+        icon: "error",
+        title: "à¹‚à¸«à¸¥à¸”à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ",
+        text: err.message || "à¸à¸£à¸¸à¸“à¸²à¸¥à¸­à¸‡à¹ƒà¸«à¸¡à¹ˆ",
+        confirmButtonText: "à¸•à¸à¸¥à¸‡"
+      });
+    }
   }
 }
 
 function captureGps() {
   if (!navigator.geolocation) {
-    return Promise.reject(new Error("อุ�›กร�“�Œ�„ม�ˆรอ�‡รั�š GPS"));
+    return Promise.reject(new Error("à¸­à¸¸ï¿½â€ºà¸à¸£ï¿½â€œï¿½Å’ï¿½â€žà¸¡ï¿½Ë†à¸£à¸­ï¿½â€¡à¸£à¸±ï¿½Å¡ GPS"));
   }
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -616,23 +712,23 @@ async function onSubmitCheckpoint() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�“า�€ลือก�ˆุ�”�•รว�ˆ�ˆากรายการก�ˆอ�™ส�ˆ�‡");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½â€œà¸²ï¿½â‚¬à¸¥à¸·à¸­à¸ï¿½Ë†à¸¸ï¿½â€ï¿½â€¢à¸£à¸§ï¿½Ë†ï¿½Ë†à¸²à¸à¸£à¸²à¸¢à¸à¸²à¸£à¸ï¿½Ë†à¸­ï¿½â„¢à¸ªï¿½Ë†ï¿½â€¡");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.checkpointStatus, "กรุ�“าก�” Card 1 �€�žื�ˆอสแก�™ QR ก�ˆอ�™");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½â€œà¸²à¸ï¿½â€ Card 1 ï¿½â‚¬ï¿½Å¾à¸·ï¿½Ë†à¸­à¸ªà¹à¸ï¿½â„¢ QR à¸ï¿½Ë†à¸­ï¿½â„¢");
     return;
   }
 
   if (!state.gps) {
-    setText(el.checkpointStatus, "กรุ�“า�‚หล�” GPS ก�ˆอ�™ส�ˆ�‡");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½â€œà¸²ï¿½â€šà¸«à¸¥ï¿½â€ GPS à¸ï¿½Ë†à¸­ï¿½â„¢à¸ªï¿½Ë†ï¿½â€¡");
     return;
   }
 
   if (!state.checkpointPhoto) {
-    setText(el.checkpointStatus, "กรุ�“าแ�™�šรู�›�–�ˆายก�ˆอ�™ส�ˆ�‡");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½â€œà¸²à¹ï¿½â„¢ï¿½Å¡à¸£à¸¹ï¿½â€ºï¿½â€“ï¿½Ë†à¸²à¸¢à¸ï¿½Ë†à¸­ï¿½â„¢à¸ªï¿½Ë†ï¿½â€¡");
     return;
   }
 
@@ -647,7 +743,7 @@ async function onSubmitCheckpoint() {
   };
 
   try {
-    setText(el.checkpointStatus, "กำลั�‡ส�ˆ�‡�‚�‰อมูล...");
+    setText(el.checkpointStatus, "à¸à¸³à¸¥à¸±ï¿½â€¡à¸ªï¿½Ë†ï¿½â€¡ï¿½â€šï¿½â€°à¸­à¸¡à¸¹à¸¥...");
     const res = await callApi("submitCheckpoint", { payload });
     await showCheckpointResultSwal(res, selectedItem);
 
@@ -666,19 +762,19 @@ async function onSubmitCheckpoint() {
       if (isDashboardVisible()) await loadGuardDashboardSummary(true);
 
       if (String(selectedItem.checkpoint_id || "") !== String(res.checkpoint_id || "")) {
-        setText(el.checkpointStatus, "�šั�™�—ึกแล�‰ว แ�•�ˆ�ˆุ�”�—ี�ˆสแก�™�„ม�ˆ�•ร�‡กั�š�ˆุ�”�—ี�ˆ�€ลือก");
+        setText(el.checkpointStatus, "ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸à¹à¸¥ï¿½â€°à¸§ à¹ï¿½â€¢ï¿½Ë†ï¿½Ë†à¸¸ï¿½â€ï¿½â€”à¸µï¿½Ë†à¸ªà¹à¸ï¿½â„¢ï¿½â€žà¸¡ï¿½Ë†ï¿½â€¢à¸£ï¿½â€¡à¸à¸±ï¿½Å¡ï¿½Ë†à¸¸ï¿½â€ï¿½â€”à¸µï¿½Ë†ï¿½â‚¬à¸¥à¸·à¸­à¸");
       } else {
-        setText(el.checkpointStatus, `ส�ˆ�‡�‚�‰อมูลสำ�€ร�‡�ˆ (${res.status})`);
+        setText(el.checkpointStatus, `à¸ªï¿½Ë†ï¿½â€¡ï¿½â€šï¿½â€°à¸­à¸¡à¸¹à¸¥à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë† (${res.status})`);
       }
     } else {
-      setText(el.checkpointStatus, `ส�ˆ�‡�‚�‰อมูลสำ�€ร�‡�ˆ (${res.status})`);
+      setText(el.checkpointStatus, `à¸ªï¿½Ë†ï¿½â€¡ï¿½â€šï¿½â€°à¸­à¸¡à¸¹à¸¥à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë† (${res.status})`);
       invalidateGuardSummaryCache();
       if (isDashboardVisible()) await loadGuardDashboardSummary(true);
     }
     clearCheckpointDraft();
   } catch (err) {
     enqueueAction("submitCheckpoint", { payload });
-    setText(el.checkpointStatus, `ส�ˆ�‡�„ม�ˆสำ�€ร�‡�ˆ: �šั�™�—ึก�„ิวออ�Ÿ�„ล�™�Œแล�‰ว (${err.message})`);
+    setText(el.checkpointStatus, `à¸ªï¿½Ë†ï¿½â€¡ï¿½â€žà¸¡ï¿½Ë†à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë†: ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸ï¿½â€žà¸´à¸§à¸­à¸­ï¿½Å¸ï¿½â€žà¸¥ï¿½â„¢ï¿½Å’à¹à¸¥ï¿½â€°à¸§ (${err.message})`);
     clearCheckpointDraft();
   }
 }
@@ -687,30 +783,36 @@ async function onSubmitIncident() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.incidentStatus, "กรุ�“า�€ลือก�ˆุ�”�•รว�ˆก�ˆอ�™");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½â€œà¸²ï¿½â‚¬à¸¥à¸·à¸­à¸ï¿½Ë†à¸¸ï¿½â€ï¿½â€¢à¸£à¸§ï¿½Ë†à¸ï¿½Ë†à¸­ï¿½â„¢");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.incidentStatus, "กรุ�“าสแก�™ QR ก�ˆอ�™");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½â€œà¸²à¸ªà¹à¸ï¿½â„¢ QR à¸ï¿½Ë†à¸­ï¿½â„¢");
     return;
   }
   if (!state.gps) {
-    setText(el.incidentStatus, "กรุ�“า�‚หล�” GPS ก�ˆอ�™");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸² Check in à¸à¹ˆà¸­à¸™");
     return;
   }
-  if (!state.checkpointPhoto) {
-    setText(el.incidentStatus, "กรุ�“า�–�ˆายรู�›ก�ˆอ�™");
+  if (!state.checkinPassed) {
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸² Check in à¹ƒà¸«à¹‰à¸œà¹ˆà¸²à¸™à¸à¹ˆà¸­à¸™");
     return;
   }
 
   const hasAbnormal = state.incidentMode === "HAS";
   const detail = (el.incidentDetail ? el.incidentDetail.value : "").trim();
   if (hasAbnormal && !detail) {
-    setText(el.incidentStatus, "กรุ�“ากรอกรายละ�€อีย�”");
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”");
     return;
   }
+  if (hasAbnormal && !state.incidentPhoto) {
+    setText(el.incidentStatus, "à¸à¸£à¸¸à¸“à¸²à¸–à¹ˆà¸²à¸¢à¸ à¸²à¸žà¹€à¸«à¸•à¸¸à¸œà¸´à¸”à¸›à¸à¸•à¸´");
+    return;
+  }
+
+  const checkpointPhoto = state.incidentPhoto || createCheckinProofImage_(state.gps);
 
   const checkpointPayload = {
     shift_id: state.activeShift.shift_id,
@@ -718,12 +820,12 @@ async function onSubmitIncident() {
     qr_text_scanned: qrText,
     gps_lat: state.gps.lat,
     gps_lng: state.gps.lng,
-    photo_url: state.checkpointPhoto,
-    remark: hasAbnormal ? `[มี�€ห�•ุ] ${detail}` : "�„ม�ˆมี�€ห�•ุ�œิ�”�›ก�•ิ"
+    photo_url: checkpointPhoto,
+    remark: hasAbnormal ? `[à¸¡à¸µï¿½â‚¬à¸«ï¿½â€¢à¸¸] ${detail}` : "ï¿½â€žà¸¡ï¿½Ë†à¸¡à¸µï¿½â‚¬à¸«ï¿½â€¢à¸¸ï¿½Å“à¸´ï¿½â€ï¿½â€ºà¸ï¿½â€¢à¸´"
   };
 
   try {
-    setText(el.incidentStatus, "กำลั�‡�šั�™�—ึก�ˆุ�”�•รว�ˆ...");
+    setText(el.incidentStatus, "à¸à¸³à¸¥à¸±ï¿½â€¡ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸ï¿½Ë†à¸¸ï¿½â€ï¿½â€¢à¸£à¸§ï¿½Ë†...");
     const checkpointRes = await callApi("submitCheckpoint", { payload: checkpointPayload });
     await showCheckpointResultSwal(checkpointRes, selectedItem);
 
@@ -733,13 +835,13 @@ async function onSubmitIncident() {
         guard_id: state.guard.guard_id,
         type: "ABNORMAL",
         detail,
-        photo_url: state.checkpointPhoto,
+        photo_url: state.incidentPhoto || checkpointPhoto,
         severity: "MEDIUM"
       };
       const incidentRes = await callApi("submitIncident", { payload: incidentPayload });
-      setText(el.incidentStatus, `�šั�™�—ึกสำ�€ร�‡�ˆ และแ�ˆ�‰�‡�€ห�•ุแล�‰ว (${incidentRes.incident_id})`);
+      setText(el.incidentStatus, `ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë† à¹à¸¥à¸°à¹ï¿½Ë†ï¿½â€°ï¿½â€¡ï¿½â‚¬à¸«ï¿½â€¢à¸¸à¹à¸¥ï¿½â€°à¸§ (${incidentRes.incident_id})`);
     } else {
-      setText(el.incidentStatus, `�šั�™�—ึกสำ�€ร�‡�ˆ (${checkpointRes.status || "OK"})`);
+      setText(el.incidentStatus, `ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë† (${checkpointRes.status || "OK"})`);
     }
 
     if (checkpointRes && checkpointRes.checkpoint_id) {
@@ -767,12 +869,12 @@ async function onSubmitIncident() {
           guard_id: state.guard.guard_id,
           type: "ABNORMAL",
           detail,
-          photo_url: state.checkpointPhoto,
+          photo_url: state.incidentPhoto || checkpointPhoto,
           severity: "MEDIUM"
         }
       });
     }
-    setText(el.incidentStatus, `ส�ˆ�‡�„ม�ˆสำ�€ร�‡�ˆ: �šั�™�—ึก�„ิวออ�Ÿ�„ล�™�Œแล�‰ว (${err.message})`);
+    setText(el.incidentStatus, `à¸ªï¿½Ë†ï¿½â€¡ï¿½â€žà¸¡ï¿½Ë†à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë†: ï¿½Å¡à¸±ï¿½â„¢ï¿½â€”à¸¶à¸ï¿½â€žà¸´à¸§à¸­à¸­ï¿½Å¸ï¿½â€žà¸¥ï¿½â„¢ï¿½Å’à¹à¸¥ï¿½â€°à¸§ (${err.message})`);
     clearIncidentDraft();
     clearCheckpointDraft();
   }
@@ -796,10 +898,17 @@ async function loadGuardBootstrap(guardId, date) {
   if (!gid || !date) return [];
 
   const data = await callApi("guardBootstrap", { guardId: gid, date });
+  let checkpointRows = [];
+  try {
+    checkpointRows = await callApi("listCheckpoints", {});
+  } catch (_) {
+    checkpointRows = [];
+  }
   state.guard = data && data.guard ? data.guard : null;
   state.shifts = Array.isArray(data && data.shifts) ? data.shifts : [];
   state.shiftProgressMap = data && data.progress_by_shift ? data.progress_by_shift : {};
   state.checkpointQrMap = data && data.checkpoint_qr_map ? data.checkpoint_qr_map : {};
+  state.checkpointMetaMap = buildCheckpointMetaMap(checkpointRows, state.shifts);
   if (state.guard) setGuardHeader(state.guard);
   return state.shifts;
 }
@@ -847,7 +956,7 @@ async function syncQueue(showMessage) {
   }
 
   if (showMessage && success > 0) {
-    await showSwalMessage("success", "�‹ิ�‡ก�Œ�‚�‰อมูลสำ�€ร�‡�ˆ", `ส�ˆ�‡�‚�‰อมูลสำ�€ร�‡�ˆ ${success} รายการ`);
+    await showSwalMessage("success", "ï¿½â€¹à¸´ï¿½â€¡à¸ï¿½Å’ï¿½â€šï¿½â€°à¸­à¸¡à¸¹à¸¥à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë†", `à¸ªï¿½Ë†ï¿½â€¡ï¿½â€šï¿½â€°à¸­à¸¡à¸¹à¸¥à¸ªà¸³ï¿½â‚¬à¸£ï¿½â€¡ï¿½Ë† ${success} à¸£à¸²à¸¢à¸à¸²à¸£`);
   }
 }
 
@@ -876,7 +985,7 @@ async function callApi(action, payload = {}) {
     });
   } catch (err) {
     stopLoading();
-    throw new Error(`�€�„รือ�‚�ˆายมี�›ัญหา: ${err.message}`);
+    throw new Error(`ï¿½â‚¬ï¿½â€žà¸£à¸·à¸­ï¿½â€šï¿½Ë†à¸²à¸¢à¸¡à¸µï¿½â€ºà¸±à¸à¸«à¸²: ${err.message}`);
   }
 
   try {
@@ -887,7 +996,7 @@ async function callApi(action, payload = {}) {
     const text = await response.text();
     const json = JSON.parse(text);
     if (!json.ok) {
-      throw new Error(json.error || "API �œิ�”�žลา�”");
+      throw new Error(json.error || "API ï¿½Å“à¸´ï¿½â€ï¿½Å¾à¸¥à¸²ï¿½â€");
     }
 
     return json.data;
@@ -941,13 +1050,12 @@ function setNavActive(view) {
 function clearCheckpointDraft() {
   state.scannedQr = "";
   state.gps = null;
+  state.checkinPassed = false;
   state.checkpointPhoto = "";
 
   if (el.manualQr) el.manualQr.value = "";
-  setText(el.gpsText, "ยั�‡�„ม�ˆ�‚หล�” GPS");
+  setText(el.gpsText, "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸” GPS");
   if (el.checkpointRemark) el.checkpointRemark.value = "";
-  el.photoInput.value = "";
-  el.photoPreview.classList.add("hidden");
   updateActionCardsState();
 }
 
@@ -961,658 +1069,72 @@ function clearIncidentDraft() {
   setIncidentMode("NONE");
 }
 
-function saveSession(obj) {
-  localStorage.setItem(STORAGE.SESSION, JSON.stringify(obj || {}));
-}
-
-function loadSession() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE.SESSION) || "{}");
-  } catch (_) {
-    return {};
-  }
-}
-
-function clearSession() {
-  localStorage.removeItem(STORAGE.SESSION);
-}
-
-function readQueryParam(key) {
-  try {
-    const params = new URLSearchParams(window.location.search || "");
-    return String(params.get(key) || "").trim();
-  } catch (_) {
-    return "";
-  }
-}
-
-function clearQueryString() {
-  try {
-    const cleanUrl = `${window.location.pathname}${window.location.hash || ""}`;
-    window.history.replaceState({}, document.title, cleanUrl);
-  } catch (_) {
-    // ignore
-  }
-}
-
-function saveQueue(queue) {
-  localStorage.setItem(STORAGE.QUEUE, JSON.stringify(queue || []));
-}
-
-function loadQueue() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE.QUEUE) || "[]");
-  } catch (_) {
-    return [];
-  }
-}
-
-function saveSyncMeta(meta) {
-  localStorage.setItem(STORAGE.SYNC_META, JSON.stringify(meta || {}));
-}
-
-function loadSyncMeta() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE.SYNC_META) || "{}");
-  } catch (_) {
-    return {};
-  }
-}
-
-function makeId() {
-  return `Q-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-}
-
-function setText(node, text) {
-  if (node) node.textContent = text;
-}
-
-function showLoginLoadingSwal() {
-  if (!window.Swal) return;
-  Swal.fire({
-    title: "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25...",
-    text: "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e2d\u0e2a\u0e31\u0e01\u0e04\u0e23\u0e39\u0e48",
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    didOpen: () => Swal.showLoading()
+function buildCheckpointMetaMap(checkpointRows, shifts) {
+  const map = {};
+  (Array.isArray(checkpointRows) ? checkpointRows : []).forEach((cp) => {
+    const id = String(cp.checkpoint_id || "").trim();
+    if (!id) return;
+    map[id] = {
+      lat: Number(cp.lat),
+      lng: Number(cp.lng),
+      radius_m: Number(cp.radius_m || 50)
+    };
   });
-}
-
-async function showSwalMessage(icon, title, text) {
-  if (!window.Swal) return;
-  await Swal.fire({
-    icon: icon || "info",
-    title: title || "",
-    text: text || "",
-    confirmButtonText: "\u0e15\u0e01\u0e25\u0e07"
-  });
-}
-function startLoading() {
-  if (state.suppressLoading) return;
-  loadingCount += 1;
-  if (loadingCount > 1) return;
-  if (!window.Swal) return;
-
-  Swal.fire({
-    title: "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25...",
-    text: "\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e2d\u0e2a\u0e31\u0e01\u0e04\u0e23\u0e39\u0e48",
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    showConfirmButton: false,
-    didOpen: () => Swal.showLoading()
-  });
-}
-
-function stopLoading() {
-  if (state.suppressLoading) return;
-  loadingCount = Math.max(0, loadingCount - 1);
-  if (loadingCount !== 0) return;
-  if (!window.Swal) return;
-  Swal.close();
-}
-
-function toYmd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatDate(date) {
-  return date.toLocaleDateString("th-TH", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-}
-
-function getPlanItemKey(item) {
-  return `${String(item.checkpoint_id || "")}__${Number(item._occurrence || 0)}__${Number(item.round_no || 1)}`;
-}
-
-function isPlanItemDone(item) {
-  const doneCount = Number(state.doneCheckpointCounter[String(item.checkpoint_id || "")] || 0);
-  return doneCount >= Number(item._occurrence || 0);
-}
-
-function getSelectedPlanItem() {
-  const planItems = buildPlanWithOccurrence(state.activePlan);
-  const currentItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
-  return currentItems.find((x) => getPlanItemKey(x) === state.selectedPlanKey) || null;
-}
-
-function detectFirstRound(plan) {
-  const rounds = getRoundNumbers(Array.isArray(plan) ? plan : []);
-  return rounds[0] || 1;
-}
-
-function getRoundNumbers(planItems) {
-  const set = {};
-  (Array.isArray(planItems) ? planItems : []).forEach((x) => {
-    const r = Number(x.round_no || 1);
-    if (Number.isFinite(r) && r > 0) set[r] = true;
-  });
-
-  const required = Number(state.activeShift && state.activeShift.rounds_required);
-  if (Number.isFinite(required) && required > 0) {
-    for (let i = 1; i <= required; i += 1) set[i] = true;
-  }
-
-  const rounds = Object.keys(set)
-    .map((k) => Number(k))
-    .filter((n) => Number.isFinite(n) && n > 0)
-    .sort((a, b) => a - b);
-
-  return rounds.length ? rounds : [1];
-}
-
-function renderRoundTabs(rounds) {
-  if (!el.roundTabs) return;
-  el.roundTabs.innerHTML = rounds.map((r, idx) => {
-    const active = Number(r) === Number(state.currentRound) ? "chip active" : "chip";
-    let locked = false;
-    if (idx > 0) {
-      const prevRound = Number(rounds[idx - 1]);
-      locked = !isRoundDone(prevRound);
-    }
-    return `<button type="button" class="${active}" data-round="${r}" ${locked ? "disabled" : ""}>\u0e23\u0e2d\u0e1a ${r}</button>`;
-  }).join("");
-  Array.from(el.roundTabs.querySelectorAll("[data-round]")).forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (btn.disabled) return;
-      state.currentRound = Number(btn.getAttribute("data-round") || 1);
-      state.selectedPlanKey = "";
-      renderCheckpointList();
-      refreshStats();
+  (Array.isArray(shifts) ? shifts : []).forEach((shift) => {
+    (Array.isArray(shift.checkpoints) ? shift.checkpoints : []).forEach((cp) => {
+      const id = String(cp.checkpoint_id || "").trim();
+      if (!id) return;
+      if (!map[id]) map[id] = {};
+      if (!Number.isFinite(map[id].lat)) map[id].lat = Number(cp.lat);
+      if (!Number.isFinite(map[id].lng)) map[id].lng = Number(cp.lng);
+      if (!Number.isFinite(map[id].radius_m)) map[id].radius_m = Number(cp.radius_m || 50);
     });
   });
+  return map;
 }
 
-function buildPlanWithOccurrence(plan) {
-  const seenCounter = {};
-  return (plan || []).map((cp) => {
-    const checkpointId = String(cp.checkpoint_id || "");
-    seenCounter[checkpointId] = Number(seenCounter[checkpointId] || 0) + 1;
-    return { ...cp, _occurrence: seenCounter[checkpointId] };
-  });
-}
-
-function moveToNextRoundIfCurrentDone() {
-  const planItems = buildPlanWithOccurrence(state.activePlan);
-  const rounds = getRoundNumbers(planItems);
-  const currentItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
-  if (!currentItems.length) return;
-  const doneAll = currentItems.every((item) => {
-    const doneCount = Number(state.doneCheckpointCounter[String(item.checkpoint_id || "")] || 0);
-    return doneCount >= Number(item._occurrence || 0);
-  });
-  if (!doneAll) return;
-  const idx = rounds.indexOf(Number(state.currentRound));
-  if (idx >= 0 && idx < rounds.length - 1) {
-    state.currentRound = rounds[idx + 1];
+function validateGpsForSelectedCheckpoint(selectedItem, gps) {
+  const cpId = String((selectedItem && selectedItem.checkpoint_id) || "").trim();
+  const meta = state.checkpointMetaMap ? state.checkpointMetaMap[cpId] : null;
+  if (!cpId || !meta || !Number.isFinite(meta.lat) || !Number.isFinite(meta.lng)) {
+    return { ok: true, distanceM: 0, message: "" };
   }
-}
-
-function isRoundDone(roundNo) {
-  const planItems = buildPlanWithOccurrence(state.activePlan).filter((x) => Number(x.round_no || 1) === Number(roundNo));
-  if (!planItems.length) return false;
-  return planItems.every((item) => isPlanItemDone(item));
-}
-
-function getCheckpointStatusMeta({ done, locked, isSelected }) {
-  if (done) return { type: "ok", label: "\u0e15\u0e23\u0e27\u0e08\u0e41\u0e25\u0e49\u0e27", cls: "ok" };
-  if (locked) return { type: "wait", label: "\u0e23\u0e2d\u0e01\u0e48\u0e2d\u0e19", cls: "wait" };
-  if (isSelected) return { type: "focus", label: "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e08\u0e38\u0e14\u0e19\u0e35\u0e49", cls: "focus" };
-  return { type: "ready", label: "\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e15\u0e23\u0e27\u0e08", cls: "ready" };
-}
-
-function renderStatusIcon(type) {
-  if (type === "ok") {
-    return '<svg viewBox="0 0 24 24" fill="none"><path d="M20 7 9 18l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const distanceM = Math.round(haversineMeters_(gps.lat, gps.lng, meta.lat, meta.lng));
+  const radius = Number(meta.radius_m || 50);
+  if (distanceM > radius) {
+    return { ok: false, distanceM, message: `à¸£à¸°à¸¢à¸° ${distanceM} à¹€à¸¡à¸•à¸£ (à¹€à¸à¸´à¸™à¸£à¸±à¸¨à¸¡à¸µ ${radius} à¹€à¸¡à¸•à¸£)` };
   }
-  if (type === "wait") {
-    return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-  if (type === "focus") {
-    return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>';
-  }
-  return '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M9 12h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  return { ok: true, distanceM, message: "" };
 }
 
-function toggleCheckinActionPanel(show) {
-  if (!el.checkinActionPanel) return;
-  el.checkinActionPanel.classList.toggle("hidden", !show);
-  if (el.checkpointListPanel) el.checkpointListPanel.classList.toggle("hidden", show);
-  if (el.backToCheckpointListBtn) el.backToCheckpointListBtn.classList.toggle("hidden", !show);
-  if (!show) hideAllActionDetails();
+function haversineMeters_(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = (x) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function updateActionCardsState() {
-  const selectedItem = getSelectedPlanItem();
-  const hasSelected = !!selectedItem;
-  const hasQr = !!String(state.scannedQr || "").trim();
-  const hasGps = !!state.gps;
-  const hasPhoto = !!state.checkpointPhoto;
-
-  setCardEnabled(el.actionQrCard, hasSelected && !hasQr);
-  setCardEnabled(el.actionGpsCard, hasSelected);
-  setCardEnabled(el.actionIncidentCard, hasSelected);
-  setCardDone(el.actionQrCard, hasQr);
-  setCardDone(el.actionGpsCard, hasPhoto);
-
-  setText(el.qrStepStatus, hasQr ? "สแก�™แล�‰ว" : "ยั�‡�„ม�ˆสแก�™");
-  setText(el.gpsStepStatus, hasPhoto ? "�–�ˆายแล�‰ว" : "ยั�‡�„ม�ˆ�–�ˆาย");
-  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "�žร�‰อมยื�™ยั�™" : "รอ�‚�‰อมูล�ƒห�‰�„ร�š");
-}
-
-function setCardEnabled(node, enabled) {
-  if (!node) return;
-  node.disabled = !enabled;
-  node.classList.toggle("disabled", !enabled);
-}
-
-function setCardDone(node, done) {
-  if (!node) return;
-  node.classList.toggle("done", !!done);
-}
-
-function openActionDetail(name) {
-  const selectedItem = getSelectedPlanItem();
-  if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�“า�€ลือก�ˆุ�”�•รว�ˆก�ˆอ�™");
-    return;
-  }
-  hideAllActionDetails();
-  if (name === "gps" && el.detailGpsPhoto) el.detailGpsPhoto.classList.remove("hidden");
-  if (name === "incident" && el.detailIncident) {
-    if (el.quickActionCards) el.quickActionCards.classList.add("hidden");
-    el.detailIncident.classList.remove("hidden");
-    setIncidentMode(state.incidentMode || "NONE");
-  }
-}
-
-function hideAllActionDetails() {
-  if (el.quickActionCards) el.quickActionCards.classList.remove("hidden");
-  if (el.detailGpsPhoto) el.detailGpsPhoto.classList.add("hidden");
-  if (el.detailIncident) el.detailIncident.classList.add("hidden");
-}
-
-function setIncidentMode(mode) {
-  state.incidentMode = mode === "HAS" ? "HAS" : "NONE";
-  if (el.incidentChoiceNone) el.incidentChoiceNone.classList.toggle("active", state.incidentMode === "NONE");
-  if (el.incidentChoiceHas) el.incidentChoiceHas.classList.toggle("active", state.incidentMode === "HAS");
-  if (el.incidentExtraFields) el.incidentExtraFields.classList.toggle("hidden", state.incidentMode !== "HAS");
-}
-
-
-async function showCheckpointResultSwal(res, selectedItem) {
-  if (!window.Swal || !res) return;
-
-  const status = String(res.status || "").toUpperCase();
-  const isWrongPoint = String((selectedItem && selectedItem.checkpoint_id) || "") !== String(res.checkpoint_id || "");
-
-  let icon = "success";
-  let title = "�šั�™�—ึก�‚�‰อมูลสำ�€ร�‡�ˆ";
-  let text = "�•รว�ˆ�ˆุ�”�€รีย�šร�‰อย";
-
-  if (status === "INVALID_GPS") {
-    icon = "error";
-    title = "สแก�™สำ�€ร�‡�ˆ แ�•�ˆ�•ำแห�™�ˆ�‡�„ม�ˆ�–ูก�•�‰อ�‡";
-    text = "GPS �„ม�ˆอยู�ˆ�ƒ�™รัศมี�ˆุ�”�•รว�ˆ กรุ�“า�„�›�—ี�ˆ�ˆุ�”�•รว�ˆ�ˆริ�‡แล�‰วสแก�™�ƒหม�ˆ";
-  } else if (status === "INVALID_QR" || isWrongPoint) {
-    icon = "error";
-    title = "สแก�™ QR �„ม�ˆ�•ร�‡�ˆุ�”";
-    text = "QR �—ี�ˆสแก�™�„ม�ˆ�•ร�‡กั�š�ˆุ�”�•รว�ˆ�—ี�ˆ�€ลือก กรุ�“า�•รว�ˆสอ�šแล�‰วสแก�™�ƒหม�ˆ";
-  } else if (status === "LATE") {
-    icon = "warning";
-    title = "�šั�™�—ึกสำ�€ร�‡�ˆ (�Š�‰า)";
-    text = "�•รว�ˆ�ˆุ�”สำ�€ร�‡�ˆ แ�•�ˆ�€กิ�™�€วลา�—ี�ˆกำห�™�”";
-  } else if (status === "ONTIME") {
-    icon = "success";
-    title = "�šั�™�—ึกสำ�€ร�‡�ˆ";
-    text = "�•รว�ˆ�ˆุ�”สำ�€ร�‡�ˆ�•าม�€วลา";
-  } else if (status) {
-    icon = "info";
-    title = "�šั�™�—ึกสำ�€ร�‡�ˆ";
-    text = "ส�–า�™ะ: " + status;
-  }
-
-  await Swal.fire({
-    icon,
-    title,
-    text,
-    confirmButtonText: "�•กล�‡"
-  });
-}
-async function openQrScanCard() {
-  const selectedItem = getSelectedPlanItem();
-  if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�“า�€ลือก�ˆุ�”�•รว�ˆก�ˆอ�™สแก�™ QR");
-    return;
-  }
-  if (!window.Swal || !window.Html5Qrcode) {
-    setText(el.checkpointStatus, "อุ�›กร�“�Œ�„ม�ˆรอ�‡รั�šสแก�™กล�‰อ�‡");
-    return;
-  }
-
-  const readerId = "swalQrReader";
-  let scanner = null;
-  await Swal.fire({
-    title: "สแก�™ QR �ˆุ�”�•รว�ˆ",
-    html: `<div id="${readerId}" style="min-height:280px;border-radius:10px;overflow:hidden;background:#0a1f37"></div>`,
-    showCancelButton: true,
-    confirmButtonText: "�›ิ�”",
-    cancelButtonText: "ยก�€ลิก",
-    didOpen: () => {
-      scanner = new Html5Qrcode(readerId);
-      scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 230, height: 230 } },
-        (decodedText) => {
-          const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
-          const actualQr = String(decodedText || "").trim();
-          if (expectedQr && actualQr !== expectedQr) {
-            setText(el.checkpointStatus, "สแก�™ QR �„ม�ˆ�•ร�‡�ˆุ�”");
-            if (navigator && typeof navigator.vibrate === "function") {
-              navigator.vibrate([180, 120, 180]);
-            }
-            if (window.Swal && Swal.isVisible()) {
-              Swal.showValidationMessage("สแก�™ QR �„ม�ˆ�•ร�‡�ˆุ�”");
-              const vm = Swal.getValidationMessage ? Swal.getValidationMessage() : null;
-              if (vm) {
-                vm.style.fontSize = "1.06rem";
-                vm.style.fontWeight = "800";
-                vm.style.color = "#b91c1c";
-                vm.style.background = "#fee2e2";
-                vm.style.border = "1px solid #fecaca";
-                vm.style.borderRadius = "10px";
-                vm.style.padding = "10px 12px";
-                vm.style.marginTop = "10px";
-              }
-            }
-            return;
-          }
-          state.scannedQr = actualQr;
-          if (el.manualQr) el.manualQr.value = decodedText;
-          setText(el.qrStepStatus, `สแก�™แล�‰ว: ${decodedText}`);
-          updateActionCardsState();
-          Swal.close();
-        },
-        () => {}
-      ).catch(() => {
-        setText(el.checkpointStatus, "�€�›ิ�”กล�‰อ�‡�„ม�ˆสำ�€ร�‡�ˆ");
-      });
-    },
-    willClose: () => {
-      if (!scanner) return;
-      scanner.stop().catch(() => {}).finally(() => {
-        scanner.clear();
-      });
-    }
-  });
-}
-
-function getExpectedQrForSelectedPoint(selectedItem) {
-  if (!selectedItem) return "";
-  const cpId = String(selectedItem.checkpoint_id || "").trim();
-  if (!cpId) return "";
-  return String(state.checkpointQrMap[cpId] || cpId).trim();
-}
-
-async function openAssignedRouteOrFallback(activeShiftId) {
-  if (!state.shifts.length) {
-    switchView("shifts");
-    return;
-  }
-
-  if (activeShiftId) {
-    const idx = state.shifts.findIndex((s) => String(s.shift_id) === String(activeShiftId));
-    if (idx >= 0) {
-      await openShift(idx);
-      return;
-    }
-  }
-
-  const openIndex = state.shifts.findIndex((s) => String(s.status || "").toUpperCase() !== "CLOSED");
-  await openShift(openIndex >= 0 ? openIndex : 0);
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString("th-TH", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
-}
-
-function formatShiftWindow(shift) {
-  const dateRaw = shift && shift.date ? shift.date : "";
-  const dateParts = extractDateParts(dateRaw);
-  const dd = dateParts ? dateParts.dd : "--";
-  const monthText = dateParts ? toThaiMonthShort(dateParts.mm) : "--";
-  const yy = dateParts ? dateParts.yy : "--";
-  const start = String((shift && shift.start_time) || "-").slice(0, 5);
-  const end = String((shift && shift.end_time) || "-").slice(0, 5);
-  return `${dd} ${monthText} ${yy} ${start} - ${end}`;
-}
-
-function toThaiMonthShort(mm) {
-  const m = Number(mm);
-  const months = ["\u0e21.\u0e04.", "\u0e01.\u0e1e.", "\u0e21\u0e35.\u0e04.", "\u0e40\u0e21.\u0e22.", "\u0e1e.\u0e04.", "\u0e21\u0e34.\u0e22.", "\u0e01.\u0e04.", "\u0e2a.\u0e04.", "\u0e01.\u0e22.", "\u0e15.\u0e04.", "\u0e1e.\u0e22.", "\u0e18.\u0e04."];
-  if (!Number.isFinite(m) || m < 1 || m > 12) return "--";
-  return months[m - 1];
-}
-
-function extractDateParts(value) {
-  if (!value) return null;
-
-  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
-    const y = String(value.getFullYear());
-    const m = String(value.getMonth() + 1).padStart(2, "0");
-    const d = String(value.getDate()).padStart(2, "0");
-    return { dd: d, mm: m, yy: y.slice(2) };
-  }
-
-  const raw = String(value).trim();
-  const ymd = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (ymd) {
-    return { dd: ymd[3], mm: ymd[2], yy: ymd[1].slice(2) };
-  }
-
-  const dmy = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-  if (dmy) {
-    return { dd: dmy[1], mm: dmy[2], yy: dmy[3].slice(2) };
-  }
-
-  // ISO datetime (e.g. 2026-04-20T17:00:00.000Z) should be converted to local date.
-  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
-    const isoDate = new Date(raw);
-    if (!isNaN(isoDate.getTime())) {
-      const y = String(isoDate.getFullYear());
-      const m = String(isoDate.getMonth() + 1).padStart(2, "0");
-      const day = String(isoDate.getDate()).padStart(2, "0");
-      return { dd: day, mm: m, yy: y.slice(2) };
-    }
-  }
-
-  const d = new Date(raw);
-  if (!isNaN(d.getTime())) {
-    const y = String(d.getFullYear());
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return { dd: day, mm: m, yy: y.slice(2) };
-  }
-
-  return null;
-}
-
-function updateTodayText() {
-  const now = new Date();
-  el.todayText.textContent = `\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49 ${formatDate(now)} ${formatTime(now)}`;
-}
-
-function fmtDateTimeLocal(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${d} ${hh}:${mm}`;
-}
-
-function normalizeTime(value) {
-  const s = String(value || "").trim();
-  if (!s) return "00:00:00";
-  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (!m) return s;
-  const hh = String(Math.min(23, Math.max(0, Number(m[1])))).padStart(2, "0");
-  const mm = String(Math.min(59, Math.max(0, Number(m[2])))).padStart(2, "0");
-  const ss = String(Math.min(59, Math.max(0, Number(m[3] || 0)))).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
-}
-
-function parseGuardIdsLocal(raw) {
-  const uniq = {};
-  return String(raw || "")
-    .split(",")
-    .map((x) => String(x || "").trim())
-    .filter((id) => {
-      if (!id || uniq[id]) return false;
-      uniq[id] = true;
-      return true;
-    });
-}
-
-function makeShiftIdFromTemplate(templateId, dateStr, guardId) {
-  const d = String(dateStr || "").replace(/-/g, "");
-  const g = String(guardId || "").trim();
-  if (g) return `${String(templateId)}-${g}-${d}`;
-  return `${String(templateId)}-${d}`;
-}
-
-function escapeHtml(input) {
-  return String(input ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function escapeAttr(input) {
-  return escapeHtml(input).replaceAll("`", "");
-}
-
-async function fileToDataUrl(file, maxSize, quality) {
-  const dataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("�„ม�ˆสามาร�–อ�ˆา�™�„�Ÿล�Œ�„�”�‰"));
-    reader.readAsDataURL(file);
-  });
-
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("�„ม�ˆสามาร�–�›ระมวล�œลรู�›�„�”�‰"));
-    im.src = dataUrl;
-  });
-
-  const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
-  const w = Math.max(1, Math.round(img.width * ratio));
-  const h = Math.max(1, Math.round(img.height * ratio));
-
+function createCheckinProofImage_(gps) {
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = 1200;
+  canvas.height = 500;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", quality);
-}
-
-async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
-  const dataUrl = await fileToDataUrl(file, maxSize, quality);
-  const img = await new Promise((resolve, reject) => {
-    const im = new Image();
-    im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("�„ม�ˆสามาร�–�›ระมวล�œลรู�›�„�”�‰"));
-    im.src = dataUrl;
-  });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, img.width, img.height);
-
-  const dt = meta && meta.timestamp ? meta.timestamp : new Date();
-  const dateText = dt.toLocaleString("th-TH", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
-  });
-  const lat = Number(meta && meta.lat);
-  const lng = Number(meta && meta.lng);
-  const gpsText = Number.isFinite(lat) && Number.isFinite(lng)
-    ? `Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)}`
-    : "Lat - | Lng -";
-
-  const lines = [`วั�™�—ี�ˆ ${dateText}`, gpsText];
-  const pad = Math.max(10, Math.round(canvas.width * 0.018));
-  const fontSize = Math.max(14, Math.round(canvas.width * 0.03));
-  const lineGap = Math.max(6, Math.round(fontSize * 0.4));
-  const boxHeight = pad * 2 + lines.length * fontSize + (lines.length - 1) * lineGap;
-  const boxY = canvas.height - boxHeight - pad;
-
-  ctx.fillStyle = "rgba(9, 22, 35, 0.62)";
-  ctx.fillRect(pad, boxY, canvas.width - pad * 2, boxHeight);
-
+  ctx.fillStyle = "#0f2f55";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#ffffff";
-  ctx.font = `600 ${fontSize}px "Segoe UI", "Noto Sans Thai", sans-serif`;
-  ctx.textBaseline = "top";
-
-  let y = boxY + pad;
-  lines.forEach((line) => {
-    ctx.fillText(line, pad * 2, y);
-    y += fontSize + lineGap;
-  });
-
-  return canvas.toDataURL("image/jpeg", quality);
+  ctx.font = '700 48px "Public Sans", "Noto Sans Thai", sans-serif';
+  ctx.fillText("CHECK IN", 60, 120);
+  ctx.font = '500 34px "Public Sans", "Noto Sans Thai", sans-serif';
+  ctx.fillText(`à¸§à¸±à¸™à¸—à¸µà¹ˆ ${new Date().toLocaleString("th-TH", { hour12: false })}`, 60, 210);
+  ctx.fillText(`Lat: ${Number(gps.lat).toFixed(6)}  Lng: ${Number(gps.lng).toFixed(6)}`, 60, 280);
+  ctx.fillText(`à¸œà¸¹à¹‰à¸•à¸£à¸§à¸ˆ: ${state.guard ? (state.guard.name || state.guard.guard_id) : "-"}`, 60, 350);
+  return canvas.toDataURL("image/jpeg", 0.85);
 }
-
-
-
-
-
-
-
-
 
 
 

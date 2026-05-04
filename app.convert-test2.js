@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbw5n09onxcuAr9XG7k8j-3GhbumAD5zk2iptjU8-_uG-HHG849-DFNzVMgPk5n1vdE/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbxtsnZc-dktCAdYEsMgsnldQ85v2SSWXy4XY4dhPKN4ckgo2wskfd6GlLDWCKHyTEQ/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -43,7 +43,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   refreshQueueBanner();
 
   if (!navigator.onLine) {
-    console.warn("อุ�:กร��Rออ�x�ล�"�R: �aั�"�ึก�ิว�ว�0ก��อ�" แล�0ว�9ิ�!ก�Rภายหลั�!���0");
+    console.warn("à¸­à¸¸ï¿½:à¸à¸£ï¿½ï¿½Rà¸­à¸­ï¿½xï¿½à¸¥ï¿½"ï¿½R: ï¿½aà¸±ï¿½"ï¿½à¸¶à¸ï¿½à¸´à¸§ï¿½à¸§ï¿½0à¸ï¿½ï¿½à¸­ï¿½" à¹à¸¥ï¿½0à¸§ï¿½9à¸´ï¿½!à¸ï¿½Rà¸ à¸²à¸¢à¸«à¸¥à¸±ï¿½!ï¿½ï¿½ï¿½0");
   }
 
   const guardIdFromUrl = readQueryParam("guardId");
@@ -130,11 +130,11 @@ function bindEvents() {
     if (!file) return;
     if (!state.gps) {
       try {
-        setText(el.gpsText, "กำลั�!�หล��"ำแห�"���!...");
+        setText(el.gpsText, "à¸à¸³à¸¥à¸±ï¿½!ï¿½à¸«à¸¥ï¿½ï¿½"à¸³à¹à¸«ï¿½"ï¿½ï¿½ï¿½!...");
         await captureGps();
         setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
       } catch (err) {
-        setText(el.gpsText, `�หล� GPS �ม��สำ๬ร�!��: ${err.message}`);
+        setText(el.gpsText, `ï¿½à¸«à¸¥ï¿½ GPS ï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½: ${err.message}`);
       }
     }
     state.checkpointPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
@@ -144,7 +144,7 @@ function bindEvents() {
     });
     el.photoPreview.src = state.checkpointPhoto;
     el.photoPreview.classList.remove("hidden");
-    setText(el.checkpointStatus, "���ายรู�:สำ๬ร�!�� และ�:ระ�ั�aลาย�"�0ำแล�0ว");
+    setText(el.checkpointStatus, "ï¿½ï¿½ï¿½à¸²à¸¢à¸£à¸¹ï¿½:à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ à¹à¸¥à¸°ï¿½:à¸£à¸°ï¿½à¸±ï¿½aà¸¥à¸²à¸¢ï¿½"ï¿½0à¸³à¹à¸¥ï¿½0à¸§");
     updateActionCardsState();
   });
 
@@ -182,7 +182,7 @@ async function restoreSession() {
     clearSession();
     state.suppressLoading = false;
     if (window.Swal) Swal.close();
-    await showSwalMessage("error", "๬��0าสู��ระ�a�a�ม��สำ๬ร�!��", `กู�0�ื�"๬�9ส�`ั�"�ม��สำ๬ร�!��: ${err.message}`);
+    await showSwalMessage("error", "à¹¬ï¿½ï¿½0à¸²à¸ªà¸¹ï¿½ï¿½à¸£à¸°ï¿½aï¿½aï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½", `à¸à¸¹ï¿½0ï¿½à¸·ï¿½"à¹¬ï¿½9à¸ªï¿½`à¸±ï¿½"ï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½: ${err.message}`);
     window.location.href = "index.html";
   }
 }
@@ -202,8 +202,8 @@ function onLogout() {
 function setGuardHeader(guard) {
   if (!guard) return;
 
-  const guardName = guard.name || "๬���0าห�"�0า�ี��";
-  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "ร";
+  const guardName = guard.name || "à¹¬ï¿½ï¿½ï¿½0à¸²à¸«ï¿½"ï¿½0à¸²ï¿½à¸µï¿½ï¿½";
+  const initials = String(guardName).trim().slice(0, 1).toUpperCase() || "à¸£";
 
   el.guardAvatar.textContent = initials;
   el.guardNameText.textContent = guardName;
@@ -221,21 +221,21 @@ function hideGuardHeader() {
 
 function getShiftProfile(shift) {
   return String(
-    shift.profile_name || shift.template_name || shift.shift_name || "�ั��ว��:"
+    shift.profile_name || shift.template_name || shift.shift_name || "ï¿½à¸±ï¿½ï¿½à¸§ï¿½ï¿½:"
   ).trim();
 }
 
 function displayShiftStatus(status) {
   const code = String(status || "OPEN").toUpperCase();
-  if (code === "CLOSED") return "�:ิ�แล�0ว";
-  return "๬�:ิ�อยู��";
+  if (code === "CLOSED") return "ï¿½:à¸´ï¿½à¹à¸¥ï¿½0à¸§";
+  return "à¹¬ï¿½:à¸´ï¿½à¸­à¸¢à¸¹ï¿½ï¿½";
 }
 
 function renderShiftList() {
   const rows = state.shifts || [];
 
   if (!rows.length) {
-    el.shiftList.innerHTML = '<div class="shift-card">�ม���~�a๬�ม๬�~ล�"�ี���Sูกกั�aรหัส�"ี�0 กรุ�า�"รว��สอ�a๒�"ห�"�0า Admin</div>';
+    el.shiftList.innerHTML = '<div class="shift-card">ï¿½à¸¡ï¿½ï¿½ï¿½~ï¿½aà¹¬ï¿½à¸¡à¹¬ï¿½~à¸¥ï¿½"ï¿½à¸µï¿½ï¿½ï¿½Sà¸¹à¸à¸à¸±ï¿½aà¸£à¸«à¸±à¸ªï¿½"à¸µï¿½0 à¸à¸£à¸¸ï¿½à¸²ï¿½"à¸£à¸§ï¿½ï¿½à¸ªà¸­ï¿½aà¹’ï¿½"à¸«ï¿½"ï¿½0à¸² Admin</div>';
     return;
   }
 
@@ -246,8 +246,8 @@ function renderShiftList() {
     return `
       <div class="shift-card">
         <h4>${escapeHtml(getShiftProfile(s))}</h4>
-        <p class="meta">๬วลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-        <p class="meta">รหัสกะ: ${escapeHtml(s.shift_id || "")}</p>
+        <p class="meta">à¹¬à¸§à¸¥à¸² ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+        <p class="meta">à¸£à¸«à¸±à¸ªà¸à¸°: ${escapeHtml(s.shift_id || "")}</p>
         <span class="${statusClass}">${displayShiftStatus(status)}</span>
       </div>
     `;
@@ -276,13 +276,13 @@ async function openShift(index) {
   el.photoPreview.classList.add("hidden");
   if (el.incidentPhotoPreview) el.incidentPhotoPreview.classList.add("hidden");
 
-  setText(el.gpsText, "ยั�!�ม���หล� GPS");
+  setText(el.gpsText, "à¸¢à¸±ï¿½!ï¿½à¸¡ï¿½ï¿½ï¿½à¸«à¸¥ï¿½ GPS");
   setText(el.checkpointStatus, "");
   setText(el.incidentStatus, "");
-  setText(el.qrStepStatus, "ยั�!�ม��สแก�" QR");
-  setText(el.gpsStepStatus, "ยั�!�ม�����าย");
-  setText(el.submitStepStatus, "รอ��0อมูล๒ห�0�ร�a");
-  setText(el.incidentStepStatus, "รอ��0อมูล๒ห�0�ร�a");
+  setText(el.qrStepStatus, "à¸¢à¸±ï¿½!ï¿½à¸¡ï¿½ï¿½à¸ªà¹à¸ï¿½" QR");
+  setText(el.gpsStepStatus, "à¸¢à¸±ï¿½!ï¿½à¸¡ï¿½ï¿½ï¿½ï¿½ï¿½à¸²à¸¢");
+  setText(el.submitStepStatus, "à¸£à¸­ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¹’à¸«ï¿½0ï¿½à¸£ï¿½a");
+  setText(el.incidentStepStatus, "à¸£à¸­ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¹’à¸«ï¿½0ï¿½à¸£ï¿½a");
   setIncidentMode("NONE");
   hideAllActionDetails();
 
@@ -311,11 +311,11 @@ function getShiftProgressCounter(shift) {
 function renderCheckpointList() {
   if (!state.activePlan.length) {
     el.roundTabs.innerHTML = "";
-    setText(el.currentPointText, "�ม���~�a��ุ��"รว��๒�"รอ�a�"ี�0");
+    setText(el.currentPointText, "ï¿½à¸¡ï¿½ï¿½ï¿½~ï¿½aï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½à¹’ï¿½"à¸£à¸­ï¿½aï¿½"à¸µï¿½0");
     if (el.checkinActionPanel) el.checkinActionPanel.classList.add("hidden");
     if (el.checkpointListPanel) el.checkpointListPanel.classList.remove("hidden");
     stopQrScanner();
-    el.checkpointList.innerHTML = '<div class="checkpoint-card">�ม��มี��ุ��"รว��๒�"กะ�"ี�0</div>';
+    el.checkpointList.innerHTML = '<div class="checkpoint-card">ï¿½à¸¡ï¿½ï¿½à¸¡à¸µï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½à¹’ï¿½"à¸à¸°ï¿½"à¸µï¿½0</div>';
     return;
   }
 
@@ -399,12 +399,12 @@ function renderDashboard() {
     : (state.shifts || []).reduce((sum, s) => sum + Number(s.rounds_required || 1), 0);
 
   el.dbShiftTotal.textContent = String(total);
-  el.dbRoundProgress.textContent = `${roundsDone}/${roundsTotal} รอบ`;
+  el.dbRoundProgress.textContent = `${roundsDone}/${roundsTotal} à¸£à¸­à¸š`;
   el.dbCheckedTotal.textContent = String(checkedTotal);
   el.dbIncidentTotal.textContent = String(incidentTotal);
 
   if (!state.shifts.length) {
-    el.dashboardList.innerHTML = '<div class="dashboard-card">ยังไม่มีกะงานวันนี้</div>';
+    el.dashboardList.innerHTML = '<div class="dashboard-card">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¸à¸°à¸‡à¸²à¸™à¸§à¸±à¸™à¸™à¸µà¹‰</div>';
     return;
   }
 
@@ -417,9 +417,9 @@ function renderDashboard() {
       return `
         <div class="dashboard-card">
           <h4>${escapeHtml(getShiftProfile(s))}</h4>
-          <p class="meta">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
-          <p class="meta">รอบที่ทำแล้ว 0/${Number(s.rounds_required || 1)} รอบ</p>
-          <p class="meta">จุดตรวจทั้งหมด ${checkpointCount}</p>
+          <p class="meta">à¹€à¸§à¸¥à¸² ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
+          <p class="meta">à¸£à¸­à¸šà¸—à¸µà¹ˆà¸—à¸³à¹à¸¥à¹‰à¸§ 0/${Number(s.rounds_required || 1)} à¸£à¸­à¸š</p>
+          <p class="meta">à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆà¸—à¸±à¹‰à¸‡à¸«à¸¡à¸” ${checkpointCount}</p>
           <span class="${statusClass}">${displayShiftStatus(status)}</span>
         </div>
       `;
@@ -429,14 +429,14 @@ function renderDashboard() {
 
   el.dashboardList.innerHTML = rows.map((row) => {
     const statusClass = row.done ? "badge badge-closed" : "badge badge-open";
-    const statusText = row.done ? "ครบแล้ว" : "ยังไม่ครบ";
+    const statusText = row.done ? "à¸„à¸£à¸šà¹à¸¥à¹‰à¸§" : "à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸„à¸£à¸š";
     return `
       <div class="dashboard-card">
         <h4>${escapeHtml(row.name)}</h4>
-        <p class="meta">เวลา ${escapeHtml(row.start)} - ${escapeHtml(row.end)}</p>
-        <p class="meta">รอบที่ทำแล้ว ${row.rounds_done}/${row.rounds_total} รอบ</p>
-        <p class="meta">ตรวจแล้ว ${row.checked}/${row.expected} จุด</p>
-        <p class="meta">ช้า ${row.late} | ผิดพลาด ${row.invalid} | เหตุ ${row.incidents}</p>
+        <p class="meta">à¹€à¸§à¸¥à¸² ${escapeHtml(row.start)} - ${escapeHtml(row.end)}</p>
+        <p class="meta">à¸£à¸­à¸šà¸—à¸µà¹ˆà¸—à¸³à¹à¸¥à¹‰à¸§ ${row.rounds_done}/${row.rounds_total} à¸£à¸­à¸š</p>
+        <p class="meta">à¸•à¸£à¸§à¸ˆà¹à¸¥à¹‰à¸§ ${row.checked}/${row.expected} à¸ˆà¸¸à¸”</p>
+        <p class="meta">à¸Šà¹‰à¸² ${row.late} | à¸œà¸´à¸”à¸žà¸¥à¸²à¸” ${row.invalid} | à¹€à¸«à¸•à¸¸ ${row.incidents}</p>
         <span class="${statusClass}">${statusText}</span>
       </div>
     `;
@@ -577,14 +577,14 @@ async function loadGps() {
     setText(el.gpsText, `Lat: ${state.gps.lat.toFixed(6)}, Lng: ${state.gps.lng.toFixed(6)}`);
     updateActionCardsState();
   } catch (err) {
-    setText(el.gpsText, `�หล� GPS �ม��สำ๬ร�!��: ${err.message}`);
+    setText(el.gpsText, `ï¿½à¸«à¸¥ï¿½ GPS ï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½: ${err.message}`);
   }
 }
 
 async function onCapturePhotoCard() {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�า๬ลือก��ุ��"รว��ก��อ�"");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²à¹¬à¸¥à¸·à¸­à¸ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
   if (el.photoInput) {
@@ -595,7 +595,7 @@ async function onCapturePhotoCard() {
 
 function captureGps() {
   if (!navigator.geolocation) {
-    return Promise.reject(new Error("อุ�:กร��R�ม��รอ�!รั�a GPS"));
+    return Promise.reject(new Error("à¸­à¸¸ï¿½:à¸à¸£ï¿½ï¿½Rï¿½à¸¡ï¿½ï¿½à¸£à¸­ï¿½!à¸£à¸±ï¿½a GPS"));
   }
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -616,23 +616,23 @@ async function onSubmitCheckpoint() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�า๬ลือก��ุ��"รว����ากรายการก��อ�"ส���!");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²à¹¬à¸¥à¸·à¸­à¸ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½ï¿½ï¿½à¸²à¸à¸£à¸²à¸¢à¸à¸²à¸£à¸ï¿½ï¿½à¸­ï¿½"à¸ªï¿½ï¿½ï¿½!");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.checkpointStatus, "กรุ�าก� Card 1 ๬�~ื��อสแก�" QR ก��อ�"");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²à¸ï¿½ Card 1 à¹¬ï¿½~à¸·ï¿½ï¿½à¸­à¸ªà¹à¸ï¿½" QR à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
 
   if (!state.gps) {
-    setText(el.checkpointStatus, "กรุ�า�หล� GPS ก��อ�"ส���!");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²ï¿½à¸«à¸¥ï¿½ GPS à¸ï¿½ï¿½à¸­ï¿½"à¸ªï¿½ï¿½ï¿½!");
     return;
   }
 
   if (!state.checkpointPhoto) {
-    setText(el.checkpointStatus, "กรุ�าแ�"�aรู�:���ายก��อ�"ส���!");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²à¹ï¿½"ï¿½aà¸£à¸¹ï¿½:ï¿½ï¿½ï¿½à¸²à¸¢à¸ï¿½ï¿½à¸­ï¿½"à¸ªï¿½ï¿½ï¿½!");
     return;
   }
 
@@ -647,7 +647,7 @@ async function onSubmitCheckpoint() {
   };
 
   try {
-    setText(el.checkpointStatus, "กำลั�!ส���!��0อมูล...");
+    setText(el.checkpointStatus, "à¸à¸³à¸¥à¸±ï¿½!à¸ªï¿½ï¿½ï¿½!ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥...");
     const res = await callApi("submitCheckpoint", { payload });
     await showCheckpointResultSwal(res, selectedItem);
 
@@ -666,19 +666,19 @@ async function onSubmitCheckpoint() {
       if (isDashboardVisible()) await loadGuardDashboardSummary(true);
 
       if (String(selectedItem.checkpoint_id || "") !== String(res.checkpoint_id || "")) {
-        setText(el.checkpointStatus, "�aั�"�ึกแล�0ว แ�"����ุ��ี��สแก�"�ม���"ร�!กั�a��ุ��ี��๬ลือก");
+        setText(el.checkpointStatus, "ï¿½aà¸±ï¿½"ï¿½à¸¶à¸à¹à¸¥ï¿½0à¸§ à¹ï¿½"ï¿½ï¿½ï¿½ï¿½à¸¸ï¿½ï¿½à¸µï¿½ï¿½à¸ªà¹à¸ï¿½"ï¿½à¸¡ï¿½ï¿½ï¿½"à¸£ï¿½!à¸à¸±ï¿½aï¿½ï¿½à¸¸ï¿½ï¿½à¸µï¿½ï¿½à¹¬à¸¥à¸·à¸­à¸");
       } else {
-        setText(el.checkpointStatus, `ส���!��0อมูลสำ๬ร�!�� (${res.status})`);
+        setText(el.checkpointStatus, `à¸ªï¿½ï¿½ï¿½!ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ (${res.status})`);
       }
     } else {
-      setText(el.checkpointStatus, `ส���!��0อมูลสำ๬ร�!�� (${res.status})`);
+      setText(el.checkpointStatus, `à¸ªï¿½ï¿½ï¿½!ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ (${res.status})`);
       invalidateGuardSummaryCache();
       if (isDashboardVisible()) await loadGuardDashboardSummary(true);
     }
     clearCheckpointDraft();
   } catch (err) {
     enqueueAction("submitCheckpoint", { payload });
-    setText(el.checkpointStatus, `ส���!�ม��สำ๬ร�!��: �aั�"�ึก�ิวออ�x�ล�"�Rแล�0ว (${err.message})`);
+    setText(el.checkpointStatus, `à¸ªï¿½ï¿½ï¿½!ï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½: ï¿½aà¸±ï¿½"ï¿½à¸¶à¸ï¿½à¸´à¸§à¸­à¸­ï¿½xï¿½à¸¥ï¿½"ï¿½Rà¹à¸¥ï¿½0à¸§ (${err.message})`);
     clearCheckpointDraft();
   }
 }
@@ -687,28 +687,28 @@ async function onSubmitIncident() {
   if (!state.activeShift || !state.guard) return;
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.incidentStatus, "กรุ�า๬ลือก��ุ��"รว��ก��อ�"");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½à¸²à¹¬à¸¥à¸·à¸­à¸ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
 
   const qrText = (state.scannedQr || "").trim();
   if (!qrText) {
-    setText(el.incidentStatus, "กรุ�าสแก�" QR ก��อ�"");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½à¸²à¸ªà¹à¸ï¿½" QR à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
   if (!state.gps) {
-    setText(el.incidentStatus, "กรุ�า�หล� GPS ก��อ�"");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½à¸²ï¿½à¸«à¸¥ï¿½ GPS à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
   if (!state.checkpointPhoto) {
-    setText(el.incidentStatus, "กรุ�า���ายรู�:ก��อ�"");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½à¸²ï¿½ï¿½ï¿½à¸²à¸¢à¸£à¸¹ï¿½:à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
 
   const hasAbnormal = state.incidentMode === "HAS";
   const detail = (el.incidentDetail ? el.incidentDetail.value : "").trim();
   if (hasAbnormal && !detail) {
-    setText(el.incidentStatus, "กรุ�ากรอกรายละ๬อีย�");
+    setText(el.incidentStatus, "à¸à¸£à¸¸ï¿½à¸²à¸à¸£à¸­à¸à¸£à¸²à¸¢à¸¥à¸°à¹¬à¸­à¸µà¸¢ï¿½");
     return;
   }
 
@@ -719,11 +719,11 @@ async function onSubmitIncident() {
     gps_lat: state.gps.lat,
     gps_lng: state.gps.lng,
     photo_url: state.checkpointPhoto,
-    remark: hasAbnormal ? `[มี๬ห�"ุ] ${detail}` : "�ม��มี๬ห�"ุ�Sิ��:ก�"ิ"
+    remark: hasAbnormal ? `[à¸¡à¸µà¹¬à¸«ï¿½"à¸¸] ${detail}` : "ï¿½à¸¡ï¿½ï¿½à¸¡à¸µà¹¬à¸«ï¿½"à¸¸ï¿½Sà¸´ï¿½ï¿½:à¸ï¿½"à¸´"
   };
 
   try {
-    setText(el.incidentStatus, "กำลั�!�aั�"�ึก��ุ��"รว��...");
+    setText(el.incidentStatus, "à¸à¸³à¸¥à¸±ï¿½!ï¿½aà¸±ï¿½"ï¿½à¸¶à¸ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½...");
     const checkpointRes = await callApi("submitCheckpoint", { payload: checkpointPayload });
     await showCheckpointResultSwal(checkpointRes, selectedItem);
 
@@ -737,9 +737,9 @@ async function onSubmitIncident() {
         severity: "MEDIUM"
       };
       const incidentRes = await callApi("submitIncident", { payload: incidentPayload });
-      setText(el.incidentStatus, `�aั�"�ึกสำ๬ร�!�� และแ���0�!๬ห�"ุแล�0ว (${incidentRes.incident_id})`);
+      setText(el.incidentStatus, `ï¿½aà¸±ï¿½"ï¿½à¸¶à¸à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ à¹à¸¥à¸°à¹ï¿½ï¿½ï¿½0ï¿½!à¹¬à¸«ï¿½"à¸¸à¹à¸¥ï¿½0à¸§ (${incidentRes.incident_id})`);
     } else {
-      setText(el.incidentStatus, `�aั�"�ึกสำ๬ร�!�� (${checkpointRes.status || "OK"})`);
+      setText(el.incidentStatus, `ï¿½aà¸±ï¿½"ï¿½à¸¶à¸à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ (${checkpointRes.status || "OK"})`);
     }
 
     if (checkpointRes && checkpointRes.checkpoint_id) {
@@ -772,7 +772,7 @@ async function onSubmitIncident() {
         }
       });
     }
-    setText(el.incidentStatus, `ส���!�ม��สำ๬ร�!��: �aั�"�ึก�ิวออ�x�ล�"�Rแล�0ว (${err.message})`);
+    setText(el.incidentStatus, `à¸ªï¿½ï¿½ï¿½!ï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½: ï¿½aà¸±ï¿½"ï¿½à¸¶à¸ï¿½à¸´à¸§à¸­à¸­ï¿½xï¿½à¸¥ï¿½"ï¿½Rà¹à¸¥ï¿½0à¸§ (${err.message})`);
     clearIncidentDraft();
     clearCheckpointDraft();
   }
@@ -847,7 +847,7 @@ async function syncQueue(showMessage) {
   }
 
   if (showMessage && success > 0) {
-    await showSwalMessage("success", "�9ิ�!ก�R��0อมูลสำ๬ร�!��", `ส���!��0อมูลสำ๬ร�!�� ${success} รายการ`);
+    await showSwalMessage("success", "ï¿½9à¸´ï¿½!à¸ï¿½Rï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½", `à¸ªï¿½ï¿½ï¿½!ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ ${success} à¸£à¸²à¸¢à¸à¸²à¸£`);
   }
 }
 
@@ -876,7 +876,7 @@ async function callApi(action, payload = {}) {
     });
   } catch (err) {
     stopLoading();
-    throw new Error(`๬�รือ���ายมี�:ัญหา: ${err.message}`);
+    throw new Error(`à¹¬ï¿½à¸£à¸·à¸­ï¿½ï¿½ï¿½à¸²à¸¢à¸¡à¸µï¿½:à¸±à¸à¸«à¸²: ${err.message}`);
   }
 
   try {
@@ -887,7 +887,7 @@ async function callApi(action, payload = {}) {
     const text = await response.text();
     const json = JSON.parse(text);
     if (!json.ok) {
-      throw new Error(json.error || "API �Sิ��~ลา�");
+      throw new Error(json.error || "API ï¿½Sà¸´ï¿½ï¿½~à¸¥à¸²ï¿½");
     }
 
     return json.data;
@@ -944,7 +944,7 @@ function clearCheckpointDraft() {
   state.checkpointPhoto = "";
 
   if (el.manualQr) el.manualQr.value = "";
-  setText(el.gpsText, "ยั�!�ม���หล� GPS");
+  setText(el.gpsText, "à¸¢à¸±ï¿½!ï¿½à¸¡ï¿½ï¿½ï¿½à¸«à¸¥ï¿½ GPS");
   if (el.checkpointRemark) el.checkpointRemark.value = "";
   el.photoInput.value = "";
   el.photoPreview.classList.add("hidden");
@@ -1221,9 +1221,9 @@ function updateActionCardsState() {
   setCardDone(el.actionQrCard, hasQr);
   setCardDone(el.actionGpsCard, hasPhoto);
 
-  setText(el.qrStepStatus, hasQr ? "สแก�"แล�0ว" : "ยั�!�ม��สแก�"");
-  setText(el.gpsStepStatus, hasPhoto ? "���ายแล�0ว" : "ยั�!�ม�����าย");
-  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "�~ร�0อมยื�"ยั�"" : "รอ��0อมูล๒ห�0�ร�a");
+  setText(el.qrStepStatus, hasQr ? "à¸ªà¹à¸ï¿½"à¹à¸¥ï¿½0à¸§" : "à¸¢à¸±ï¿½!ï¿½à¸¡ï¿½ï¿½à¸ªà¹à¸ï¿½"");
+  setText(el.gpsStepStatus, hasPhoto ? "ï¿½ï¿½ï¿½à¸²à¸¢à¹à¸¥ï¿½0à¸§" : "à¸¢à¸±ï¿½!ï¿½à¸¡ï¿½ï¿½ï¿½ï¿½ï¿½à¸²à¸¢");
+  setText(el.incidentStepStatus, hasQr && hasGps && hasPhoto ? "ï¿½~à¸£ï¿½0à¸­à¸¡à¸¢à¸·ï¿½"à¸¢à¸±ï¿½"" : "à¸£à¸­ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¹’à¸«ï¿½0ï¿½à¸£ï¿½a");
 }
 
 function setCardEnabled(node, enabled) {
@@ -1240,7 +1240,7 @@ function setCardDone(node, done) {
 function openActionDetail(name) {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�า๬ลือก��ุ��"รว��ก��อ�"");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²à¹¬à¸¥à¸·à¸­à¸ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½à¸ï¿½ï¿½à¸­ï¿½"");
     return;
   }
   hideAllActionDetails();
@@ -1273,57 +1273,57 @@ async function showCheckpointResultSwal(res, selectedItem) {
   const isWrongPoint = String((selectedItem && selectedItem.checkpoint_id) || "") !== String(res.checkpoint_id || "");
 
   let icon = "success";
-  let title = "�aั�"�ึก��0อมูลสำ๬ร�!��";
-  let text = "�"รว����ุ�๬รีย�aร�0อย";
+  let title = "ï¿½aà¸±ï¿½"ï¿½à¸¶à¸ï¿½ï¿½0à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½";
+  let text = "ï¿½"à¸£à¸§ï¿½ï¿½ï¿½ï¿½à¸¸ï¿½à¹¬à¸£à¸µà¸¢ï¿½aà¸£ï¿½0à¸­à¸¢";
 
   if (status === "INVALID_GPS") {
     icon = "error";
-    title = "สแก�"สำ๬ร�!�� แ�"���"ำแห�"���!�ม���ูก�"�0อ�!";
-    text = "GPS �ม��อยู��๒�"รัศมี��ุ��"รว�� กรุ�า��:�ี����ุ��"รว����ริ�!แล�0วสแก�"๒หม��";
+    title = "à¸ªà¹à¸ï¿½"à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ à¹ï¿½"ï¿½ï¿½ï¿½"à¸³à¹à¸«ï¿½"ï¿½ï¿½ï¿½!ï¿½à¸¡ï¿½ï¿½ï¿½à¸¹à¸ï¿½"ï¿½0à¸­ï¿½!";
+    text = "GPS ï¿½à¸¡ï¿½ï¿½à¸­à¸¢à¸¹ï¿½ï¿½à¹’ï¿½"à¸£à¸±à¸¨à¸¡à¸µï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½ à¸à¸£à¸¸ï¿½à¸²ï¿½ï¿½:ï¿½à¸µï¿½ï¿½ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½ï¿½ï¿½à¸£à¸´ï¿½!à¹à¸¥ï¿½0à¸§à¸ªà¹à¸ï¿½"à¹’à¸«à¸¡ï¿½ï¿½";
   } else if (status === "INVALID_QR" || isWrongPoint) {
     icon = "error";
-    title = "สแก�" QR �ม���"ร�!��ุ�";
-    text = "QR �ี��สแก�"�ม���"ร�!กั�a��ุ��"รว���ี��๬ลือก กรุ�า�"รว��สอ�aแล�0วสแก�"๒หม��";
+    title = "à¸ªà¹à¸ï¿½" QR ï¿½à¸¡ï¿½ï¿½ï¿½"à¸£ï¿½!ï¿½ï¿½à¸¸ï¿½";
+    text = "QR ï¿½à¸µï¿½ï¿½à¸ªà¹à¸ï¿½"ï¿½à¸¡ï¿½ï¿½ï¿½"à¸£ï¿½!à¸à¸±ï¿½aï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½ï¿½à¸µï¿½ï¿½à¹¬à¸¥à¸·à¸­à¸ à¸à¸£à¸¸ï¿½à¸²ï¿½"à¸£à¸§ï¿½ï¿½à¸ªà¸­ï¿½aà¹à¸¥ï¿½0à¸§à¸ªà¹à¸ï¿½"à¹’à¸«à¸¡ï¿½ï¿½";
   } else if (status === "LATE") {
     icon = "warning";
-    title = "�aั�"�ึกสำ๬ร�!�� (�`�0า)";
-    text = "�"รว����ุ�สำ๬ร�!�� แ�"��๬กิ�"๬วลา�ี��กำห�"�";
+    title = "ï¿½aà¸±ï¿½"ï¿½à¸¶à¸à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ (ï¿½`ï¿½0à¸²)";
+    text = "ï¿½"à¸£à¸§ï¿½ï¿½ï¿½ï¿½à¸¸ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ à¹ï¿½"ï¿½ï¿½à¹¬à¸à¸´ï¿½"à¹¬à¸§à¸¥à¸²ï¿½à¸µï¿½ï¿½à¸à¸³à¸«ï¿½"ï¿½";
   } else if (status === "ONTIME") {
     icon = "success";
-    title = "�aั�"�ึกสำ๬ร�!��";
-    text = "�"รว����ุ�สำ๬ร�!���"าม๬วลา";
+    title = "ï¿½aà¸±ï¿½"ï¿½à¸¶à¸à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½";
+    text = "ï¿½"à¸£à¸§ï¿½ï¿½ï¿½ï¿½à¸¸ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½ï¿½"à¸²à¸¡à¹¬à¸§à¸¥à¸²";
   } else if (status) {
     icon = "info";
-    title = "�aั�"�ึกสำ๬ร�!��";
-    text = "ส�า�"ะ: " + status;
+    title = "ï¿½aà¸±ï¿½"ï¿½à¸¶à¸à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½";
+    text = "à¸ªï¿½à¸²ï¿½"à¸°: " + status;
   }
 
   await Swal.fire({
     icon,
     title,
     text,
-    confirmButtonText: "�"กล�!"
+    confirmButtonText: "ï¿½"à¸à¸¥ï¿½!"
   });
 }
 async function openQrScanCard() {
   const selectedItem = getSelectedPlanItem();
   if (!selectedItem) {
-    setText(el.checkpointStatus, "กรุ�า๬ลือก��ุ��"รว��ก��อ�"สแก�" QR");
+    setText(el.checkpointStatus, "à¸à¸£à¸¸ï¿½à¸²à¹¬à¸¥à¸·à¸­à¸ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½à¸ï¿½ï¿½à¸­ï¿½"à¸ªà¹à¸ï¿½" QR");
     return;
   }
   if (!window.Swal || !window.Html5Qrcode) {
-    setText(el.checkpointStatus, "อุ�:กร��R�ม��รอ�!รั�aสแก�"กล�0อ�!");
+    setText(el.checkpointStatus, "à¸­à¸¸ï¿½:à¸à¸£ï¿½ï¿½Rï¿½à¸¡ï¿½ï¿½à¸£à¸­ï¿½!à¸£à¸±ï¿½aà¸ªà¹à¸ï¿½"à¸à¸¥ï¿½0à¸­ï¿½!");
     return;
   }
 
   const readerId = "swalQrReader";
   let scanner = null;
   await Swal.fire({
-    title: "สแก�" QR ��ุ��"รว��",
+    title: "à¸ªà¹à¸ï¿½" QR ï¿½ï¿½à¸¸ï¿½ï¿½"à¸£à¸§ï¿½ï¿½",
     html: `<div id="${readerId}" style="min-height:280px;border-radius:10px;overflow:hidden;background:#0a1f37"></div>`,
     showCancelButton: true,
-    confirmButtonText: "�:ิ�",
-    cancelButtonText: "ยก๬ลิก",
+    confirmButtonText: "ï¿½:à¸´ï¿½",
+    cancelButtonText: "à¸¢à¸à¹¬à¸¥à¸´à¸",
     didOpen: () => {
       scanner = new Html5Qrcode(readerId);
       scanner.start(
@@ -1333,12 +1333,12 @@ async function openQrScanCard() {
           const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
           const actualQr = String(decodedText || "").trim();
           if (expectedQr && actualQr !== expectedQr) {
-            setText(el.checkpointStatus, "สแก�" QR �ม���"ร�!��ุ�");
+            setText(el.checkpointStatus, "à¸ªà¹à¸ï¿½" QR ï¿½à¸¡ï¿½ï¿½ï¿½"à¸£ï¿½!ï¿½ï¿½à¸¸ï¿½");
             if (navigator && typeof navigator.vibrate === "function") {
               navigator.vibrate([180, 120, 180]);
             }
             if (window.Swal && Swal.isVisible()) {
-              Swal.showValidationMessage("สแก�" QR �ม���"ร�!��ุ�");
+              Swal.showValidationMessage("à¸ªà¹à¸ï¿½" QR ï¿½à¸¡ï¿½ï¿½ï¿½"à¸£ï¿½!ï¿½ï¿½à¸¸ï¿½");
               const vm = Swal.getValidationMessage ? Swal.getValidationMessage() : null;
               if (vm) {
                 vm.style.fontSize = "1.06rem";
@@ -1355,13 +1355,13 @@ async function openQrScanCard() {
           }
           state.scannedQr = actualQr;
           if (el.manualQr) el.manualQr.value = decodedText;
-          setText(el.qrStepStatus, `สแก�"แล�0ว: ${decodedText}`);
+          setText(el.qrStepStatus, `à¸ªà¹à¸ï¿½"à¹à¸¥ï¿½0à¸§: ${decodedText}`);
           updateActionCardsState();
           Swal.close();
         },
         () => {}
       ).catch(() => {
-        setText(el.checkpointStatus, "๬�:ิ�กล�0อ�!�ม��สำ๬ร�!��");
+        setText(el.checkpointStatus, "à¹¬ï¿½:à¸´ï¿½à¸à¸¥ï¿½0à¸­ï¿½!ï¿½à¸¡ï¿½ï¿½à¸ªà¸³à¹¬à¸£ï¿½!ï¿½ï¿½");
       });
     },
     willClose: () => {
@@ -1529,14 +1529,14 @@ async function fileToDataUrl(file, maxSize, quality) {
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("�ม��สามาร�อ��า�"��xล�R���0"));
+    reader.onerror = () => reject(new Error("ï¿½à¸¡ï¿½ï¿½à¸ªà¸²à¸¡à¸²à¸£ï¿½à¸­ï¿½ï¿½à¸²ï¿½"ï¿½ï¿½xà¸¥ï¿½Rï¿½ï¿½ï¿½0"));
     reader.readAsDataURL(file);
   });
 
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("�ม��สามาร��:ระมวล�Sลรู�:���0"));
+    im.onerror = () => reject(new Error("ï¿½à¸¡ï¿½ï¿½à¸ªà¸²à¸¡à¸²à¸£ï¿½ï¿½:à¸£à¸°à¸¡à¸§à¸¥ï¿½Sà¸¥à¸£à¸¹ï¿½:ï¿½ï¿½ï¿½0"));
     im.src = dataUrl;
   });
 
@@ -1557,7 +1557,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = () => resolve(im);
-    im.onerror = () => reject(new Error("�ม��สามาร��:ระมวล�Sลรู�:���0"));
+    im.onerror = () => reject(new Error("ï¿½à¸¡ï¿½ï¿½à¸ªà¸²à¸¡à¸²à¸£ï¿½ï¿½:à¸£à¸°à¸¡à¸§à¸¥ï¿½Sà¸¥à¸£à¸¹ï¿½:ï¿½ï¿½ï¿½0"));
     im.src = dataUrl;
   });
 
@@ -1583,7 +1583,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
     ? `Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)}`
     : "Lat - | Lng -";
 
-  const lines = [`วั�"�ี�� ${dateText}`, gpsText];
+  const lines = [`à¸§à¸±ï¿½"ï¿½à¸µï¿½ï¿½ ${dateText}`, gpsText];
   const pad = Math.max(10, Math.round(canvas.width * 0.018));
   const fontSize = Math.max(14, Math.round(canvas.width * 0.03));
   const lineGap = Math.max(6, Math.round(fontSize * 0.4));
@@ -1605,6 +1605,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
 
 
 

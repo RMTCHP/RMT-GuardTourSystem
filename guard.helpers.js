@@ -521,36 +521,6 @@ function fmtDateTimeLocal(date) {
   return `${y}-${m}-${d} ${hh}:${mm}`;
 }
 
-function normalizeTime(value) {
-  const s = String(value || "").trim();
-  if (!s) return "00:00:00";
-  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (!m) return s;
-  const hh = String(Math.min(23, Math.max(0, Number(m[1])))).padStart(2, "0");
-  const mm = String(Math.min(59, Math.max(0, Number(m[2])))).padStart(2, "0");
-  const ss = String(Math.min(59, Math.max(0, Number(m[3] || 0)))).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
-}
-
-function parseGuardIdsLocal(raw) {
-  const uniq = {};
-  return String(raw || "")
-    .split(",")
-    .map((x) => String(x || "").trim())
-    .filter((id) => {
-      if (!id || uniq[id]) return false;
-      uniq[id] = true;
-      return true;
-    });
-}
-
-function makeShiftIdFromTemplate(templateId, dateStr, guardId) {
-  const d = String(dateStr || "").replace(/-/g, "");
-  const g = String(guardId || "").trim();
-  if (g) return `${String(templateId)}-${g}-${d}`;
-  return `${String(templateId)}-${d}`;
-}
-
 function escapeHtml(input) {
   return String(input ?? "")
     .replaceAll("&", "&amp;")
@@ -644,6 +614,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
 
 
 
