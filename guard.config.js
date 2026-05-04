@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbwlpmO-jSlrpN_m2OaKLQ1sUy0Ka0HvneRjGrD-DNFwYn_ZY2KHDw6zPj978WsovDQ/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbwiDiMw2psnMUzmJXJTTQcpzmQyxb_wvY08fUqa70RHXSWuz6MP6ESLmEQLDy81fw/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -34,5 +34,6 @@ const state = {
 
 const el = {};
 let loadingCount = 0;
+
 
 
