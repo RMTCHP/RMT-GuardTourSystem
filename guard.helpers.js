@@ -302,6 +302,20 @@ function setIncidentMode(mode) {
   if (el.incidentChoiceNone) el.incidentChoiceNone.classList.toggle("active", state.incidentMode === "NONE");
   if (el.incidentChoiceHas) el.incidentChoiceHas.classList.toggle("active", state.incidentMode === "HAS");
   if (el.incidentExtraFields) el.incidentExtraFields.classList.toggle("hidden", state.incidentMode !== "HAS");
+  updateIncidentPhotoButtonState();
+}
+
+function updateIncidentPhotoButtonState() {
+  if (!el.incidentPhotoBtn) return;
+  if (state.incidentMode !== "HAS") {
+    el.incidentPhotoBtn.disabled = true;
+    el.incidentPhotoBtn.classList.add("is-disabled");
+    return;
+  }
+  const detail = String((el.incidentDetail && el.incidentDetail.value) || "").trim();
+  const enabled = !!detail;
+  el.incidentPhotoBtn.disabled = !enabled;
+  el.incidentPhotoBtn.classList.toggle("is-disabled", !enabled);
 }
 
 
@@ -588,11 +602,18 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
   });
   const lat = Number(meta && meta.lat);
   const lng = Number(meta && meta.lng);
-  const gpsText = Number.isFinite(lat) && Number.isFinite(lng)
-    ? `Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)}`
-    : "Lat - | Lng -";
+  const roundNo = Number(meta && meta.roundNo);
+  const seqNo = Number(meta && meta.seqNo);
+  const checkpointName = String((meta && meta.checkpointName) || "-").trim();
+  const detailRaw = String((meta && meta.incidentDetail) || "").trim();
+  const detailText = detailRaw || "-";
 
-  const lines = [`วันที่ ${dateText}`, gpsText];
+  const roundText = Number.isFinite(roundNo) && roundNo > 0 ? `รอบที่ ${roundNo}` : "รอบที่ -";
+  const pointPrefix = Number.isFinite(seqNo) && seqNo > 0 ? `จุดที่ ${seqNo}` : "จุดที่ -";
+  const pointText = checkpointName ? `${pointPrefix} ${checkpointName}` : pointPrefix;
+  const line1 = `วันที่ ${dateText} | ${roundText} / ${pointText}`;
+  const line2 = `รายละเอียด: ${detailText}`;
+  const lines = [line1, line2];
   const pad = Math.max(10, Math.round(canvas.width * 0.018));
   const fontSize = Math.max(14, Math.round(canvas.width * 0.03));
   const lineGap = Math.max(6, Math.round(fontSize * 0.4));

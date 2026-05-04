@@ -1224,6 +1224,14 @@ input:focus, textarea:focus, select:focus {
   outline-offset: 2px;
 }
 
+.incident-photo-icon-btn.is-disabled,
+.incident-photo-icon-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 
 .qr-box {
   min-height: 230px;

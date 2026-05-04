@@ -71,8 +71,14 @@ function bindEvents() {
   el.submitIncidentBtn.addEventListener("click", onSubmitIncident);
   if (el.incidentPhotoBtn && el.incidentPhotoInput) {
     el.incidentPhotoBtn.addEventListener("click", () => {
+      if (el.incidentPhotoBtn.disabled) return;
       el.incidentPhotoInput.value = "";
       el.incidentPhotoInput.click();
+    });
+  }
+  if (el.incidentDetail) {
+    el.incidentDetail.addEventListener("input", () => {
+      updateIncidentPhotoButtonState();
     });
   }
   if (el.backToCheckpointListBtn) {
@@ -101,6 +107,13 @@ function bindEvents() {
     el.incidentPhotoInput.addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      const selectedItem = getSelectedPlanItem();
+      const roundNo = Number((selectedItem && selectedItem.round_no) || state.currentRound || 0);
+      const seqNo = Number((selectedItem && selectedItem.seq_no) || 0);
+      const checkpointName = String(
+        (selectedItem && (selectedItem.checkpoint_name || selectedItem.checkpoint_id)) || "-"
+      ).trim();
+      const incidentDetail = String((el.incidentDetail ? el.incidentDetail.value : "") || "").trim();
       if (!state.gps) {
         try {
           await captureGps();
@@ -109,7 +122,11 @@ function bindEvents() {
       state.incidentPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
         timestamp: new Date(),
         lat: state.gps ? state.gps.lat : null,
-        lng: state.gps ? state.gps.lng : null
+        lng: state.gps ? state.gps.lng : null,
+        roundNo,
+        seqNo,
+        checkpointName,
+        incidentDetail
       });
       if (el.incidentPhotoPreview) {
         el.incidentPhotoPreview.src = state.incidentPhoto;
@@ -452,6 +469,14 @@ async function onSubmitIncident() {
   }
   if (hasAbnormal && !state.incidentPhoto) {
     setText(el.incidentStatus, "กรุณาถ่ายภาพเหตุผิดปกติ");
+    if (window.Swal) {
+      await Swal.fire({
+        icon: "warning",
+        title: "กรุณาถ่ายรูปด้วย",
+        text: "คุณกรอกรายละเอียดแล้ว แต่ยังไม่ได้ถ่ายรูปแจ้งเหตุ",
+        confirmButtonText: "ตกลง"
+      });
+    }
     return;
   }
 
