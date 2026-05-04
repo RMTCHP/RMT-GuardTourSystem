@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbxtsnZc-dktCAdYEsMgsnldQ85v2SSWXy4XY4dhPKN4ckgo2wskfd6GlLDWCKHyTEQ/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbwlpmO-jSlrpN_m2OaKLQ1sUy0Ka0HvneRjGrD-DNFwYn_ZY2KHDw6zPj978WsovDQ/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
@@ -119,6 +119,7 @@ async function showMessage(icon, title, text) {
     confirmButtonText: "ตกลง"
   });
 }
+
 
 
 
