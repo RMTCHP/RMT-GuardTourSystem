@@ -321,8 +321,8 @@ async function showCheckpointResultSwal(res, selectedItem) {
     text = "GPS ไม่อยู่ในรัศมีจุดตรวจ กรุณาไปที่จุดตรวจจริงแล้วสแกนใหม่";
   } else if (status === "INVALID_QR" || isWrongPoint) {
     icon = "error";
-    title = "สแกน QR ไม่ตรงจุด";
-    text = "QR ที่สแกนไม่ตรงกับจุดตรวจที่เลือก กรุณาตรวจสอบแล้วสแกนใหม่";
+    title = "QR code ไม่ตรงจุดตรวจ";
+    text = "QR code ไม่ตรงจุดตรวจ กรุณาตรวจสอบแล้วสแกนใหม่";
   } else if (status === "LATE") {
     icon = "warning";
     title = "บันทึกสำเร็จ (ช้า)";
@@ -372,12 +372,12 @@ async function openQrScanCard() {
           const expectedQr = getExpectedQrForSelectedPoint(selectedItem);
           const actualQr = String(decodedText || "").trim();
           if (expectedQr && actualQr !== expectedQr) {
-            setText(el.checkpointStatus, "สแกน QR ไม่ตรงจุด");
+            setText(el.checkpointStatus, "QR code ไม่ตรงจุดตรวจ");
             if (navigator && typeof navigator.vibrate === "function") {
               navigator.vibrate([180, 120, 180]);
             }
             if (window.Swal && Swal.isVisible()) {
-              Swal.showValidationMessage("สแกน QR ไม่ตรงจุด");
+              Swal.showValidationMessage("QR code ไม่ตรงจุดตรวจ");
               const vm = Swal.getValidationMessage ? Swal.getValidationMessage() : null;
               if (vm) {
                 vm.style.fontSize = "1.06rem";
@@ -614,6 +614,7 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
 
 
 
