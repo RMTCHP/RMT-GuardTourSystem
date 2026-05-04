@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbwiDiMw2psnMUzmJXJTTQcpzmQyxb_wvY08fUqa70RHXSWuz6MP6ESLmEQLDy81fw/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbw_dH4H8qQjuml75SYcB_ds9h6r3CbZpKk5Sc7du2uyVhUwpd5EGFd9f2vK-vjMeyw/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -1135,6 +1135,7 @@ function createCheckinProofImage_(gps) {
   ctx.fillText(`à¸œà¸¹à¹‰à¸•à¸£à¸§à¸ˆ: ${state.guard ? (state.guard.name || state.guard.guard_id) : "-"}`, 60, 350);
   return canvas.toDataURL("image/jpeg", 0.85);
 }
+
 
 
 
