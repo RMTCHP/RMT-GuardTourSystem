@@ -12,6 +12,7 @@ const state = {
   templateRouteCache: {},
   liveLogsCache: {},
   dashboardSnapshotCache: {},
+  dashboardChartsCache: {},
   liveLogs: [],
   shiftCheckpoints: {},
   charts: {},
@@ -90,10 +91,6 @@ function clearQueryString() {
 
 function switchView(name) {
   el["view-dashboard"].classList.toggle("active", name === "dashboard");
-}
-
-function setText(node, text) {
-  if (node) node.textContent = text;
 }
 
 function notify(message, icon) {
@@ -176,19 +173,6 @@ function toDateKey(value) {
   const parsed = new Date(s);
   if (!isNaN(parsed.getTime())) return toYmd(parsed);
   return s.slice(0, 10);
-}
-
-function buildDateRangeLocal(endYmd, days) {
-  const safeDays = Math.max(1, Number(days || 1));
-  const end = new Date(`${String(endYmd).slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(end.getTime())) return [toYmd(new Date())];
-  const out = [];
-  for (let i = safeDays - 1; i >= 0; i -= 1) {
-    const d = new Date(end);
-    d.setDate(end.getDate() - i);
-    out.push(toYmd(d));
-  }
-  return out;
 }
 
 function toHms(date) {

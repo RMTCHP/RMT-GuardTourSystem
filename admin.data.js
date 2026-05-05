@@ -1,8 +1,29 @@
+async function ensureAdminsLoaded(silentMode, forceReload) {
+  if (!state.supervisor) return [];
+  if (state.adminsLoaded && !forceReload) {
+    renderAdminTable(state.admins || []);
+    return state.admins || [];
+  }
+
+  try {
+    const rows = await callApi("listSupervisors", {});
+    state.admins = Array.isArray(rows) ? rows : [];
+    state.adminsLoaded = true;
+    renderAdminTable(state.admins);
+    return state.admins;
+  } catch (err) {
+    state.admins = [];
+    state.adminsLoaded = false;
+    renderAdminTable([]);
+    if (!silentMode) notify(`โหลดข้อมูล Admin ไม่สำเร็จ: ${err.message}`);
+    return [];
+  }
+}
+
 async function ensureGuardsLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
   if (state.guardsLoaded && !forceReload) {
     renderGuardsTable(state.guards || []);
-    renderAdminTable();
     renderLiveGuardFilter();
     return state.guards || [];
   }
@@ -12,7 +33,6 @@ async function ensureGuardsLoaded(silentMode, forceReload) {
     state.guards = Array.isArray(rows) ? rows : [];
     state.guardsLoaded = true;
     renderGuardsTable(state.guards);
-    renderAdminTable();
     renderLiveGuardFilter();
     return state.guards;
   } catch (err) {
@@ -136,10 +156,4 @@ function renderLiveLogs(rows) {
       </tr>
     `;
   }).join("");
-}
-
-async function loadTemplateData() {
-  if (!state.supervisor) return;
-  const rows = await ensureTemplatesLoaded(true);
-  if (rows.length) notify("โหลดข้อมูล Template สำเร็จ");
 }

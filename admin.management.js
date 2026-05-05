@@ -59,7 +59,8 @@
       el.topUserName.textContent = state.supervisor.name || state.supervisor.supervisor_id;
       el.topUserAvatar.textContent = getInitials(state.supervisor.name || state.supervisor.supervisor_id);
     }
-    renderAdminTable();
+    state.adminsLoaded = false;
+    await ensureAdminsLoaded(true, true);
   } catch (err) {
     notify(`บันทึกข้อมูล Admin ไม่สำเร็จ: ${err.message}`);
   }
@@ -68,6 +69,7 @@
 function invalidateAdminCaches() {
   state.liveLogsCache = {};
   state.dashboardSnapshotCache = {};
+  state.dashboardChartsCache = {};
 }
 
 async function openAddUserSwal(existingGuard) {
@@ -255,35 +257,39 @@ async function openCheckpointSwal(existingCheckpoint) {
 }
 
 
-function renderAdminTable() {
-  if (!state.supervisor) {
+function renderAdminTable(rows) {
+  const admins = Array.isArray(rows) ? rows : (state.admins || []);
+  if (!admins.length) {
     el.adminTableBody.innerHTML = '<tr><td colspan="4">No admin data</td></tr>';
     return;
   }
 
-  el.adminTableBody.innerHTML = `
+  el.adminTableBody.innerHTML = admins.map((admin) => `
     <tr>
-      <td>${escapeHtml(state.supervisor.supervisor_id || "-")}</td>
-      <td>${escapeHtml(state.supervisor.name || "-")}</td>
-      <td>${escapeHtml(state.supervisor.email || "-")}</td>
+      <td>${escapeHtml(admin.supervisor_id || "-")}</td>
+      <td>${escapeHtml(admin.name || "-")}</td>
+      <td>${escapeHtml(admin.email || "-")}</td>
       <td class="row-actions">
-        <button class="btn row-btn icon-btn" data-edit-admin="${escapeAttr(state.supervisor.supervisor_id || "")}" title="Edit" aria-label="Edit">
+        <button class="btn row-btn icon-btn" data-edit-admin="${escapeAttr(admin.supervisor_id || "")}" title="Edit" aria-label="Edit">
           ${iconEdit()}
         </button>
-        <button class="btn row-btn icon-btn btn-danger-soft" data-del-admin="${escapeAttr(state.supervisor.supervisor_id || "")}" title="Delete" aria-label="Delete">
+        <button class="btn row-btn icon-btn btn-danger-soft" data-del-admin="${escapeAttr(admin.supervisor_id || "")}" title="Delete" aria-label="Delete">
           ${iconTrash()}
         </button>
       </td>
     </tr>
-  `;
+  `).join("");
 
   Array.from(el.adminTableBody.querySelectorAll("[data-edit-admin]")).forEach((btn) => {
     btn.addEventListener("click", () => {
+      const supervisorId = btn.getAttribute("data-edit-admin");
+      const admin = admins.find((x) => String(x.supervisor_id || "") === String(supervisorId || ""));
+      if (!admin) return;
       openAddAdminSwal({
-        supervisor_id: state.supervisor?.supervisor_id || "",
-        name: state.supervisor?.name || "",
-        email: state.supervisor?.email || "",
-        status: "active"
+        supervisor_id: admin.supervisor_id || "",
+        name: admin.name || "",
+        email: admin.email || "",
+        status: admin.status || "active"
       });
     });
   });
@@ -292,9 +298,10 @@ function renderAdminTable() {
     btn.addEventListener("click", () => {
       const supervisorId = btn.getAttribute("data-del-admin");
       if (!supervisorId) return;
+      const admin = admins.find((x) => String(x.supervisor_id || "") === String(supervisorId));
       confirmDeleteAdmin({
         supervisor_id: supervisorId,
-        name: state.supervisor?.name || ""
+        name: admin?.name || ""
       });
     });
   });
@@ -387,7 +394,8 @@ async function confirmDeleteAdmin(admin) {
       logout();
       return;
     }
-    renderAdminTable();
+    state.adminsLoaded = false;
+    await ensureAdminsLoaded(true, true);
   } catch (err) {
     notify(`ลบ Admin ไม่สำเร็จ: ${err.message}`);
   }
@@ -947,11 +955,5 @@ async function openTemplateSwal(existingTemplate) {
     notify(`บันทึกข้อมูล Template ไม่สำเร็จ: ${err.message}`);
   }
 }
-
-async function openTemplateRouteSwal(template) {
-
-  notify("จัดการ Route ผ่านหน้าจอ Edit Template", "warning");
-}
-
 
 

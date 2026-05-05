@@ -5,14 +5,22 @@
   if (!silentMode) notify("กำลังโหลด Dashboard...");
 
   try {
+    const supervisorId = state.supervisor.supervisor_id;
+    const chartCacheKey = `${supervisorId}|${date}|30`;
+    const chartDataPromise = (!forceReload && state.dashboardChartsCache && state.dashboardChartsCache[chartCacheKey])
+      ? Promise.resolve(state.dashboardChartsCache[chartCacheKey])
+      : callApi("getDashboardCharts", {
+          supervisorId,
+          endDate: date,
+          days: 30
+        });
+
     const [snapshot, chartData] = await Promise.all([
       buildDailyDashboardSnapshot(date, forceReload),
-      callApi("getDashboardCharts", {
-        supervisorId: state.supervisor.supervisor_id,
-        endDate: date,
-        days: 30
-      })
+      chartDataPromise
     ]);
+    if (!state.dashboardChartsCache) state.dashboardChartsCache = {};
+    state.dashboardChartsCache[chartCacheKey] = chartData || {};
 
     const kpi = snapshot.kpi || {};
     el.kpiShifts.textContent = String(kpi.total_shifts || 0);
@@ -546,160 +554,6 @@ function mergeSnapshotIntoCharts(chartData, snapshot, dateYmd) {
   out.compliance_trend.sort((a, b) => String(a.date).localeCompare(String(b.date)));
   out.daily_operations.sort((a, b) => String(a.date).localeCompare(String(b.date)));
   return out;
-}
-
-async function buildFallbackDashboardFromLogs(endDate, days) {
-  const safeDays = Math.max(1, Number(days || 30));
-  const dates = buildDateRangeLocal(endDate, safeDays);
-
-  const responses = await Promise.allSettled(
-    dates.map((date) => callApi("listCheckLogs", {
-      supervisorId: state.supervisor?.supervisor_id || "",
-      date,
-      guardId: "",
-      status: ""
-    }))
-  );
-
-  const allLogs = [];
-  responses.forEach((res) => {
-    if (res.status === "fulfilled" && Array.isArray(res.value)) {
-      allLogs.push(...res.value);
-    }
-  });
-
-  const dayStats = {};
-  dates.forEach((d) => {
-    dayStats[d] = { checked: 0, late: 0, invalid: 0, total: 0 };
-  });
-
-  const shiftMap = {};
-  const checkpointIssueMap = {};
-  const shiftTypeMap = {
-    DAY: { total: 0, checked: 0, invalid: 0 },
-    NIGHT: { total: 0, checked: 0, invalid: 0 }
-  };
-
-  allLogs.forEach((log) => {
-    const status = String(log.status || "").toUpperCase();
-    const scanTime = String(log.scan_time || "");
-    const dateKey = scanTime.slice(0, 10);
-    const cpKey = String(log.checkpoint_id || "");
-    const shiftId = String(log.shift_id || "");
-
-    if (!dayStats[dateKey]) {
-      dayStats[dateKey] = { checked: 0, late: 0, invalid: 0, total: 0 };
-    }
-
-    dayStats[dateKey].total += 1;
-
-    if (status === "ONTIME" || status === "LATE") {
-      dayStats[dateKey].checked += 1;
-      if (status === "LATE") dayStats[dateKey].late += 1;
-    } else if (status.startsWith("INVALID")) {
-      dayStats[dateKey].invalid += 1;
-      if (cpKey) checkpointIssueMap[cpKey] = Number(checkpointIssueMap[cpKey] || 0) + 1;
-    }
-
-    if (shiftId) {
-      if (!shiftMap[shiftId]) {
-        shiftMap[shiftId] = {
-          shift_id: shiftId,
-          guard_id: String(log.guard_id || "-"),
-          total_points: 0,
-          checked_points: 0,
-          late_points: 0,
-          missed_points: 0,
-          incidents_count: 0,
-          compliance_pct: 0
-        };
-      }
-      shiftMap[shiftId].total_points += 1;
-      if (status === "ONTIME" || status === "LATE") {
-        shiftMap[shiftId].checked_points += 1;
-      }
-      if (status === "LATE") {
-        shiftMap[shiftId].late_points += 1;
-      }
-    }
-
-    const hh = Number(scanTime.slice(11, 13) || 0);
-    const type = (hh >= 18 || hh < 6) ? "NIGHT" : "DAY";
-    shiftTypeMap[type].total += 1;
-    if (status === "ONTIME" || status === "LATE") shiftTypeMap[type].checked += 1;
-    if (status.startsWith("INVALID")) shiftTypeMap[type].invalid += 1;
-  });
-
-  const complianceTrend = dates.map((d) => {
-    const s = dayStats[d] || { total: 0, checked: 0 };
-    const compliancePct = s.total ? (s.checked / s.total) * 100 : 0;
-    return { date: d, compliance_pct: Number(compliancePct.toFixed(2)) };
-  });
-
-  const dailyOperations = dates.map((d) => {
-    const s = dayStats[d] || { checked: 0, invalid: 0, total: 0 };
-    const missed = Math.max(0, s.total - s.checked - s.invalid);
-    return { date: d, checked: s.checked, missed, invalid: s.invalid };
-  });
-
-  const shiftTypePerformance = Object.keys(shiftTypeMap).map((type) => {
-    const s = shiftTypeMap[type];
-    const avgCompliance = s.total ? (s.checked / s.total) * 100 : 0;
-    return {
-      shift_type: type,
-      total_shifts: s.total,
-      avg_compliance_pct: Number(avgCompliance.toFixed(2)),
-      incidents: 0
-    };
-  });
-
-  const checkpointsById = {};
-  (state.checkpoints || []).forEach((cp) => {
-    checkpointsById[String(cp.checkpoint_id || "")] = cp;
-  });
-
-  const topProblemCheckpoints = Object.keys(checkpointIssueMap)
-    .map((cpId) => ({
-      checkpoint_id: cpId,
-      checkpoint_name: checkpointsById[cpId]?.checkpoint_name || "",
-      issues: Number(checkpointIssueMap[cpId] || 0)
-    }))
-    .sort((a, b) => b.issues - a.issues)
-    .slice(0, 10);
-
-  const summaryRows = Object.values(shiftMap).map((row) => {
-    const total = Number(row.total_points || 0);
-    const checked = Number(row.checked_points || 0);
-    row.compliance_pct = total ? Number(((checked / total) * 100).toFixed(2)) : 0;
-    return row;
-  });
-
-  const totalShifts = summaryRows.length;
-  const totalChecked = summaryRows.reduce((n, r) => n + Number(r.checked_points || 0), 0);
-  const totalLate = summaryRows.reduce((n, r) => n + Number(r.late_points || 0), 0);
-  const totalMissed = summaryRows.reduce((n, r) => n + Number(r.missed_points || 0), 0);
-  const avgCompliancePct = totalShifts
-    ? summaryRows.reduce((n, r) => n + Number(r.compliance_pct || 0), 0) / totalShifts
-    : 0;
-
-  return {
-    kpi: {
-      total_shifts: totalShifts,
-      total_checked_points: totalChecked,
-      total_late_points: totalLate,
-      total_missed_points: totalMissed,
-      total_incidents: 0,
-      avg_compliance_pct: Number(avgCompliancePct.toFixed(2))
-    },
-    summaryRows,
-    charts: {
-      compliance_trend: complianceTrend,
-      daily_operations: dailyOperations,
-      incidents_by_severity: { LOW: 0, MEDIUM: 0, HIGH: 0 },
-      shift_type_performance: shiftTypePerformance,
-      top_problem_checkpoints: topProblemCheckpoints
-    }
-  };
 }
 
 function upsertChart(key, canvasEl, config) {

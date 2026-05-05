@@ -130,7 +130,7 @@ async function login(silentMode, forcedSupervisorId) {
     switchView("dashboard");
     switchFuncPanel("overview");
     switchUserTab("admin");
-    renderAdminTable();
+    await ensureAdminsLoaded(true);
     await ensureGuardsLoaded(true);
     await loadDashboard(true);
     return true;
@@ -147,7 +147,7 @@ async function login(silentMode, forcedSupervisorId) {
       switchView("dashboard");
       switchFuncPanel("overview");
       switchUserTab("admin");
-      renderAdminTable();
+      await ensureAdminsLoaded(true);
       notify(`กู้คืนเซสชันสำเร็จ (โหมดออฟไลน์): ${err.message}`, "warning");
       return false;
     } else {
@@ -161,6 +161,8 @@ async function login(silentMode, forcedSupervisorId) {
 function logout() {
   closeTopUserMenu();
   state.supervisor = null;
+  state.admins = [];
+  state.adminsLoaded = false;
   state.guards = [];
   state.guardsLoaded = false;
   state.checkpoints = [];
@@ -170,12 +172,13 @@ function logout() {
   state.templateRouteCache = {};
   state.liveLogsCache = {};
   state.dashboardSnapshotCache = {};
+  state.dashboardChartsCache = {};
   state.shiftCheckpoints = {};
   destroyAllCharts();
   clearSession();
   el.topUserName.textContent = "-";
   el.topUserAvatar.textContent = "--";
-  renderAdminTable();
+  renderAdminTable([]);
   renderGuardsTable([]);
   renderCheckpointsTable([]);
   renderTemplatesTable([]);
@@ -204,11 +207,11 @@ function switchFuncPanel(panelName) {
   });
 
   if (panelName === "users") {
-    ensureGuardsLoaded();
+    Promise.all([ensureAdminsLoaded(true), ensureGuardsLoaded(true)]);
     return;
   }
   if (panelName === "overview") {
-    loadDashboard(false, true);
+    loadDashboard(false, false);
     return;
   }
   if (panelName === "checkpoints") {
@@ -230,6 +233,8 @@ function switchUserTab(tabName) {
   el.userTabGuards.classList.toggle("active", state.userTab === "guards");
   el.userPaneAdmin.classList.toggle("active", state.userTab === "admin");
   el.userPaneGuards.classList.toggle("active", state.userTab === "guards");
+  if (state.userTab === "admin") ensureAdminsLoaded(true);
+  if (state.userTab === "guards") ensureGuardsLoaded(true);
 }
 
 
