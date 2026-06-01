@@ -199,6 +199,8 @@ function closeTopUserMenu() {
 }
 
 function switchFuncPanel(panelName) {
+  state.activePanel = panelName;
+
   document.querySelectorAll(".func-panel").forEach((panel) => {
     panel.classList.toggle("active", panel.id === `panel-${panelName}`);
   });

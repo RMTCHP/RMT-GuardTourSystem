@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbw_dH4H8qQjuml75SYcB_ds9h6r3CbZpKk5Sc7du2uyVhUwpd5EGFd9f2vK-vjMeyw/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbz4pyRObSzSc-wwc1TONzRFAbfsbM2l3c9xSDQ4KSn0esapVLGfIe-qVO-VbuIm0_w/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -237,6 +237,37 @@ function formatTemplateGuardNames(raw) {
   }).join(", ");
 }
 
+function normalizeActiveDaysLocal(raw) {
+  const dayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+  const uniq = {};
+  const list = Array.isArray(raw)
+    ? raw
+    : String(raw || "").split(",");
+  const picked = [];
+  list.forEach((x) => {
+    const v = String(x || "").trim().toUpperCase();
+    if (!v || uniq[v] || dayOrder.indexOf(v) < 0) return;
+    uniq[v] = true;
+    picked.push(v);
+  });
+  return dayOrder.filter((d) => picked.indexOf(d) >= 0);
+}
+
+function formatActiveDaysThai(raw) {
+  const map = {
+    MON: "จ.",
+    TUE: "อ.",
+    WED: "พ.",
+    THU: "พฤ.",
+    FRI: "ศ.",
+    SAT: "ส.",
+    SUN: "อา."
+  };
+  const days = normalizeActiveDaysLocal(raw);
+  if (!days.length) return "ทุกวัน";
+  return days.map((d) => map[d] || d).join(" ");
+}
+
 async function initCheckpointMapPicker(initialLat, initialLng) {
   const noticeEl = document.getElementById("swalCpMapNotice");
   const openGoogleBtn = document.getElementById("swalCpOpenGoogleBtn");
@@ -331,6 +362,14 @@ function iconQr() {
   `;
 }
 
+function iconPlus() {
+  return `
+    <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M19 11H13V5h-2v6H5v2h6v6h2v-6h6z"/>
+    </svg>
+  `;
+}
+
 
 function generateNextTemplateId() {
   let maxId = 0;
@@ -356,6 +395,7 @@ function generateNextCheckpointId() {
   const next = maxId + 1;
   return `CP${String(next).padStart(3, "0")}`;
 }
+
 
 
 

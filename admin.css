@@ -779,25 +779,29 @@ select {
 }
 
 .swal-template-popup {
-  width: min(96vw, 1460px) !important;
-  max-width: 1460px !important;
+  width: min(94vw, 1320px) !important;
+  max-width: 1320px !important;
+  max-height: 92vh !important;
+  padding: 0 0 8px !important;
 }
 
 .swal-template-popup .swal2-html-container {
-  margin-top: 4px !important;
+  margin-top: 2px !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 .swal-template-popup .template-popup-top-note {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   text-align: left;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   color: #5f6f86;
 }
 
 .swal-template-popup .template-popup-layout {
   display: grid;
   grid-template-columns: minmax(250px, 0.74fr) minmax(520px, 1.36fr) minmax(340px, 0.9fr);
-  gap: 14px;
+  gap: 10px;
   align-items: start;
   text-align: left;
 }
@@ -806,7 +810,7 @@ select {
   border: 1px solid #d6dfeb;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px;
 }
 
 .swal-template-popup .template-panel-head {
@@ -814,38 +818,101 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .swal-template-popup .template-panel-head h4 {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 0.9rem;
   color: #1f2a3a;
 }
 
 .swal-template-popup .template-form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 9px;
+  gap: 6px;
 }
 
 .swal-template-popup .template-field label {
   display: block;
-  margin-bottom: 3px;
-  font-size: 0.8rem;
+  margin-bottom: 2px;
+  font-size: 0.76rem;
   font-weight: 600;
   color: #304562;
 }
 
+.swal-template-popup .template-field-full {
+  grid-column: 1 / -1;
+}
+
+.swal-template-popup .template-day-checks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #d3ddea;
+  border-radius: 10px;
+  background: #f7fafe;
+}
+
+.swal-template-popup .template-day-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  font-size: 0.74rem;
+  color: #1f2a3a;
+  min-width: 0;
+}
+
+.swal-template-popup .template-day-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #0b7b83;
+}
+
+.swal-template-popup .template-day-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 21px;
+  width: 100%;
+  border: 1px solid #c6d3e6;
+  border-radius: 999px;
+  background: #ffffff;
+  font-weight: 600;
+  font-size: 0.72rem;
+  color: #2f4666;
+}
+
+.swal-template-popup .template-day-item input[type="checkbox"]:checked + .template-day-pill {
+  border-color: #0b7b83;
+  background: #e9f7f8;
+  color: #0a6b72;
+}
+
+@media (max-width: 520px) {
+  .swal-template-popup .template-day-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .swal-template-popup .template-day-checks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .swal-template-popup .template-popup-layout .swal2-input,
 .swal-template-popup .template-popup-layout .swal2-select {
-  min-height: 34px;
-  padding: 6px 10px;
-  font-size: 0.9rem;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
 }
 
 .swal-template-popup .template-table-wrap {
-  max-height: 42vh;
+  max-height: 38vh;
   overflow: auto;
 }
 
@@ -861,8 +928,8 @@ select {
 .swal-template-popup .template-route-panel .data-table td,
 .swal-template-popup .template-guard-panel .data-table th,
 .swal-template-popup .template-guard-panel .data-table td {
-  padding: 8px;
-  font-size: 0.86rem;
+  padding: 6px;
+  font-size: 0.78rem;
 }
 
 .swal-template-popup .template-route-panel .data-table th:first-child,
@@ -871,8 +938,8 @@ select {
 }
 
 .swal-template-popup .route-seq-input {
-  width: 72px !important;
-  min-width: 72px !important;
+  width: 64px !important;
+  min-width: 64px !important;
   margin: 0 !important;
 }
 
@@ -886,21 +953,24 @@ select {
 .swal-template-popup .template-route-panel .data-table th:last-child,
 .swal-template-popup .template-guard-panel .data-table td:last-child,
 .swal-template-popup .template-guard-panel .data-table th:last-child {
-  width: 92px;
+  width: 46px;
   text-align: center;
 }
 
 .swal-template-popup .template-row-del-btn {
-  min-width: 72px;
-  white-space: nowrap;
-  text-align: center;
-  padding: 6px 8px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
 }
 
 .swal-template-popup .template-add-route-btn {
-  min-height: 34px;
-  padding: 0 10px;
-  font-size: 0.86rem;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 7px;
 }
 
 @media (max-width: 1360px) {

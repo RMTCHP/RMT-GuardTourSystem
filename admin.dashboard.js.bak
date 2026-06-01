@@ -1,6 +1,5 @@
 ﻿async function loadDashboard(silentMode, forceReload) {
   if (!state.supervisor) return;
-  if ((state.activePanel || "overview") !== "overview") return;
 
   const date = el.reportDate.value || toYmd(new Date());
   if (!silentMode) notify("กำลังโหลด Dashboard...");
@@ -20,7 +19,6 @@
       buildDailyDashboardSnapshot(date, forceReload),
       chartDataPromise
     ]);
-    if ((state.activePanel || "overview") !== "overview") return;
     if (!state.dashboardChartsCache) state.dashboardChartsCache = {};
     state.dashboardChartsCache[chartCacheKey] = chartData || {};
 

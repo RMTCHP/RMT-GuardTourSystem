@@ -561,7 +561,7 @@ async function loadTemplateData(forceReload) {
 
 function renderTemplatesTable(rows) {
   if (!rows.length) {
-    el.templatesTableBody.innerHTML = '<tr><td colspan="8">No templates</td></tr>';
+    el.templatesTableBody.innerHTML = '<tr><td colspan="9">No templates</td></tr>';
     return;
   }
 
@@ -569,6 +569,7 @@ function renderTemplatesTable(rows) {
     <tr>
       <td>${escapeHtml(t.template_id || "-")}</td>
       <td>${escapeHtml(t.template_name || "-")}</td>
+      <td>${escapeHtml(formatActiveDaysThai(t.active_days || ""))}</td>
       <td>${escapeHtml(formatTemplateGuardNames(t.guard_ids || t.guard_id))}</td>
       <td>${Number(t.rounds_per_shift || 1)}</td>
       <td>${escapeHtml(t.start_time || "-")}</td>
@@ -645,22 +646,53 @@ async function fetchTemplateCheckpointsQuick(templateId) {
 }
 
 async function openTemplateSwal(existingTemplate) {
+  await ensureCheckpointsLoaded(true, false);
+  await ensureGuardsLoaded(true, false);
+
   const isEdit = !!existingTemplate;
   const defaultTemplateId = isEdit ? String(existingTemplate.template_id || "") : generateNextTemplateId();
   const selectedGuardIds = parseGuardIdsLocal(isEdit ? (existingTemplate.guard_ids || existingTemplate.guard_id || "") : "");
+  const selectedDays = normalizeActiveDaysLocal(isEdit ? (existingTemplate.active_days || "") : "MON,TUE,WED,THU,FRI,SAT,SUN");
+  const dayMeta = [
+    { code: "MON", label: "จันทร์" },
+    { code: "TUE", label: "อังคาร" },
+    { code: "WED", label: "พุธ" },
+    { code: "THU", label: "พฤหัส" },
+    { code: "FRI", label: "ศุกร์" },
+    { code: "SAT", label: "เสาร์" },
+    { code: "SUN", label: "อาทิตย์" }
+  ];
   const templateCache = state.templateRouteCache || (state.templateRouteCache = {});
   const cachedRoute = isEdit ? templateCache[defaultTemplateId] : null;
   let initialRouteRows = Array.isArray(cachedRoute) ? cachedRoute : [];
   let needFetchRoute = Boolean(isEdit && !Array.isArray(cachedRoute));
 
-  const cpOptions = (state.checkpoints || []).map((cp) => {
-    return `<option value="${escapeAttr(cp.checkpoint_id)}">${escapeHtml(cp.checkpoint_id)} - ${escapeHtml(cp.checkpoint_name || "-")}</option>`;
-  }).join("");
-  const guardOptions = (state.guards || []).map((g) => {
-    const gid = String(g.guard_id || "");
-    if (!gid) return "";
-    return `<option value="${escapeAttr(gid)}">${escapeHtml(gid)} - ${escapeHtml(g.name || "-")}</option>`;
-  }).join("");
+  const buildCheckpointOptions = (selectedId) => {
+    const sel = String(selectedId || "").trim();
+    const options = (state.checkpoints || []).map((cp) => {
+      const id = String(cp.checkpoint_id || "").trim();
+      if (!id) return "";
+      const selected = id === sel ? " selected" : "";
+      return `<option value="${escapeAttr(id)}"${selected}>${escapeHtml(id)} - ${escapeHtml(cp.checkpoint_name || "-")}</option>`;
+    }).join("");
+    if (sel && options.indexOf(`value="${escapeAttr(sel)}"`) < 0) {
+      return `<option value="${escapeAttr(sel)}" selected>${escapeHtml(sel)} - (ไม่พบชื่อจุดตรวจ)</option>${options}`;
+    }
+    return options;
+  };
+  const buildGuardOptions = (selectedGuardId) => {
+    const sel = String(selectedGuardId || "").trim();
+    const options = (state.guards || []).map((g) => {
+      const gid = String(g.guard_id || "").trim();
+      if (!gid) return "";
+      const selected = gid === sel ? " selected" : "";
+      return `<option value="${escapeAttr(gid)}"${selected}>${escapeHtml(gid)} - ${escapeHtml(g.name || "-")}</option>`;
+    }).join("");
+    if (sel && options.indexOf(`value="${escapeAttr(sel)}"`) < 0) {
+      return `<option value="${escapeAttr(sel)}" selected>${escapeHtml(sel)} - (ไม่พบชื่อผู้ใช้)</option>${options}`;
+    }
+    return options;
+  };
   const guardRows = (selectedGuardIds.length ? selectedGuardIds : [""]).map((id) => ({
     guard_id: String(id || "").trim()
   }));
@@ -704,6 +736,17 @@ async function openTemplateSwal(existingTemplate) {
               <option value="INACTIVE" ${String(isEdit ? existingTemplate.status : "").toUpperCase() === "INACTIVE" ? "selected" : ""}>INACTIVE</option>
             </select>
           </div>
+          <div class="template-field template-field-full">
+            <label>วันที่ใช้งาน</label>
+            <div class="template-day-checks">
+              ${dayMeta.map((d) => `
+                <label class="template-day-item">
+                  <input type="checkbox" class="template-day-checkbox" value="${d.code}" ${selectedDays.indexOf(d.code) >= 0 ? "checked" : ""}>
+                  <span class="template-day-pill">${d.label}</span>
+                </label>
+              `).join("")}
+            </div>
+          </div>
           <div class="template-field">
             <label>Start Time</label>
             <input id="swalTemplateStart" class="swal2-input" type="time" value="${escapeAttr(toHm(isEdit ? existingTemplate.start_time : "08:00"))}">
@@ -717,7 +760,7 @@ async function openTemplateSwal(existingTemplate) {
         <section class="template-column template-route-panel">
           <div class="template-panel-head">
             <h4>Route Checkpoints</h4>
-            <button id="swalTemplateAddRouteRow" type="button" class="btn template-add-route-btn">+ Add</button>
+            <button id="swalTemplateAddRouteRow" type="button" class="btn icon-btn template-add-route-btn" title="เพิ่มจุดตรวจ" aria-label="เพิ่มจุดตรวจ">${iconPlus()}</button>
           </div>
           <div class="table-wrap template-table-wrap">
             <table class="data-table template-route-table">
@@ -731,7 +774,7 @@ async function openTemplateSwal(existingTemplate) {
         <section class="template-column template-guard-panel">
           <div class="template-panel-head">
             <h4>Guards</h4>
-            <button id="swalTemplateAddGuardRow" type="button" class="btn template-add-route-btn">+ Add</button>
+            <button id="swalTemplateAddGuardRow" type="button" class="btn icon-btn template-add-route-btn" title="เพิ่มผู้ใช้งาน" aria-label="เพิ่มผู้ใช้งาน">${iconPlus()}</button>
           </div>
           <div class="table-wrap template-table-wrap">
             <table class="data-table template-guard-table">
@@ -778,25 +821,25 @@ async function openTemplateSwal(existingTemplate) {
             <td>
               <select class="swal2-select route-cp route-select-input" data-idx="${i}">
                 <option value="">Select checkpoint</option>
-                ${cpOptions.replace(`value="${escapeAttr(r.checkpoint_id)}"`, `value="${escapeAttr(r.checkpoint_id)}" selected`)}
+                ${buildCheckpointOptions(r.checkpoint_id)}
               </select>
             </td>
-            <td><button type="button" class="btn row-btn btn-danger-soft route-del template-row-del-btn" data-idx="${i}">Delete</button></td>
+            <td><button type="button" class="btn icon-btn btn-danger-soft route-del template-row-del-btn" data-idx="${i}" title="ลบ" aria-label="ลบ">${iconTrash()}</button></td>
           </tr>
         `).join("");
       };
       const guardTableHtml = () => {
-        if (!guardOptions) return '<tr><td colspan="2">No guards available</td></tr>';
+        if (!(state.guards || []).length) return '<tr><td colspan="2">No guards available</td></tr>';
         if (!guardRows.length) return '<tr><td colspan="2">No guards selected</td></tr>';
         return guardRows.map((r, i) => `
           <tr>
             <td>
               <select class="swal2-select guard-select guard-select-input" data-idx="${i}">
                 <option value="">Select guard</option>
-                ${guardOptions.replace(`value="${escapeAttr(r.guard_id)}"`, `value="${escapeAttr(r.guard_id)}" selected`)}
+                ${buildGuardOptions(r.guard_id)}
               </select>
             </td>
-            <td><button type="button" class="btn row-btn btn-danger-soft guard-del template-row-del-btn" data-idx="${i}">Delete</button></td>
+            <td><button type="button" class="btn icon-btn btn-danger-soft guard-del template-row-del-btn" data-idx="${i}" title="ลบ" aria-label="ลบ">${iconTrash()}</button></td>
           </tr>
         `).join("");
       };
@@ -902,6 +945,13 @@ async function openTemplateSwal(existingTemplate) {
         Swal.showValidationMessage("Please select at least 1 guard");
         return false;
       }
+      const activeDays = Array.from(document.querySelectorAll(".template-day-checkbox:checked"))
+        .map((node) => String(node.value || "").trim().toUpperCase())
+        .filter(Boolean);
+      if (!activeDays.length) {
+        Swal.showValidationMessage("Please select at least 1 day");
+        return false;
+      }
 
       const seqEls = Array.from(document.querySelectorAll(".route-seq"));
       const cpEls = Array.from(document.querySelectorAll(".route-cp"));
@@ -925,6 +975,7 @@ async function openTemplateSwal(existingTemplate) {
           shift_name: template_name,
           guard_id: guardIds[0],
           guard_ids: guardIds,
+          active_days: activeDays,
           rounds_per_shift: Math.floor(rounds_per_shift),
           start_time,
           end_time,
