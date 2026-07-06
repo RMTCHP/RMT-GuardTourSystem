@@ -22,7 +22,7 @@
             <span>Guard Tour Platform</span>
           </div>
           <h1 class="gateway-hero-title">ระบบตรวจรอบ รปภ</h1>
-          <p class="gateway-hero-copy">เข้าสู่ระบบด้วยรหัสผู้ใช้งานเดียวกัน ระบบจะพาไปยังหน้าของ รปภ หรือผู้ดูแลให้อัตโนมัติ</p>
+          <p class="gateway-hero-copy">เข้าสู่ระบบด้วยชื่อผู้ใช้และรหัสผ่าน ระบบจะพาไปยังหน้าของ รปภ หรือผู้ดูแลให้อัตโนมัติ</p>
           <div class="gateway-hero-points">
             <div class="gateway-point">
               <span class="material-symbols-outlined">qr_code_scanner</span>
@@ -49,10 +49,15 @@
           </header>
 
           <div class="auth-v2-card gateway-card">
-            <label for="userId" class="auth-v2-label">รหัสผู้ใช้งาน</label>
+            <label for="username" class="auth-v2-label">ชื่อผู้ใช้</label>
             <div class="auth-v2-input-wrap">
               <span class="material-symbols-outlined auth-v2-input-icon">badge</span>
-              <input id="userId" type="text" placeholder="กรอกรหัส รปภ หรือ Admin" autocomplete="off">
+              <input id="username" type="text" placeholder="กรอกชื่อผู้ใช้" autocomplete="username">
+            </div>
+            <label for="password" class="auth-v2-label auth-v2-label-spaced">รหัสผ่าน</label>
+            <div class="auth-v2-input-wrap">
+              <span class="material-symbols-outlined auth-v2-input-icon">lock</span>
+              <input id="password" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password">
             </div>
             <button id="loginBtn" class="auth-v2-btn" type="button">
               <span class="material-symbols-outlined">login</span>

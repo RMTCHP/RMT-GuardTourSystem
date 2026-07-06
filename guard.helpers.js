@@ -74,6 +74,11 @@ function showLoginLoadingSwal() {
     allowOutsideClick: false,
     allowEscapeKey: false,
     showConfirmButton: false,
+    customClass: {
+      popup: "guard-swal",
+      title: "guard-swal-title",
+      htmlContainer: "guard-swal-text"
+    },
     didOpen: () => Swal.showLoading()
   });
 }
@@ -84,7 +89,14 @@ async function showSwalMessage(icon, title, text) {
     icon: icon || "info",
     title: title || "",
     text: text || "",
-    confirmButtonText: "\u0e15\u0e01\u0e25\u0e07"
+    confirmButtonText: "\u0e15\u0e01\u0e25\u0e07",
+    customClass: {
+      popup: "guard-swal",
+      title: "guard-swal-title",
+      htmlContainer: "guard-swal-text",
+      confirmButton: "guard-swal-confirm"
+    },
+    buttonsStyling: false
   });
 }
 function startLoading() {
@@ -99,6 +111,11 @@ function startLoading() {
     allowOutsideClick: false,
     allowEscapeKey: false,
     showConfirmButton: false,
+    customClass: {
+      popup: "guard-swal",
+      title: "guard-swal-title",
+      htmlContainer: "guard-swal-text"
+    },
     didOpen: () => Swal.showLoading()
   });
 }
@@ -445,6 +462,12 @@ async function openAssignedRouteOrFallback(activeShiftId) {
       await openShift(idx);
       return;
     }
+  }
+
+  const currentIdx = state.shifts.findIndex((s) => !!s.is_current);
+  if (currentIdx >= 0) {
+    await openShift(currentIdx);
+    return;
   }
 
   const openIndex = state.shifts.findIndex((s) => String(s.status || "").toUpperCase() !== "CLOSED");

@@ -1,25 +1,31 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbz4pyRObSzSc-wwc1TONzRFAbfsbM2l3c9xSDQ4KSn0esapVLGfIe-qVO-VbuIm0_w/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbwFIXS1Jz8pYKoqYzib0aGXfZODFyYm4-chPeJH1JAtA14YZCwPxgoXyy_VfxyL3is/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
 window.addEventListener("DOMContentLoaded", () => {
-  const userIdInput = document.getElementById("userId");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
   const loginBtn = document.getElementById("loginBtn");
-  if (!userIdInput || !loginBtn) return;
+  if (!usernameInput || !passwordInput || !loginBtn) return;
 
-  loginBtn.addEventListener("click", () => handleLogin(userIdInput));
-  userIdInput.addEventListener("keydown", (event) => {
+  loginBtn.addEventListener("click", () => handleLogin(usernameInput, passwordInput));
+  [usernameInput, passwordInput].forEach((input) => input.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      handleLogin(userIdInput);
+      handleLogin(usernameInput, passwordInput);
     }
-  });
+  }));
 });
 
-async function handleLogin(userIdInput) {
-  const userId = String(userIdInput.value || "").trim();
-  if (!userId) {
-    await showMessage("warning", "กรุณากรอกรหัสผู้ใช้งาน", "โปรดกรอกรหัส รปภ หรือ Admin ก่อนเข้าสู่ระบบ");
+async function handleLogin(usernameInput, passwordInput) {
+  const username = String(usernameInput.value || "").trim();
+  const password = String(passwordInput.value || "");
+  if (!username) {
+    await showMessage("warning", "กรุณากรอกชื่อผู้ใช้", "โปรดกรอกชื่อผู้ใช้ก่อนเข้าสู่ระบบ");
+    return;
+  }
+  if (!password) {
+    await showMessage("warning", "กรุณากรอกรหัสผ่าน", "โปรดกรอกรหัสผ่านก่อนเข้าสู่ระบบ");
     return;
   }
 
@@ -27,30 +33,32 @@ async function handleLogin(userIdInput) {
 
   try {
     const [adminResult, guardResult] = await Promise.allSettled([
-      callApi("supervisorLogin", { supervisorId: userId }),
-      callApi("loginGuard", { guardId: userId })
+      callApi("supervisorLogin", { username, password }),
+      callApi("loginGuard", { username, password })
     ]);
 
     clearStoredSessions();
 
     if (adminResult.status === "fulfilled") {
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
-        supervisor_id: adminResult.value.supervisor_id || userId,
+        supervisor_id: adminResult.value.supervisor_id || "",
+        username: adminResult.value.username || username,
         name: adminResult.value.name || "",
         email: adminResult.value.email || ""
       }));
       await showMessage("success", "เข้าสู่ระบบสำเร็จ", "เข้าสู่ระบบในสิทธิ์ Admin");
-      window.location.href = `admin.html?supervisorId=${encodeURIComponent(userId)}`;
+      window.location.href = "admin.html";
       return;
     }
 
     if (guardResult.status === "fulfilled") {
       localStorage.setItem(GUARD_SESSION_KEY, JSON.stringify({
-        guardId: guardResult.value.guard_id || userId,
+        guardId: guardResult.value.guard_id || "",
+        username: guardResult.value.username || username,
         activeShiftId: ""
       }));
       await showMessage("success", "เข้าสู่ระบบสำเร็จ", "เข้าสู่ระบบในสิทธิ์ รปภ");
-      window.location.href = `Guard.html?guardId=${encodeURIComponent(userId)}`;
+      window.location.href = "Guard.html";
       return;
     }
 
@@ -91,7 +99,7 @@ function extractErrorMessage(adminResult, guardResult) {
   if (adminMessage && !/Guard not found or inactive/i.test(adminMessage)) {
     return adminMessage;
   }
-  return "ไม่พบรหัสผู้ใช้งานในระบบ";
+  return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
 }
 
 function clearStoredSessions() {
@@ -106,6 +114,11 @@ function showLoading() {
     text: "โปรดรอสักครู่",
     allowOutsideClick: false,
     allowEscapeKey: false,
+    customClass: {
+      popup: "guard-swal",
+      title: "guard-swal-title",
+      htmlContainer: "guard-swal-text"
+    },
     didOpen: () => Swal.showLoading()
   });
 }
@@ -116,13 +129,13 @@ async function showMessage(icon, title, text) {
     icon,
     title,
     text,
-    confirmButtonText: "ตกลง"
+    confirmButtonText: "ตกลง",
+    customClass: {
+      popup: "guard-swal",
+      title: "guard-swal-title",
+      htmlContainer: "guard-swal-text",
+      confirmButton: "guard-swal-confirm"
+    },
+    buttonsStyling: false
   });
 }
-
-
-
-
-
-
-

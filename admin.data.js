@@ -15,7 +15,7 @@ async function ensureAdminsLoaded(silentMode, forceReload) {
     state.admins = [];
     state.adminsLoaded = false;
     renderAdminTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Admin ไม่สำเร็จ: ${err.message}`);
+    if (!silentMode) notify(`โหลดข้อมูล Admin ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -24,7 +24,6 @@ async function ensureGuardsLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
   if (state.guardsLoaded && !forceReload) {
     renderGuardsTable(state.guards || []);
-    renderLiveGuardFilter();
     return state.guards || [];
   }
 
@@ -33,14 +32,12 @@ async function ensureGuardsLoaded(silentMode, forceReload) {
     state.guards = Array.isArray(rows) ? rows : [];
     state.guardsLoaded = true;
     renderGuardsTable(state.guards);
-    renderLiveGuardFilter();
     return state.guards;
   } catch (err) {
     state.guards = [];
     state.guardsLoaded = false;
     renderGuardsTable([]);
-    renderLiveGuardFilter();
-    if (!silentMode) notify(`โหลดข้อมูล Guards ไม่สำเร็จ: ${err.message}`);
+    if (!silentMode) notify(`โหลดข้อมูล Guards ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -62,7 +59,7 @@ async function ensureCheckpointsLoaded(silentMode, forceReload) {
     state.checkpoints = [];
     state.checkpointsLoaded = false;
     renderCheckpointsTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Checkpoints ไม่สำเร็จ: ${err.message}`);
+    if (!silentMode) notify(`โหลดข้อมูล Checkpoints ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -84,76 +81,170 @@ async function ensureTemplatesLoaded(silentMode, forceReload) {
     state.templates = [];
     state.templatesLoaded = false;
     renderTemplatesTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Templates ไม่สำเร็จ: ${err.message}`);
+    if (!silentMode) notify(`โหลดข้อมูล Template ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
 
-function renderLiveGuardFilter() {
-  if (!el.liveGuardFilter) return;
-  const prev = String(el.liveGuardFilter.value || "");
-  const options = ['<option value="">All</option>']
-    .concat((state.guards || []).map((g) => {
-      const id = String(g.guard_id || "");
-      const name = String(g.name || "-");
-      return `<option value="${escapeAttr(id)}">${escapeHtml(id)} - ${escapeHtml(name)}</option>`;
-    }))
-    .join("");
-  el.liveGuardFilter.innerHTML = options;
-  if (prev) el.liveGuardFilter.value = prev;
-}
+async function ensureAssignmentsLoaded(silentMode, forceReload) {
+  if (!state.supervisor || !el.assignCalendarGrid) return [];
+  const cacheKey = "__all__";
 
-async function loadLiveLogs(forceReload) {
-  if (!state.supervisor) return;
-  const date = el.liveDate && el.liveDate.value ? el.liveDate.value : toYmd(new Date());
-  const guardId = String(el.liveGuardFilter ? el.liveGuardFilter.value : "").trim();
-  const status = String(el.liveStatusFilter ? el.liveStatusFilter.value : "").trim();
-  const cacheKey = `${state.supervisor?.supervisor_id || ""}|${date}|${guardId}|${status}`;
-  if (!forceReload && state.liveLogsCache && Array.isArray(state.liveLogsCache[cacheKey])) {
-    state.liveLogs = state.liveLogsCache[cacheKey];
-    renderLiveLogs(state.liveLogs);
-    return;
+  if (!forceReload && Array.isArray(state.assignmentsByDateCache?.[cacheKey])) {
+    state.assignments = state.assignmentsByDateCache[cacheKey];
+    renderAssignmentsBoard(state.assignments);
+    return state.assignments;
   }
 
   try {
-    const rows = await callApi("listCheckLogs", {
-      supervisorId: state.supervisor && state.supervisor.supervisor_id ? state.supervisor.supervisor_id : "",
-      date,
-      guardId,
-      status
-    });
-    state.liveLogs = Array.isArray(rows) ? rows : [];
-    if (!state.liveLogsCache) state.liveLogsCache = {};
-    state.liveLogsCache[cacheKey] = state.liveLogs;
-    renderLiveLogs(state.liveLogs);
+    const rows = await callApi("listAssignments", {});
+    state.assignments = Array.isArray(rows) ? rows : [];
+    if (!state.assignmentsByDateCache) state.assignmentsByDateCache = {};
+    state.assignmentsByDateCache[cacheKey] = state.assignments;
+    state.assignmentsLoadedDate = cacheKey;
+    renderAssignmentsBoard(state.assignments);
+    return state.assignments;
   } catch (err) {
-    renderLiveLogs([]);
-    notify(`โหลดข้อมูล Live Logs ไม่สำเร็จ: ${err.message}`, "error");
+    state.assignments = [];
+    renderAssignmentsBoard([]);
+    if (!silentMode) notify(`โหลดข้อมูล Assign ไม่สำเร็จ: ${err.message}`, "error");
+    return [];
   }
 }
 
-function renderLiveLogs(rows) {
-  if (!el.liveTableBody) return;
-  if (!rows || !rows.length) {
-    el.liveTableBody.innerHTML = '<tr><td colspan="8">No logs</td></tr>';
-    return;
+async function ensureShiftSettingsLoaded(silentMode, forceReload) {
+  if (!state.supervisor) return [];
+  if (state.shiftSettingsLoaded && !forceReload) {
+    return state.shiftSettings || [];
   }
-  el.liveTableBody.innerHTML = rows.map((r) => {
-    const photoUrl = String(r.photo_url || "").trim();
-    const photoCell = photoUrl
-      ? `<a class="btn row-btn" href="${escapeAttr(photoUrl)}" target="_blank" rel="noopener">View</a>`
-      : "-";
+
+  try {
+    const rows = await callApi("listShiftSettings", {});
+    state.shiftSettings = Array.isArray(rows) ? rows : [];
+    state.shiftSettingsLoaded = true;
+    return state.shiftSettings;
+  } catch (err) {
+    state.shiftSettings = [];
+    state.shiftSettingsLoaded = false;
+    if (!silentMode) notify(`โหลดข้อมูล Shift Settings ไม่สำเร็จ: ${err.message}`, "error");
+    return [];
+  }
+}
+
+function renderAssignmentsBoard(rows) {
+  if (!el.assignCalendarGrid || !el.assignMonthLabel) return;
+
+  const monthBase = state.assignCalendarMonth || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const monthStart = new Date(monthBase.getFullYear(), monthBase.getMonth(), 1);
+  const monthEnd = new Date(monthBase.getFullYear(), monthBase.getMonth() + 1, 0);
+  const firstWeekday = monthStart.getDay();
+  const totalDays = monthEnd.getDate();
+  const list = Array.isArray(rows) ? rows : [];
+  const todayKey = toYmd(new Date());
+  const cells = [];
+
+  el.assignMonthLabel.textContent = formatAssignMonthThai(monthStart);
+
+  for (let i = 0; i < firstWeekday; i += 1) {
+    cells.push('<div class="assign-day-placeholder" aria-hidden="true"></div>');
+  }
+
+  for (let day = 1; day <= totalDays; day += 1) {
+    const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+    const dateKey = toYmd(date);
+    const dayRows = list.filter((row) => String(row.assign_date || "") === dateKey);
+    const dayShiftRows = dayRows.filter((row) => String(row.shift_code || "").toUpperCase() === "DAY");
+    const nightShiftRows = dayRows.filter((row) => String(row.shift_code || "").toUpperCase() === "NIGHT");
+    const hasDayAssignment = dayShiftRows.length > 0;
+    const hasNightAssignment = nightShiftRows.length > 0;
+    const hasAnyAssignment = hasDayAssignment || hasNightAssignment;
+    const isFullyAssigned = hasDayAssignment && hasNightAssignment;
+    const cellClasses = [
+      "assign-day-cell",
+      dateKey === todayKey ? "is-today" : "",
+      hasAnyAssignment ? "has-assignment" : "is-unassigned",
+      hasAnyAssignment ? (isFullyAssigned ? "is-fully-assigned" : "is-partial-assigned") : ""
+    ].filter(Boolean).join(" ");
+
+    cells.push(`
+      <button class="${cellClasses}" type="button" data-assign-date="${escapeAttr(dateKey)}">
+        <div class="assign-day-head">
+          <span class="assign-day-num">${day}</span>
+          ${dateKey === todayKey ? '<span class="assign-day-badge">วันนี้</span>' : ""}
+        </div>
+        <div class="assign-day-body">
+          ${renderAssignShiftPill("DAY", dayShiftRows)}
+          ${renderAssignShiftPill("NIGHT", nightShiftRows)}
+        </div>
+      </button>
+    `);
+  }
+
+  const trailing = (7 - (cells.length % 7)) % 7;
+  for (let i = 0; i < trailing; i += 1) {
+    cells.push('<div class="assign-day-placeholder" aria-hidden="true"></div>');
+  }
+
+  el.assignCalendarGrid.innerHTML = cells.join("");
+  bindAssignmentCalendarActions();
+}
+
+function renderAssignShiftPill(shiftCode, rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const isDay = String(shiftCode || "").toUpperCase() === "DAY";
+  const shiftLabel = isDay ? "กะกลางวัน" : "กะกลางคืน";
+  const iconSvg = isDay
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zm10.45 0l1.41 1.42 1.8-1.8-1.42-1.41-1.79 1.79zM12 4h1V1h-2v3h1zm7 9h3v-2h-3v2zm-7 7h-1v3h2v-3h-1zm8.45-2.05l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM4 11H1v2h3v-2zm2.76 6.95l-1.79 1.8 1.41 1.41 1.8-1.79-1.42-1.42zM12 6a6 6 0 100 12 6 6 0 000-12z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.74 15.35A9 9 0 0112.65 3.26 9 9 0 1019 19.61a8.96 8.96 0 001.74-4.26z"/></svg>';
+
+  if (!list.length) {
+    const emptyTitle = `${shiftLabel}: ยังไม่ได้ Assign`;
     return `
-      <tr>
-        <td>${escapeHtml(r.scan_time || "-")}</td>
-        <td>${escapeHtml(r.guard_id || "-")}</td>
-        <td>${escapeHtml(r.shift_id || "-")}</td>
-        <td>${escapeHtml(r.checkpoint_name || r.checkpoint_id || "-")}</td>
-        <td>${escapeHtml(r.qr_text_scanned || "-")}</td>
-        <td>${escapeHtml(String(r.distance_m ?? "-"))}</td>
-        <td>${escapeHtml(r.status || "-")}</td>
-        <td>${photoCell}</td>
-      </tr>
+      <div class="assign-shift-pill is-empty is-${isDay ? "day" : "night"}" title="${escapeAttr(emptyTitle)}" aria-label="${escapeAttr(emptyTitle)}">
+        <span class="assign-shift-icon">${iconSvg}</span>
+      </div>
     `;
-  }).join("");
+  }
+
+  const templateNames = [...new Set(
+    list.map((row) => String(row.template_label || row.template_id || "").trim()).filter(Boolean)
+  )];
+  const title = `${shiftLabel}: ${templateNames[0] || "-"} / รปภ ${list.length} คน`;
+
+  return `
+    <div class="assign-shift-pill is-assigned is-${isDay ? "day" : "night"}" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">
+      <span class="assign-shift-icon">${iconSvg}</span>
+    </div>
+  `;
+}
+
+function bindAssignmentCalendarActions() {
+  document.querySelectorAll("[data-assign-date]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dateKey = String(btn.getAttribute("data-assign-date") || "").trim();
+      if (!dateKey) return;
+      if (el.assignDate) el.assignDate.value = dateKey;
+      openAssignDaySwal(dateKey);
+    });
+  });
+}
+
+function formatAssignMonthThai(date) {
+  const months = [
+    "มกราคม",
+    "กุมภาพันธ์",
+    "มีนาคม",
+    "เมษายน",
+    "พฤษภาคม",
+    "มิถุนายน",
+    "กรกฎาคม",
+    "สิงหาคม",
+    "กันยายน",
+    "ตุลาคม",
+    "พฤศจิกายน",
+    "ธันวาคม"
+  ];
+  const d = Object.prototype.toString.call(date) === "[object Date]" ? date : new Date(date);
+  if (isNaN(d.getTime())) return "-";
+  return `${months[d.getMonth()]} ${d.getFullYear() + 543}`;
 }

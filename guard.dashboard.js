@@ -19,7 +19,7 @@ function renderDashboard() {
     el.dashboardList.innerHTML = `
       <div class="dashboard-card dashboard-empty">
         <h4>\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e01\u0e30\u0e07\u0e32\u0e19\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49</h4>
-        <p class="meta">\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e01\u0e32\u0e23\u0e1c\u0e39\u0e01 Template \u0e01\u0e31\u0e1a\u0e23\u0e2b\u0e31\u0e2a \u0e23\u0e1b\u0e20 \u0e43\u0e19\u0e2b\u0e19\u0e49\u0e32 Admin</p>
+        <p class="meta">\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e01\u0e32\u0e23 Assign \u0e07\u0e32\u0e19\u0e43\u0e19\u0e2b\u0e19\u0e49\u0e32 Admin</p>
       </div>
     `;
     return;
@@ -120,23 +120,46 @@ function renderDashboard() {
 
 async function loadGuardDashboardSummary(forceRefresh) {
   if (!state.guard) return;
-  const date = toYmd(new Date());
-  if (!forceRefresh && state.summaryCacheDate === date && state.summaryCache) return;
+  const cacheKey = getGuardSummaryCacheKey_();
+  if (!forceRefresh && state.summaryCacheDate === cacheKey && state.summaryCache) return;
 
   try {
-    const [logsRes, incidentsRes] = await Promise.allSettled([
-      callApi("listCheckLogs", { date, guardId: state.guard.guard_id }),
-      callApi("listIncidents", { date, guardId: state.guard.guard_id, status: "" })
-    ]);
-    const logs = logsRes.status === "fulfilled" && Array.isArray(logsRes.value) ? logsRes.value : [];
-    const incidents = incidentsRes.status === "fulfilled" && Array.isArray(incidentsRes.value) ? incidentsRes.value : [];
+    const dates = getGuardRelevantSummaryDates_();
+    const logResults = await Promise.allSettled(
+      dates.map((date) => callApi("listCheckLogs", { date, guardId: state.guard.guard_id }))
+    );
+    const incidentResults = await Promise.allSettled(
+      dates.map((date) => callApi("listIncidents", { date, guardId: state.guard.guard_id, status: "" }))
+    );
+    const logs = logResults.flatMap((res) => (
+      res.status === "fulfilled" && Array.isArray(res.value) ? res.value : []
+    ));
+    const incidents = incidentResults.flatMap((res) => (
+      res.status === "fulfilled" && Array.isArray(res.value) ? res.value : []
+    ));
     const summary = buildGuardSummaryFromRows(logs, incidents);
-    state.summaryCacheDate = date;
+    state.summaryCacheDate = cacheKey;
     state.summaryCache = summary;
     renderDashboard();
   } catch (_) {
     // keep fallback rendering from shifts only
   }
+}
+
+function getGuardRelevantSummaryDates_() {
+  const dates = {};
+  dates[toYmd(new Date())] = true;
+  (state.shifts || []).forEach((shift) => {
+    const startDate = String((shift && shift.date) || "").trim();
+    const endDate = String((shift && shift.end_date) || "").trim();
+    if (startDate) dates[startDate] = true;
+    if (endDate) dates[endDate] = true;
+  });
+  return Object.keys(dates).filter(Boolean).sort();
+}
+
+function getGuardSummaryCacheKey_() {
+  return getGuardRelevantSummaryDates_().join("|");
 }
 
 function buildGuardSummaryFromRows(logRows, incidentRows) {

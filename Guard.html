@@ -24,12 +24,12 @@
         <h1 class="topbar-title">ระบบตรวจรอบ รปภ</h1>
         <p id="todayText" class="topbar-sub"></p>
       </div>
-      <div id="guardBadge" class="guard-badge hidden">
+      <button id="guardBadge" class="guard-badge hidden" type="button" title="เมนูผู้ใช้" aria-label="เมนูผู้ใช้">
         <div id="guardAvatar" class="guard-avatar">ร</div>
         <div class="guard-meta">
           <strong id="guardNameText">เจ้าหน้าที่</strong>
         </div>
-      </div>
+      </button>
     </header>
 
     <section id="view-shifts" class="screen active">
@@ -38,7 +38,7 @@
           <h2>เส้นทางของฉันวันนี้</h2>
           <button id="logoutBtn" class="icon-btn" title="ออกจากระบบ" aria-label="ออกจากระบบ">⎋</button>
         </div>
-        <p class="hint">ระบบจะแสดงเทมเพลตที่ผูกกับรหัส รปภ อัตโนมัติ</p>
+        <p class="hint">ระบบจะแสดงงานที่ถูก Assign ตามวันและกะของ รปภ อัตโนมัติ</p>
         <div id="shiftList" class="shift-cards"></div>
       </div>
     </section>
@@ -107,8 +107,9 @@
             </div>
             <div id="incidentExtraFields" class="hidden">
               <textarea id="incidentDetail" rows="3" placeholder="รายละเอียด"></textarea>
-              <button id="incidentPhotoBtn" type="button" class="incident-photo-icon-btn" aria-label="ถ่ายภาพ" title="ถ่ายภาพ">
+              <button id="incidentPhotoBtn" type="button" class="incident-photo-icon-btn" aria-label="เพิ่มรูปแจ้งเหตุ" title="เพิ่มรูปแจ้งเหตุ">
                 <span class="material-symbols-outlined">photo_camera</span>
+                <span class="incident-photo-plus" aria-hidden="true">+</span>
               </button>
               <input id="incidentPhotoInput" type="file" accept="image/*" capture="environment" class="hidden">
               <img id="incidentPhotoPreview" class="preview hidden" alt="ภาพแจ้งเหตุ">

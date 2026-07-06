@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbz4pyRObSzSc-wwc1TONzRFAbfsbM2l3c9xSDQ4KSn0esapVLGfIe-qVO-VbuIm0_w/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbwFIXS1Jz8pYKoqYzib0aGXfZODFyYm4-chPeJH1JAtA14YZCwPxgoXyy_VfxyL3is/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";
@@ -9,7 +9,11 @@ const state = {
   guards: [],
   checkpoints: [],
   templates: [],
+  assignments: [],
+  shiftSettings: [],
   templateRouteCache: {},
+  assignmentsByDateCache: {},
+  assignmentsLoadedDate: "",
   liveLogsCache: {},
   dashboardSnapshotCache: {},
   dashboardChartsCache: {},
@@ -17,10 +21,12 @@ const state = {
   shiftCheckpoints: {},
   charts: {},
   userTab: "admin",
+  assignCalendarMonth: null,
   adminsLoaded: false,
   guardsLoaded: false,
   checkpointsLoaded: false,
   templatesLoaded: false,
+  shiftSettingsLoaded: false,
   suppressLoading: false
 };
 
@@ -111,6 +117,9 @@ function notify(message, icon) {
     position: "bottom-end",
     icon: autoIcon,
     title: msg,
+    customClass: {
+      popup: "admin-swal-toast"
+    },
     showConfirmButton: false,
     timer: autoIcon === "error" ? 3500 : 2200,
     timerProgressBar: true
@@ -128,6 +137,11 @@ function startLoading(title, text) {
     allowOutsideClick: false,
     allowEscapeKey: false,
     showConfirmButton: false,
+    customClass: {
+      popup: "admin-swal",
+      title: "admin-swal-title",
+      htmlContainer: "admin-swal-text"
+    },
     didOpen: () => Swal.showLoading()
   });
 }
@@ -268,6 +282,13 @@ function formatActiveDaysThai(raw) {
   return days.map((d) => map[d] || d).join(" ");
 }
 
+function formatShiftCodeThai(code) {
+  const value = String(code || "").trim().toUpperCase();
+  if (value === "DAY") return "กะกลางวัน";
+  if (value === "NIGHT") return "กะกลางคืน";
+  return value || "-";
+}
+
 async function initCheckpointMapPicker(initialLat, initialLng) {
   const noticeEl = document.getElementById("swalCpMapNotice");
   const openGoogleBtn = document.getElementById("swalCpOpenGoogleBtn");
@@ -395,6 +416,8 @@ function generateNextCheckpointId() {
   const next = maxId + 1;
   return `CP${String(next).padStart(3, "0")}`;
 }
+
+
 
 
 

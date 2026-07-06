@@ -48,7 +48,8 @@ function bindElements() {
 }
 
 function bindEvents() {
-  el.logoutBtn.addEventListener("click", onLogout);
+  el.logoutBtn.addEventListener("click", confirmLogout);
+  if (el.guardBadge) el.guardBadge.addEventListener("click", confirmLogout);
 
   el.navTour.addEventListener("click", () => {
     if (!state.activeShift) return;
@@ -147,7 +148,7 @@ async function restoreSession() {
 
   try {
     const date = toYmd(new Date());
-    await loadGuardBootstrap(session.guardId, date);
+    await loadGuardBootstrap(session.guardId, date, new Date().toISOString());
     renderShiftList();
     renderDashboard();
     await openAssignedRouteOrFallback(session.activeShiftId);
@@ -161,6 +162,30 @@ async function restoreSession() {
     window.location.href = "index.html";
   }
 }
+async function confirmLogout() {
+  if (!window.Swal) {
+    onLogout();
+    return;
+  }
+  const result = await Swal.fire({
+    icon: "question",
+    title: "ออกจากระบบ",
+    text: "ต้องการออกจากระบบใช่หรือไม่",
+    showCancelButton: true,
+    confirmButtonText: "ออกจากระบบ",
+    cancelButtonText: "ยกเลิก",
+    customClass: {
+      popup: "guard-swal",
+      title: "guard-swal-title",
+      htmlContainer: "guard-swal-text",
+      confirmButton: "guard-swal-confirm",
+      cancelButton: "guard-swal-cancel"
+    },
+    buttonsStyling: false
+  });
+  if (result.isConfirmed) onLogout();
+}
+
 function onLogout() {
   stopQrScanner();
   state.guard = null;
@@ -203,27 +228,34 @@ function getShiftProfile(shift) {
 function displayShiftStatus(status) {
   const code = String(status || "OPEN").toUpperCase();
   if (code === "CLOSED") return "ปิดกะแล้ว";
-  return "กำลังตรวจ";
+  if (code === "CANCELED") return "ยกเลิก";
+  return "พร้อมตรวจ";
 }
 
 function renderShiftList() {
   const rows = state.shifts || [];
 
   if (!rows.length) {
-    el.shiftList.innerHTML = '<div class="shift-card">ไม่พบกะงานที่ผูกกับรหัสนี้ กรุณาตรวจสอบ Template ในหน้า Admin</div>';
+    el.shiftList.innerHTML = '<div class="shift-card">ไม่พบงานที่ถูก Assign สำหรับรหัสนี้ กรุณาตรวจสอบเมนู Assign ในหน้า Admin</div>';
     return;
   }
 
   el.shiftList.innerHTML = rows.map((s) => {
     const status = String(s.status || "OPEN").toUpperCase();
     const statusClass = status === "CLOSED" ? "badge badge-closed" : "badge badge-open";
+    const timingState = String(s.timing_state || "").toUpperCase();
+    const timingText =
+      timingState === "CURRENT" ? "กำลังเข้ากะ" :
+      timingState === "UPCOMING" ? "รอเวลาเริ่มกะ" :
+      timingState === "ENDED" ? "หมดเวลากะแล้ว" :
+      displayShiftStatus(status);
 
     return `
       <div class="shift-card">
         <h4>${escapeHtml(getShiftProfile(s))}</h4>
         <p class="meta">เวลา ${escapeHtml(s.start_time || "-")} - ${escapeHtml(s.end_time || "-")}</p>
         <p class="meta">รหัสกะ: ${escapeHtml(s.shift_id || "")}</p>
-        <span class="${statusClass}">${displayShiftStatus(status)}</span>
+        <span class="${statusClass}">${escapeHtml(timingText)}</span>
       </div>
     `;
   }).join("");
@@ -296,7 +328,6 @@ function renderCheckpointList() {
   renderRoundTabs(rounds);
 
   const currentItems = planItems.filter((x) => Number(x.round_no || 1) === Number(state.currentRound));
-  const firstPendingIdx = currentItems.findIndex((item) => !isPlanItemDone(item));
   if (state.selectedPlanKey && !currentItems.some((x) => getPlanItemKey(x) === state.selectedPlanKey)) {
     state.selectedPlanKey = "";
   }
@@ -317,9 +348,8 @@ function renderCheckpointList() {
     const done = isPlanItemDone(cp);
     const key = getPlanItemKey(cp);
     const isSelected = key === state.selectedPlanKey;
-    const idx = currentItems.findIndex((x) => getPlanItemKey(x) === key);
-    const locked = firstPendingIdx >= 0 && idx > firstPendingIdx && !done;
-    const disabled = done || locked;
+    const locked = false;
+    const disabled = done;
     const statusMeta = getCheckpointStatusMeta({ done, locked, isSelected });
 
     return `
@@ -554,18 +584,18 @@ async function refreshShiftPlan() {
 
   const date = toYmd(new Date());
   const activeShiftId = state.activeShift ? state.activeShift.shift_id : loadSession().activeShiftId;
-  await loadGuardBootstrap(state.guard.guard_id, date);
+  await loadGuardBootstrap(state.guard.guard_id, date, new Date().toISOString());
   invalidateGuardSummaryCache();
   renderShiftList();
   renderDashboard();
   await openAssignedRouteOrFallback(activeShiftId);
 }
 
-async function loadGuardBootstrap(guardId, date) {
+async function loadGuardBootstrap(guardId, date, moment) {
   const gid = String(guardId || "").trim();
   if (!gid || !date) return [];
 
-  const data = await callApi("guardBootstrap", { guardId: gid, date });
+  const data = await callApi("guardBootstrap", { guardId: gid, date, moment: moment || new Date().toISOString() });
   let checkpointRows = [];
   try {
     checkpointRows = await callApi("listCheckpoints", {});

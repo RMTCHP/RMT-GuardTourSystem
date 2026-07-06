@@ -47,12 +47,6 @@
           </svg>
           <span class="menu-label">Dashboard</span>
         </button>
-        <button class="menu-item" data-panel="live" title="Live Logs" aria-label="Live Logs">
-          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h16v2H4z"/>
-          </svg>
-          <span class="menu-label">Live Logs</span>
-        </button>
         <button class="menu-item" data-panel="users" title="User" aria-label="User">
           <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M16 11a4 4 0 1 0-3.999-4A4 4 0 0 0 16 11zM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zM8 14c-2.76 0-5 1.79-5 4v1h10v-1c0-2.21-2.24-4-5-4zm8 0c-.58 0-1.13.07-1.66.19A5.88 5.88 0 0 1 18 19v1h3v-1c0-2.76-2.24-5-5-5z"/>
@@ -71,6 +65,12 @@
           </svg>
           <span class="menu-label">Template</span>
         </button>
+        <button class="menu-item" data-panel="assign" title="Assign" aria-label="Assign">
+          <svg class="menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v10h16V10zM6 12h5v5H6v-5z"/>
+          </svg>
+          <span class="menu-label">Assign</span>
+        </button>
 
         <div class="nav-bottom"></div>
       </aside>
@@ -87,28 +87,28 @@
             <div class="kpi-card">
               <div class="kpi-head">
                 <span class="kpi-icon material-symbols-outlined">event_note</span>
-                <span class="kpi-label">Total Shifts</span>
+                <span class="kpi-label">งานที่มอบหมาย</span>
               </div>
               <strong id="kpiShifts">0</strong>
             </div>
             <div class="kpi-card">
               <div class="kpi-head">
                 <span class="kpi-icon material-symbols-outlined">verified</span>
-                <span class="kpi-label">Checked Points</span>
+                <span class="kpi-label">จุดที่ตรวจแล้ว</span>
               </div>
               <strong id="kpiChecked">0</strong>
             </div>
             <div class="kpi-card">
               <div class="kpi-head">
-                <span class="kpi-icon material-symbols-outlined">error</span>
-                <span class="kpi-label">Missed Points</span>
+                <span class="kpi-icon material-symbols-outlined">groups</span>
+                <span class="kpi-label">รปภ ที่มอบหมาย</span>
               </div>
-              <strong id="kpiMissed">0</strong>
+              <strong id="kpiGuards">0</strong>
             </div>
             <div class="kpi-card">
               <div class="kpi-head">
                 <span class="kpi-icon material-symbols-outlined">warning</span>
-                <span class="kpi-label">Incidents</span>
+                <span class="kpi-label">เหตุผิดปกติ</span>
               </div>
               <strong id="kpiIncidents">0</strong>
             </div>
@@ -159,13 +159,14 @@
                   <thead>
                     <tr>
                       <th>Supervisor ID</th>
+                      <th>Username</th>
                       <th>Name</th>
                       <th>Email</th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody id="adminTableBody">
-                    <tr><td colspan="4">No admin data</td></tr>
+                    <tr><td colspan="5">No admin data</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -177,6 +178,7 @@
                   <thead>
                     <tr>
                       <th>Guard ID</th>
+                      <th>Username</th>
                       <th>Name</th>
                       <th>Phone</th>
                       <th>Email</th>
@@ -185,60 +187,10 @@
                     </tr>
                   </thead>
                   <tbody id="guardsTableBody">
-                    <tr><td colspan="6">No guards</td></tr>
+                    <tr><td colspan="7">No guards</td></tr>
                   </tbody>
                 </table>
               </div>
-            </div>
-          </section>
-        </section>
-
-        <section id="panel-live" class="func-panel">
-          <section class="panel-box">
-            <div class="users-head">
-              <h3>Live Check Logs</h3>
-              <button id="liveRefreshBtn" class="btn" type="button">Refresh</button>
-            </div>
-            <div class="toolbar">
-              <div>
-                <label for="liveDate">Date</label>
-                <input id="liveDate" type="date">
-              </div>
-              <div>
-                <label for="liveGuardFilter">Guard</label>
-                <select id="liveGuardFilter">
-                  <option value="">All</option>
-                </select>
-              </div>
-              <div>
-                <label for="liveStatusFilter">Status</label>
-                <select id="liveStatusFilter">
-                  <option value="">All</option>
-                  <option value="ONTIME">ONTIME</option>
-                  <option value="LATE">LATE</option>
-                  <option value="INVALID_QR">INVALID_QR</option>
-                  <option value="INVALID_GPS">INVALID_GPS</option>
-                </select>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Scan Time</th>
-                    <th>Guard</th>
-                    <th>Shift</th>
-                    <th>Checkpoint</th>
-                    <th>QR Scanned</th>
-                    <th>Distance(m)</th>
-                    <th>Status</th>
-                    <th>Photo</th>
-                  </tr>
-                </thead>
-                <tbody id="liveTableBody">
-                  <tr><td colspan="8">No logs</td></tr>
-                </tbody>
-              </table>
             </div>
           </section>
         </section>
@@ -287,19 +239,50 @@
                   <tr>
                     <th>Template ID</th>
                     <th>Template Name</th>
-                    <th>Days</th>
-                    <th>Guards</th>
-                    <th>Rounds/Shift</th>
-                    <th>Start</th>
-                    <th>End</th>
+                    <th>Checkpoints</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="templatesTableBody">
-                  <tr><td colspan="9">No templates</td></tr>
+                  <tr><td colspan="5">No templates</td></tr>
                 </tbody>
               </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="panel-assign" class="func-panel">
+          <section class="panel-box">
+            <div class="users-head">
+              <h3>Assign</h3>
+              <button id="assignShiftSettingsBtn" class="btn" type="button">Shift Settings</button>
+            </div>
+            <div class="assign-toolbar">
+              <div class="assign-month-nav">
+                <button id="assignPrevMonthBtn" class="btn assign-month-btn" type="button" aria-label="เดือนก่อน">‹</button>
+                <div class="assign-month-box">
+                  <label>เดือนที่แสดง</label>
+                  <div id="assignMonthLabel" class="assign-month-label">-</div>
+                </div>
+                <button id="assignNextMonthBtn" class="btn assign-month-btn" type="button" aria-label="เดือนถัดไป">›</button>
+              </div>
+              <input id="assignDate" type="hidden">
+            </div>
+
+            <div class="assign-calendar-wrap">
+              <div class="assign-weekdays">
+                <div>อาทิตย์</div>
+                <div>จันทร์</div>
+                <div>อังคาร</div>
+                <div>พุธ</div>
+                <div>พฤหัสบดี</div>
+                <div>ศุกร์</div>
+                <div>เสาร์</div>
+              </div>
+              <div id="assignCalendarGrid" class="assign-calendar-grid">
+                <div class="assign-calendar-empty">กำลังโหลดปฏิทิน...</div>
+              </div>
             </div>
           </section>
         </section>
@@ -309,5 +292,6 @@
   </div>
 </body>
 </html>
+
 
 
