@@ -4,7 +4,6 @@ async function ensureAdminsLoaded(silentMode, forceReload) {
     renderAdminTable(state.admins || []);
     return state.admins || [];
   }
-
   try {
     const rows = await callApi("listSupervisors", {});
     state.admins = Array.isArray(rows) ? rows : [];
