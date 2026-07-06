@@ -695,6 +695,7 @@ function baseChartOptions(extra) {
   };
   return deepMerge(base, extra || {});
 }
+
 function deepMerge(base, override) {
   const output = { ...base };
   Object.keys(override || {}).forEach((key) => {
@@ -708,6 +709,7 @@ function deepMerge(base, override) {
   });
   return output;
 }
+
 function destroyAllCharts() {
   Object.keys(state.charts || {}).forEach((key) => {
     try {
