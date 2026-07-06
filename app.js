@@ -1,4 +1,4 @@
-﻿window.addEventListener("DOMContentLoaded", async () => {
+window.addEventListener("DOMContentLoaded", async () => {
   bindElements();
   bindEvents();
   state.queue = loadQueue();
@@ -833,9 +833,3 @@ function createCheckinProofImage_(gps) {
   ctx.fillText(`ผู้ตรวจ: ${state.guard ? (state.guard.name || state.guard.guard_id) : "-"}`, 60, 350);
   return canvas.toDataURL("image/jpeg", 0.85);
 }
-
-
-
-
-
-
