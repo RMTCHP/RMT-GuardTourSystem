@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycbwFIXS1Jz8pYKoqYzib0aGXfZODFyYm4-chPeJH1JAtA14YZCwPxgoXyy_VfxyL3is/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycbxtnTxrpbCeJok2iCJZIsoBalA7LFSPzUEHik_xSvw89_HHc_1mR9aAmf8pcaAm8NQ/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
@@ -139,3 +139,4 @@ async function showMessage(icon, title, text) {
     buttonsStyling: false
   });
 }
+
