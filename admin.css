@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #ecf1f7;
   --nav-dark: #2d3548;
   --nav-dark-2: #242b3a;
@@ -1617,4 +1617,3 @@ select {
     grid-template-columns: 1fr;
   }
 }
-
