@@ -296,7 +296,6 @@ function switchFuncPanel(panelName) {
     return;
   }
 }
-
 function switchUserTab(tabName) {
   state.userTab = tabName === "guards" ? "guards" : "admin";
   if (el.userTabAdmin) el.userTabAdmin.classList.toggle("active", state.userTab === "admin");
