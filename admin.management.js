@@ -1,4 +1,4 @@
-﻿function isValidEmailInput(value) {
+function isValidEmailInput(value) {
   const email = String(value || '').trim();
   if (!email) return true;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -1519,5 +1519,3 @@ async function openChangePasswordSwal() {
     notify(`à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
   }
 }
-
-
