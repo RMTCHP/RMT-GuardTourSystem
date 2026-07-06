@@ -1,4 +1,4 @@
-﻿// Guard helper functions extracted from app.js
+// Guard helper functions extracted from app.js
 
 function saveSession(obj) {
   localStorage.setItem(STORAGE.SESSION, JSON.stringify(obj || {}));
@@ -658,17 +658,3 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
