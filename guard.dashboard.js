@@ -255,11 +255,9 @@ function computeRoundProgressByCounter(shift, counterMap) {
   const done = rounds.filter((r) => Number(r.total || 0) > 0 && Number(r.done || 0) >= Number(r.total || 0)).length;
   return { done, total };
 }
-
 function refreshQueueBanner() {
   // Queue runs in background; no dashboard KPI card for queue/sync anymore.
 }
-
 function invalidateGuardSummaryCache() {
   state.summaryCacheDate = "";
   state.summaryCache = null;
