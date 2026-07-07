@@ -1,4 +1,4 @@
-// Guard helper functions extracted from app.js
+﻿// Guard helper functions extracted from app.js
 
 function saveSession(obj) {
   localStorage.setItem(STORAGE.SESSION, JSON.stringify(obj || {}));
@@ -319,6 +319,9 @@ function setIncidentMode(mode) {
   if (el.incidentChoiceNone) el.incidentChoiceNone.classList.toggle("active", state.incidentMode === "NONE");
   if (el.incidentChoiceHas) el.incidentChoiceHas.classList.toggle("active", state.incidentMode === "HAS");
   if (el.incidentExtraFields) el.incidentExtraFields.classList.toggle("hidden", state.incidentMode !== "HAS");
+  if (state.incidentMode === "HAS") {
+    renderIncidentEvidenceList();
+  }
   updateIncidentPhotoButtonState();
 }
 
@@ -329,8 +332,8 @@ function updateIncidentPhotoButtonState() {
     el.incidentPhotoBtn.classList.add("is-disabled");
     return;
   }
-  const detail = String((el.incidentDetail && el.incidentDetail.value) || "").trim();
-  const enabled = !!detail;
+  const count = Array.isArray(state.incidentEvidenceItems) ? state.incidentEvidenceItems.length : 0;
+  const enabled = count < 3;
   el.incidentPhotoBtn.disabled = !enabled;
   el.incidentPhotoBtn.classList.toggle("is-disabled", !enabled);
 }
@@ -658,3 +661,17 @@ async function fileToDataUrlWithWatermark(file, maxSize, quality, meta) {
 
   return canvas.toDataURL("image/jpeg", quality);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

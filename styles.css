@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #eef2f7;
   --surface: #ffffff;
   --surface-soft: #f6f9fc;
@@ -1020,6 +1020,14 @@ input:focus, textarea:focus, select:focus {
   font-size: .76rem;
 }
 
+.status-subline {
+  margin-top: 6px;
+  font-size: .7rem;
+  line-height: 1.3;
+  color: #60738d;
+  font-weight: 700;
+}
+
 .status-icon {
   width: 20px;
   height: 20px;
@@ -1308,6 +1316,118 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 4px 10px rgba(26, 164, 184, .24);
 }
 
+.incident-evidence-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.incident-evidence-title {
+  font-size: .9rem;
+  font-weight: 800;
+  color: #183b63;
+}
+
+.incident-evidence-list {
+  display: grid;
+  gap: 10px;
+}
+
+.incident-evidence-empty {
+  border: 1px dashed #c7d7ea;
+  border-radius: 14px;
+  background: #f8fbff;
+  color: #6e83a0;
+  font-size: .82rem;
+  padding: 16px 14px;
+  text-align: center;
+}
+
+.incident-evidence-card {
+  border: 1px solid #d2dfef;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.incident-evidence-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.incident-evidence-index {
+  font-size: .86rem;
+  color: #16385d;
+}
+
+.incident-evidence-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.incident-evidence-camera,
+.incident-evidence-remove {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid #bfd0e4;
+  background: #f6fbff;
+  color: #1d4f7f;
+  display: inline-grid;
+  place-items: center;
+}
+
+.incident-evidence-remove {
+  color: #b42318;
+  border-color: #f1c5bf;
+  background: #fff7f6;
+}
+
+.incident-evidence-preview-wrap {
+  height: 128px;
+  border-radius: 14px;
+  border: 1px dashed #cfdbeb;
+  background: #f7fbff;
+  margin-bottom: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.incident-evidence-preview-wrap.has-photo {
+  border-style: solid;
+  background: #eef6ff;
+}
+
+.incident-evidence-placeholder {
+  color: #7f94af;
+  display: grid;
+  place-items: center;
+}
+
+.incident-evidence-placeholder .material-symbols-outlined {
+  font-size: 34px;
+}
+
+.incident-evidence-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.incident-evidence-comment {
+  min-height: 72px;
+  margin-bottom: 0;
+  resize: vertical;
+}
+
 .incident-photo-icon-btn:hover {
   transform: translateY(-1px);
   border-color: #8fb1d8;
@@ -1444,3 +1564,4 @@ input:focus, textarea:focus, select:focus {
   .guard-avatar { width: 34px; height: 34px; }
   .guard-meta strong { max-width: 98px; font-size: .95rem; }
 }
+
