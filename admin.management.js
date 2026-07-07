@@ -103,6 +103,7 @@ function invalidateAdminCaches() {
   state.dashboardSnapshotCache = {};
   state.dashboardChartsCache = {};
 }
+
 async function openAddUserSwal(existingGuard) {
   if (!state.supervisor) return;
   const isEdit = !!existingGuard;
