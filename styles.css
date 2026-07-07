@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #eef2f7;
   --surface: #ffffff;
   --surface-soft: #f6f9fc;
@@ -1444,4 +1444,3 @@ input:focus, textarea:focus, select:focus {
   .guard-avatar { width: 34px; height: 34px; }
   .guard-meta strong { max-width: 98px; font-size: .95rem; }
 }
-
