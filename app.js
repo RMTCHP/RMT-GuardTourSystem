@@ -224,12 +224,14 @@ function getShiftProfile(shift) {
     shift.profile_name || shift.template_name || shift.shift_name || "ไม่ระบุ"
   ).trim();
 }
+
 function displayShiftStatus(status) {
   const code = String(status || "OPEN").toUpperCase();
   if (code === "CLOSED") return "ปิดกะแล้ว";
   if (code === "CANCELED") return "ยกเลิก";
   return "พร้อมตรวจ";
 }
+
 function renderShiftList() {
   const rows = state.shifts || [];
 
