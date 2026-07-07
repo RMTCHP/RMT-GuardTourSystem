@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
@@ -106,13 +106,15 @@
               </button>
             </div>
             <div id="incidentExtraFields" class="hidden">
-              <textarea id="incidentDetail" rows="3" placeholder="รายละเอียด"></textarea>
-              <button id="incidentPhotoBtn" type="button" class="incident-photo-icon-btn" aria-label="เพิ่มรูปแจ้งเหตุ" title="เพิ่มรูปแจ้งเหตุ">
-                <span class="material-symbols-outlined">photo_camera</span>
-                <span class="incident-photo-plus" aria-hidden="true">+</span>
-              </button>
+              <div class="incident-evidence-head">
+                <span class="incident-evidence-title">หลักฐานเหตุผิดปกติ</span>
+                <button id="incidentPhotoBtn" type="button" class="incident-photo-icon-btn" aria-label="เพิ่มชุดรูปแจ้งเหตุ" title="เพิ่มชุดรูปแจ้งเหตุ">
+                  <span class="material-symbols-outlined">add_a_photo</span>
+                  <span class="incident-photo-plus" aria-hidden="true">+</span>
+                </button>
+              </div>
+              <div id="incidentEvidenceList" class="incident-evidence-list"></div>
               <input id="incidentPhotoInput" type="file" accept="image/*" capture="environment" class="hidden">
-              <img id="incidentPhotoPreview" class="preview hidden" alt="ภาพแจ้งเหตุ">
             </div>
             <button id="submitIncidentBtn" class="btn btn-warning">ยืนยันและบันทึก</button>
           </div>

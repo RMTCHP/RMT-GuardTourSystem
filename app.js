@@ -1,4 +1,4 @@
-window.addEventListener("DOMContentLoaded", async () => {
+﻿window.addEventListener("DOMContentLoaded", async () => {
   bindElements();
   bindEvents();
   state.queue = loadQueue();
@@ -38,7 +38,7 @@ function bindElements() {
     "submitStepStatus",
     "roundTabs", "checkpointList", "incidentDetail",
     "incidentChoiceNone", "incidentChoiceHas", "incidentExtraFields",
-    "incidentPhotoBtn", "incidentPhotoInput", "incidentPhotoPreview",
+    "incidentPhotoBtn", "incidentPhotoInput", "incidentEvidenceList",
     "submitIncidentBtn",
     "incidentStatus",
     "bottomNav", "navTour", "navDashboard"
@@ -73,13 +73,11 @@ function bindEvents() {
   if (el.incidentPhotoBtn && el.incidentPhotoInput) {
     el.incidentPhotoBtn.addEventListener("click", () => {
       if (el.incidentPhotoBtn.disabled) return;
+      const slot = addIncidentEvidenceItem(true);
+      if (!slot) return;
+      state.activeIncidentCaptureId = String(slot.id || "");
       el.incidentPhotoInput.value = "";
       el.incidentPhotoInput.click();
-    });
-  }
-  if (el.incidentDetail) {
-    el.incidentDetail.addEventListener("input", () => {
-      updateIncidentPhotoButtonState();
     });
   }
   if (el.backToCheckpointListBtn) {
@@ -108,19 +106,22 @@ function bindEvents() {
     el.incidentPhotoInput.addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      const targetId = String(state.activeIncidentCaptureId || "").trim();
+      const slot = state.incidentEvidenceItems.find((item) => String(item.id || "") === targetId);
+      if (!slot) return;
       const selectedItem = getSelectedPlanItem();
       const roundNo = Number((selectedItem && selectedItem.round_no) || state.currentRound || 0);
       const seqNo = Number((selectedItem && selectedItem.seq_no) || 0);
       const checkpointName = String(
         (selectedItem && (selectedItem.checkpoint_name || selectedItem.checkpoint_id)) || "-"
       ).trim();
-      const incidentDetail = String((el.incidentDetail ? el.incidentDetail.value : "") || "").trim();
+      const incidentDetail = String(slot.comment || "").trim();
       if (!state.gps) {
         try {
           await captureGps();
         } catch (_) {}
       }
-      state.incidentPhoto = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
+      slot.photo = await fileToDataUrlWithWatermark(file, 1280, 0.8, {
         timestamp: new Date(),
         lat: state.gps ? state.gps.lat : null,
         lng: state.gps ? state.gps.lng : null,
@@ -129,10 +130,8 @@ function bindEvents() {
         checkpointName,
         incidentDetail
       });
-      if (el.incidentPhotoPreview) {
-        el.incidentPhotoPreview.src = state.incidentPhoto;
-        el.incidentPhotoPreview.classList.remove("hidden");
-      }
+      renderIncidentEvidenceList();
+      state.activeIncidentCaptureId = "";
     });
   }
 }
@@ -276,11 +275,12 @@ async function openShift(index) {
   state.checkinPassed = false;
   state.checkpointPhoto = "";
   state.incidentPhoto = "";
+  state.incidentEvidenceItems = [];
+  state.activeIncidentCaptureId = "";
   state.incidentMode = "NONE";
 
   if (el.manualQr) el.manualQr.value = "";
   if (el.incidentPhotoInput) el.incidentPhotoInput.value = "";
-  if (el.incidentPhotoPreview) el.incidentPhotoPreview.classList.add("hidden");
 
   setText(el.gpsText, "ยังไม่โหลด GPS");
   setText(el.checkpointStatus, "");
@@ -309,6 +309,13 @@ function getShiftProgressCounter(shift) {
     counter[String(cpId)] = Number(progress[cpId] || 0);
   });
   return counter;
+}
+
+function getCheckpointCheckerMeta(point) {
+  if (!state.activeShift || !point) return null;
+  const shiftMeta = state.shiftProgressMetaMap[String(state.activeShift.shift_id || "")] || {};
+  const checkpointId = String(point.checkpoint_id || "").trim();
+  return checkpointId ? (shiftMeta[checkpointId] || null) : null;
 }
 
 function renderCheckpointList() {
@@ -351,6 +358,10 @@ function renderCheckpointList() {
     const locked = false;
     const disabled = done;
     const statusMeta = getCheckpointStatusMeta({ done, locked, isSelected });
+    const checkerMeta = getCheckpointCheckerMeta(cp);
+    const checkerText = done && checkerMeta && checkerMeta.guard_name
+      ? `ตรวจโดย: ${checkerMeta.guard_name}`
+      : "";
 
     return `
       <button type="button" class="checkpoint-card ${done ? "done" : ""} ${isSelected ? "active" : ""}" data-plan-key="${escapeAttr(key)}" ${disabled ? "disabled" : ""}>
@@ -365,6 +376,7 @@ function renderCheckpointList() {
           <span class="status-icon ${statusMeta.cls}" aria-hidden="true">${renderStatusIcon(statusMeta.type)}</span>
           <span class="status-text">${statusMeta.label}</span>
         </div>
+        ${checkerText ? `<div class="status-subline">${escapeHtml(checkerText)}</div>` : ""}
       </button>
     `;
   }).join("");
@@ -395,6 +407,85 @@ async function loadGps() {
   } catch (err) {
     setText(el.gpsText, `โหลด GPS ไม่สำเร็จ: ${err.message}`);
   }
+}
+
+function addIncidentEvidenceItem(autoRender) {
+  if (!Array.isArray(state.incidentEvidenceItems)) state.incidentEvidenceItems = [];
+  if (state.incidentEvidenceItems.length >= 3) {
+    if (window.Swal) {
+      Swal.fire({
+        icon: "warning",
+        title: "เพิ่มได้สูงสุด 3 ชุด",
+        text: "แต่ละเหตุสามารถแนบรูปพร้อมคอมเมนต์ได้ไม่เกิน 3 ชุด",
+        confirmButtonText: "ตกลง"
+      });
+    }
+    return null;
+  }
+  const item = { id: `EV-${Date.now()}-${Math.floor(Math.random() * 100000)}`, comment: "", photo: "" };
+  state.incidentEvidenceItems.push(item);
+  if (autoRender) renderIncidentEvidenceList();
+  updateIncidentPhotoButtonState();
+  return item;
+}
+
+function removeIncidentEvidenceItem(itemId) {
+  state.incidentEvidenceItems = (state.incidentEvidenceItems || []).filter((item) => String(item.id || "") !== String(itemId || ""));
+  renderIncidentEvidenceList();
+  updateIncidentPhotoButtonState();
+}
+
+function renderIncidentEvidenceList() {
+  if (!el.incidentEvidenceList) return;
+  const items = Array.isArray(state.incidentEvidenceItems) ? state.incidentEvidenceItems : [];
+  if (!items.length) {
+    el.incidentEvidenceList.innerHTML = '<div class="incident-evidence-empty">กดปุ่ม + เพื่อเพิ่มรูปและคอมเมนต์</div>';
+    return;
+  }
+
+  el.incidentEvidenceList.innerHTML = items.map((item, index) => `
+    <div class="incident-evidence-card" data-evidence-id="${escapeAttr(item.id)}">
+      <div class="incident-evidence-top">
+        <strong class="incident-evidence-index">ชุดที่ ${index + 1}</strong>
+        <div class="incident-evidence-actions">
+          <button type="button" class="incident-evidence-camera" data-photo-evidence="${escapeAttr(item.id)}" title="ถ่ายรูป" aria-label="ถ่ายรูป">
+            <span class="material-symbols-outlined">photo_camera</span>
+          </button>
+          <button type="button" class="incident-evidence-remove" data-remove-evidence="${escapeAttr(item.id)}" title="ลบชุดนี้" aria-label="ลบชุดนี้">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </div>
+      <div class="incident-evidence-preview-wrap ${item.photo ? "has-photo" : ""}">
+        ${item.photo ? `<img src="${item.photo}" class="incident-evidence-preview" alt="ภาพเหตุผิดปกติ">` : '<div class="incident-evidence-placeholder"><span class="material-symbols-outlined">imagesmode</span></div>'}
+      </div>
+      <textarea class="incident-evidence-comment" data-comment-evidence="${escapeAttr(item.id)}" rows="2" placeholder="คอมเมนต์ใต้รูป">${escapeHtml(item.comment || "")}</textarea>
+    </div>
+  `).join("");
+
+  el.incidentEvidenceList.querySelectorAll("[data-comment-evidence]").forEach((node) => {
+    node.addEventListener("input", (event) => {
+      const itemId = String(event.currentTarget.getAttribute("data-comment-evidence") || "");
+      const item = state.incidentEvidenceItems.find((x) => String(x.id || "") === itemId);
+      if (!item) return;
+      item.comment = event.currentTarget.value || "";
+      updateIncidentPhotoButtonState();
+    });
+  });
+
+  el.incidentEvidenceList.querySelectorAll("[data-photo-evidence]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.activeIncidentCaptureId = String(btn.getAttribute("data-photo-evidence") || "");
+      el.incidentPhotoInput.value = "";
+      el.incidentPhotoInput.click();
+    });
+  });
+
+  el.incidentEvidenceList.querySelectorAll("[data-remove-evidence]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      removeIncidentEvidenceItem(String(btn.getAttribute("data-remove-evidence") || ""));
+    });
+  });
 }
 
 async function onCheckinCard() {
@@ -492,25 +583,36 @@ async function onSubmitIncident() {
   }
 
   const hasAbnormal = state.incidentMode === "HAS";
-  const detail = (el.incidentDetail ? el.incidentDetail.value : "").trim();
-  if (hasAbnormal && !detail) {
-    setText(el.incidentStatus, "กรุณากรอกรายละเอียด");
+  const evidenceItems = (state.incidentEvidenceItems || []).filter((item) => {
+    return String(item.comment || "").trim() || String(item.photo || "").trim();
+  });
+  if (hasAbnormal && !evidenceItems.length) {
+    setText(el.incidentStatus, "กรุณาเพิ่มรูปและคอมเมนต์อย่างน้อย 1 ชุด");
     return;
   }
-  if (hasAbnormal && !state.incidentPhoto) {
-    setText(el.incidentStatus, "กรุณาถ่ายภาพเหตุผิดปกติ");
+  if (hasAbnormal && evidenceItems.some((item) => !String(item.comment || "").trim())) {
+    setText(el.incidentStatus, "กรุณากรอกคอมเมนต์ใต้รูปให้ครบ");
+    return;
+  }
+  if (hasAbnormal && evidenceItems.some((item) => !String(item.photo || "").trim())) {
+    setText(el.incidentStatus, "กรุณาถ่ายรูปให้ครบทุกชุด");
     if (window.Swal) {
       await Swal.fire({
         icon: "warning",
         title: "กรุณาถ่ายรูปด้วย",
-        text: "คุณกรอกรายละเอียดแล้ว แต่ยังไม่ได้ถ่ายรูปแจ้งเหตุ",
+        text: "บางชุดยังไม่มีรูป กรุณาถ่ายรูปให้ครบก่อนบันทึก",
         confirmButtonText: "ตกลง"
       });
     }
     return;
   }
 
-  const checkpointPhoto = state.incidentPhoto || createCheckinProofImage_(state.gps);
+  const incidentDetailText = evidenceItems
+    .map((item, index) => `ชุดที่ ${index + 1}: ${String(item.comment || "").trim()}`)
+    .join("\n");
+  const checkpointPhoto = (hasAbnormal && evidenceItems[0] && evidenceItems[0].photo)
+    ? evidenceItems[0].photo
+    : createCheckinProofImage_(state.gps);
 
   const checkpointPayload = {
     shift_id: state.activeShift.shift_id,
@@ -519,7 +621,7 @@ async function onSubmitIncident() {
     gps_lat: state.gps.lat,
     gps_lng: state.gps.lng,
     photo_url: checkpointPhoto,
-    remark: hasAbnormal ? `[มีเหตุ] ${detail}` : "ไม่มีเหตุผิดปกติ"
+    remark: hasAbnormal ? `[มีเหตุ] ${incidentDetailText}` : "ไม่มีเหตุผิดปกติ"
   };
 
   try {
@@ -532,8 +634,13 @@ async function onSubmitIncident() {
         shift_id: state.activeShift.shift_id,
         guard_id: state.guard.guard_id,
         type: "ABNORMAL",
-        detail,
-        photo_url: state.incidentPhoto || checkpointPhoto,
+        detail: incidentDetailText,
+        photo_url: evidenceItems[0].photo || checkpointPhoto,
+        photo_sets: evidenceItems.map((item, index) => ({
+          seq_no: index + 1,
+          comment: String(item.comment || "").trim(),
+          photo_url: String(item.photo || "").trim()
+        })),
         severity: "MEDIUM"
       };
       const incidentRes = await callApi("submitIncident", { payload: incidentPayload });
@@ -566,8 +673,13 @@ async function onSubmitIncident() {
           shift_id: state.activeShift.shift_id,
           guard_id: state.guard.guard_id,
           type: "ABNORMAL",
-          detail,
-          photo_url: state.incidentPhoto || checkpointPhoto,
+          detail: incidentDetailText,
+          photo_url: evidenceItems[0].photo || checkpointPhoto,
+          photo_sets: evidenceItems.map((item, index) => ({
+            seq_no: index + 1,
+            comment: String(item.comment || "").trim(),
+            photo_url: String(item.photo || "").trim()
+          })),
           severity: "MEDIUM"
         }
       });
@@ -605,6 +717,7 @@ async function loadGuardBootstrap(guardId, date, moment) {
   state.guard = data && data.guard ? data.guard : null;
   state.shifts = Array.isArray(data && data.shifts) ? data.shifts : [];
   state.shiftProgressMap = data && data.progress_by_shift ? data.progress_by_shift : {};
+  state.shiftProgressMetaMap = data && data.progress_meta_by_shift ? data.progress_meta_by_shift : {};
   state.checkpointQrMap = data && data.checkpoint_qr_map ? data.checkpoint_qr_map : {};
   state.checkpointMetaMap = buildCheckpointMetaMap(checkpointRows, state.shifts);
   if (state.guard) setGuardHeader(state.guard);
@@ -759,11 +872,12 @@ function clearCheckpointDraft() {
 
 function clearIncidentDraft() {
   state.incidentPhoto = "";
+  state.incidentEvidenceItems = [];
+  state.activeIncidentCaptureId = "";
   state.incidentMode = "NONE";
   if (el.incidentType) el.incidentType.value = "";
-  if (el.incidentDetail) el.incidentDetail.value = "";
   if (el.incidentPhotoInput) el.incidentPhotoInput.value = "";
-  if (el.incidentPhotoPreview) el.incidentPhotoPreview.classList.add("hidden");
+  if (el.incidentEvidenceList) el.incidentEvidenceList.innerHTML = "";
   setIncidentMode("NONE");
 }
 
