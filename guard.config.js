@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxtnTxrpbCeJok2iCJZIsoBalA7LFSPzUEHik_xSvw89_HHc_1mR9aAmf8pcaAm8NQ/exec";
+﻿const API_URL = "https://script.google.com/macros/s/AKfycby5hEIim-I0KCEsZsprWne8clnsBBOhyACbw6kzagoHfpEjecLlYjb240sYB2wUUTg/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",
@@ -10,6 +10,7 @@ const state = {
   guard: null,
   shifts: [],
   shiftProgressMap: {},
+  shiftProgressMetaMap: {},
   activeShift: null,
   activePlan: [],
   currentRound: 1,
@@ -19,6 +20,8 @@ const state = {
   checkinPassed: false,
   checkpointPhoto: "",
   incidentPhoto: "",
+  incidentEvidenceItems: [],
+  activeIncidentCaptureId: "",
   incidentMode: "NONE",
   checkpointQrMap: {},
   checkpointMetaMap: {},
@@ -34,3 +37,12 @@ const state = {
 
 const el = {};
 let loadingCount = 0;
+
+
+
+
+
+
+
+
+
