@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -131,7 +131,13 @@
 
           <div class="panel-grid">
             <section class="panel-box">
-              <h3>สรุปผลกะงาน</h3>
+              <div class="panel-box-head">
+                <h3>สรุปผลกะงาน</h3>
+                <div class="summary-tabs">
+                  <button id="summaryTabDay" type="button" class="summary-tab active">กะกลางวัน</button>
+                  <button id="summaryTabNight" type="button" class="summary-tab">กะกลางคืน</button>
+                </div>
+              </div>
               <div id="summaryList" class="list"></div>
             </section>
 
@@ -292,3 +298,6 @@
   </div>
 </body>
 </html>
+
+
+
