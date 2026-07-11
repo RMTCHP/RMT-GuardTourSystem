@@ -282,7 +282,7 @@ function switchFuncPanel(panelName) {
     return;
   }
   if (panelName === "overview") {
-    loadDashboard(false, false);
+    loadDashboard(false, true);
     return;
   }
   if (panelName === "checkpoints") {

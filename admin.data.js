@@ -1,4 +1,4 @@
-﻿async function ensureAdminsLoaded(silentMode, forceReload) {
+async function ensureAdminsLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
   if (state.adminsLoaded && !forceReload) {
     renderAdminTable(state.admins || []);
@@ -15,7 +15,7 @@
     state.admins = [];
     state.adminsLoaded = false;
     renderAdminTable([]);
-    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    if (!silentMode) notify(`โหลดข้อมูล Admin ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -37,7 +37,7 @@ async function ensureGuardsLoaded(silentMode, forceReload) {
     state.guards = [];
     state.guardsLoaded = false;
     renderGuardsTable([]);
-    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guards à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    if (!silentMode) notify(`โหลดข้อมูล รปภ ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -59,7 +59,7 @@ async function ensureCheckpointsLoaded(silentMode, forceReload) {
     state.checkpoints = [];
     state.checkpointsLoaded = false;
     renderCheckpointsTable([]);
-    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Checkpoints à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    if (!silentMode) notify(`โหลดข้อมูลจุดตรวจไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -81,7 +81,7 @@ async function ensureTemplatesLoaded(silentMode, forceReload) {
     state.templates = [];
     state.templatesLoaded = false;
     renderTemplatesTable([]);
-    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    if (!silentMode) notify(`โหลดข้อมูล Template ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -107,7 +107,7 @@ async function ensureAssignmentsLoaded(silentMode, forceReload) {
   } catch (err) {
     state.assignments = [];
     renderAssignmentsBoard([]);
-    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Assign à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    if (!silentMode) notify(`โหลดข้อมูล Assign ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -126,7 +126,7 @@ async function ensureShiftSettingsLoaded(silentMode, forceReload) {
   } catch (err) {
     state.shiftSettings = [];
     state.shiftSettingsLoaded = false;
-    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Shift Settings à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    if (!silentMode) notify(`โหลดข้อมูล Shift Settings ไม่สำเร็จ: ${err.message}`, "error");
     return [];
   }
 }
@@ -143,7 +143,7 @@ function renderAssignmentsBoard(rows) {
   const todayKey = toYmd(new Date());
   const cells = [];
 
-  el.assignMonthLabel.textContent = formatAssignMonthThai(monthStart);
+  el.assignMonthLabel.textContent = formatAssignMonthEnglish(monthStart);
 
   for (let i = 0; i < firstWeekday; i += 1) {
     cells.push('<div class="assign-day-placeholder" aria-hidden="true"></div>');
@@ -234,23 +234,12 @@ function bindAssignmentCalendarActions() {
   });
 }
 
-function formatAssignMonthThai(date) {
-  const months = [
-    "à¸¡à¸à¸£à¸²à¸„à¸¡",
-    "à¸à¸¸à¸¡à¸ à¸²à¸žà¸±à¸™à¸˜à¹Œ",
-    "à¸¡à¸µà¸™à¸²à¸„à¸¡",
-    "à¹€à¸¡à¸©à¸²à¸¢à¸™",
-    "à¸žà¸¤à¸©à¸ à¸²à¸„à¸¡",
-    "à¸¡à¸´à¸–à¸¸à¸™à¸²à¸¢à¸™",
-    "à¸à¸£à¸à¸Žà¸²à¸„à¸¡",
-    "à¸ªà¸´à¸‡à¸«à¸²à¸„à¸¡",
-    "à¸à¸±à¸™à¸¢à¸²à¸¢à¸™",
-    "à¸•à¸¸à¸¥à¸²à¸„à¸¡",
-    "à¸žà¸¤à¸¨à¸ˆà¸´à¸à¸²à¸¢à¸™",
-    "à¸˜à¸±à¸™à¸§à¸²à¸„à¸¡"
-  ];
+function formatAssignMonthEnglish(date) {
   const d = Object.prototype.toString.call(date) === "[object Date]" ? date : new Date(date);
   if (isNaN(d.getTime())) return "-";
-  return `${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric"
+  }).format(d);
 }
 

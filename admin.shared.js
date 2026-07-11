@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbyGeCsJDJ8pmlmiCCXZS_eVLumVFfphMEqHhZ_MPQlwKH8_XfcEN2HXO9EaR2_GRdA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyAmnKZikesQN8uHEKZQKUZ1nzjl1h0ZBHAy6eGKahqQK8dNNI4Pyopn73DAzDNU6g/exec";
 const STORAGE_KEY = "guardtour.supervisor.session";
 const DEFAULT_MAP_CENTER = { lat: 13.782472, lng: 100.971472 };
 const DEFAULT_GOOGLE_MAPS_URL = "https://www.google.com/maps?q=13.782472,100.971472";

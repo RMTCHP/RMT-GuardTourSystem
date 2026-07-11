@@ -78,16 +78,16 @@
       <main class="content-area">
         <section id="panel-overview" class="func-panel active">
           <div class="toolbar">
-            <label for="reportDate">Report Date</label>
+            <label for="reportDate">วันที่รายงาน</label>
             <input id="reportDate" type="date">
-            <button id="loadBtn" class="btn">Load</button>
+            <button id="loadBtn" class="btn">โหลดข้อมูล</button>
           </div>
 
           <div class="kpi-grid">
             <div class="kpi-card">
               <div class="kpi-head">
                 <span class="kpi-icon material-symbols-outlined">event_note</span>
-                <span class="kpi-label">งานที่มอบหมาย</span>
+                <span class="kpi-label">กะงานที่มอบหมาย</span>
               </div>
               <strong id="kpiShifts">0</strong>
             </div>
@@ -101,7 +101,7 @@
             <div class="kpi-card">
               <div class="kpi-head">
                 <span class="kpi-icon material-symbols-outlined">groups</span>
-                <span class="kpi-label">รปภ ที่มอบหมาย</span>
+                <span class="kpi-label">รปภ ที่ได้รับมอบหมาย</span>
               </div>
               <strong id="kpiGuards">0</strong>
             </div>
@@ -116,15 +116,15 @@
 
           <div class="chart-grid">
             <section class="panel-box chart-box">
-              <h3>สถานะการตรวจวันนี้</h3>
+              <h3 id="chartComplianceTitle">สถานะการตรวจ</h3>
               <canvas id="chartCompliance"></canvas>
             </section>
             <section class="panel-box chart-box">
-              <h3>ผลงานราย รปภ (วันนี้)</h3>
+              <h3 id="chartOperationsTitle">ผลงานราย รปภ</h3>
               <canvas id="chartOperations"></canvas>
             </section>
             <section class="panel-box chart-box chart-box-wide">
-              <h3>กิจกรรมรายชั่วโมง (วันนี้)</h3>
+              <h3 id="chartActivityTitle">กิจกรรมตามช่วงเวลา</h3>
               <canvas id="chartShiftType"></canvas>
             </section>
           </div>
@@ -268,7 +268,7 @@
               <div class="assign-month-nav">
                 <button id="assignPrevMonthBtn" class="btn assign-month-btn" type="button" aria-label="เดือนก่อน">‹</button>
                 <div class="assign-month-box">
-                  <label>เดือนที่แสดง</label>
+                  <label>Display Month</label>
                   <div id="assignMonthLabel" class="assign-month-label">-</div>
                 </div>
                 <button id="assignNextMonthBtn" class="btn assign-month-btn" type="button" aria-label="เดือนถัดไป">›</button>

@@ -41,10 +41,11 @@ function renderSummary(rows) {
             <th>รปภ</th>
             <th>Template</th>
             <th>เวลา</th>
-            <th>จุดทั้งหมด</th>
+            <th>รอบ</th>
+            <th>จุดตรวจทั้งหมด</th>
             <th>ตรวจแล้ว</th>
             <th>ช้า</th>
-            <th>ตกหล่น</th>
+            <th>คงเหลือ</th>
             <th>ผิดจุด</th>
             <th>เหตุ</th>
             <th>สถานะ</th>
@@ -57,6 +58,7 @@ function renderSummary(rows) {
               <td>${escapeHtml(String(r.guard_name || "-"))}</td>
               <td>${escapeHtml(r.template_label || "-")}</td>
               <td>${escapeHtml(formatShiftTimeRange(r.start_time, r.end_time))}</td>
+              <td>${Number(r.rounds_required || 1)}</td>
               <td>${Number(r.total_points || 0)}</td>
               <td>${Number(r.checked_points || 0)}</td>
               <td>${Number(r.late_points || 0)}</td>
@@ -160,21 +162,13 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
 
   const allowedGuardIds = new Set(Object.keys(guardMap));
   const assignmentRowsRaw = Array.isArray(bundle?.assignments) ? bundle.assignments : [];
-  const shiftRowsRaw = Array.isArray(bundle?.shifts) ? bundle.shifts : [];
   const logRowsRaw = Array.isArray(bundle?.logs) ? bundle.logs : [];
   const incidentRowsRaw = Array.isArray(bundle?.incidents) ? bundle.incidents : [];
   const bundledTemplateRoutes = bundle?.template_routes && typeof bundle.template_routes === "object"
     ? bundle.template_routes
     : {};
-  const bundledShiftRoutes = bundle?.shift_routes && typeof bundle.shift_routes === "object"
-    ? bundle.shift_routes
-    : {};
 
   const assignmentRows = assignmentRowsRaw.filter((row) => {
-    const guardId = String(row.guard_id || "").trim();
-    return !allowedGuardIds.size || allowedGuardIds.has(guardId);
-  });
-  const shiftRows = shiftRowsRaw.filter((row) => {
     const guardId = String(row.guard_id || "").trim();
     return !allowedGuardIds.size || allowedGuardIds.has(guardId);
   });
@@ -200,26 +194,10 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
       state.templateRouteCache[templateId] = bundledTemplateRoutes[templateId];
     }
   });
-  if (!state.shiftCheckpoints) state.shiftCheckpoints = {};
-  Object.keys(bundledShiftRoutes).forEach((shiftId) => {
-    if (Array.isArray(bundledShiftRoutes[shiftId])) {
-      state.shiftCheckpoints[shiftId] = bundledShiftRoutes[shiftId];
-    }
-  });
 
   const templateRouteMap = Object.fromEntries(
     uniqueTemplateIds.map((templateId) => [templateId, state.templateRouteCache[templateId] || []])
   );
-  const routeMap = Object.fromEntries(
-    shiftRows.map((shift) => {
-      const shiftId = String(shift.shift_id || "").trim();
-      return [shiftId, state.shiftCheckpoints[shiftId] || []];
-    })
-  );
-  const shiftById = {};
-  shiftRows.forEach((row) => {
-    shiftById[String(row.shift_id || "")] = row;
-  });
 
   const logsByShift = {};
   logRows.forEach((row) => {
@@ -238,40 +216,33 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
   });
 
   const summaryRows = [];
+  const summaryByAssignmentId = {};
 
   assignmentGroups.forEach((assignment) => {
-    const groupShiftRows = shiftRows.filter((shift) => isShiftInAssignmentGroup(shift, assignment));
-    const groupShiftIds = groupShiftRows
-      .map((shift) => String(shift.shift_id || "").trim())
-      .filter(Boolean);
-
-    const routeRows = groupShiftIds.reduce((acc, shiftId) => {
-      const rows = Array.isArray(routeMap[shiftId]) ? routeMap[shiftId] : [];
-      if (rows.length) return rows;
-      return acc;
-    }, []);
-
     const templateId = String(assignment.template_id || "").trim();
     const templateRoutes = templateId ? (templateRouteMap[templateId] || []) : [];
-    const effectiveRoutes = routeRows.length ? routeRows : templateRoutes;
-    const effectiveLogs = groupShiftIds.flatMap((shiftId) => logsByShift[shiftId] || []);
-    const effectiveIncidents = groupShiftIds.flatMap((shiftId) => incidentsByShift[shiftId] || []);
-    const primaryShift = groupShiftRows[0] || null;
+    const assignmentIds = Array.isArray(assignment.assign_ids) ? assignment.assign_ids : [];
+    const effectiveLogs = assignmentIds.flatMap((assignId) => logsByShift[assignId] || []);
+    const effectiveIncidents = assignmentIds.flatMap((assignId) => incidentsByShift[assignId] || []);
 
-    summaryRows.push(buildDashboardSummaryRow({
+    const summary = buildDashboardSummaryRow({
       shiftId: String(assignment.group_key || assignment.assign_id || ""),
-      shiftName: assignment.shift_name || primaryShift?.shift_name || "-",
+      shiftName: assignment.shift_name || "-",
       guardId: assignment.guard_ids_joined || "",
       guardName: assignment.guard_names_joined || "",
       templateLabel: assignment.template_label || assignment.template_id || "-",
-      startTime: assignment.start_time || primaryShift?.start_time || "",
-      endTime: assignment.end_time || primaryShift?.end_time || "",
-      status: assignment.status || primaryShift?.status || "ACTIVE",
-      routeRows: effectiveRoutes,
+      assignDate: assignment.assign_date || date,
+      startTime: assignment.start_time || "",
+      endTime: assignment.end_time || "",
+      roundsRequired: assignment.rounds_required,
+      status: assignment.status || "ACTIVE",
+      routeRows: templateRoutes,
       logs: effectiveLogs,
       incidents: effectiveIncidents,
       sourceMode: "assignment"
-    }));
+    });
+    summaryRows.push(summary);
+    assignmentIds.forEach((assignId) => { summaryByAssignmentId[String(assignId)] = summary; });
   });
 
   summaryRows.sort((a, b) =>
@@ -282,12 +253,11 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
   const incidentTableRows = incidentRows
     .map((row) => {
       const shiftId = String(row.shift_id || "").trim();
-      const summary = summaryRows.find((item) => String(item.shift_id || "") === shiftId);
-      const shiftRow = shiftById[shiftId] || null;
+      const summary = summaryByAssignmentId[shiftId] || null;
       const guardId = String(row.guard_id || "").trim();
       return {
         ...row,
-        shift_name: summary?.shift_name || shiftRow?.shift_name || shiftId || "-",
+        shift_name: summary?.shift_name || shiftId || "-",
         guard_name: guardMap[guardId]?.name || ""
       };
     })
@@ -326,7 +296,9 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
     },
     summaryRows,
     incidents: incidentTableRows,
-    logs: logRows
+    logs: logRows,
+    assignments: assignmentRows,
+    guardMap: guardMap
   };
 
   if (!state.dashboardSnapshotCache) state.dashboardSnapshotCache = {};
@@ -351,6 +323,7 @@ function groupAssignmentsForDashboard(rows, guardMap) {
         template_label: row.template_label || templateId || "-",
         start_time: row.start_time || "",
         end_time: row.end_time || "",
+        rounds_required: Math.max(1, Number(row.rounds_required || 1)),
         status: row.status || "ACTIVE",
         assign_ids: [],
         guard_ids: [],
@@ -365,6 +338,7 @@ function groupAssignmentsForDashboard(rows, guardMap) {
     if (assignId && group.assign_ids.indexOf(assignId) < 0) group.assign_ids.push(assignId);
     if (guardId && group.guard_ids.indexOf(guardId) < 0) group.guard_ids.push(guardId);
     if (guardName && group.guard_names.indexOf(guardName) < 0) group.guard_names.push(guardName);
+    group.rounds_required = Math.max(Number(group.rounds_required || 1), Number(row.rounds_required || 1));
     if (String(row.status || "").toUpperCase() === "ACTIVE") group.status = "ACTIVE";
   });
 
@@ -469,12 +443,13 @@ function buildDashboardSummaryRow(payload) {
   const routeRows = Array.isArray(payload.routeRows) ? payload.routeRows : [];
   const logs = Array.isArray(payload.logs) ? payload.logs : [];
   const incidents = Array.isArray(payload.incidents) ? payload.incidents : [];
+  const roundsRequired = Math.max(1, Number(payload.roundsRequired || 1));
 
   const expectedCount = {};
   routeRows.forEach((row) => {
     const checkpointId = String(row.checkpoint_id || "").trim();
     if (!checkpointId) return;
-    expectedCount[checkpointId] = Number(expectedCount[checkpointId] || 0) + 1;
+    expectedCount[checkpointId] = Number(expectedCount[checkpointId] || 0) + roundsRequired;
   });
 
   const checkedCount = {};
@@ -498,7 +473,7 @@ function buildDashboardSummaryRow(payload) {
   const invalidPoints = logs.filter((log) => String(log.status || "").toUpperCase().startsWith("INVALID")).length;
   const lateFromLogs = logs.filter((log) => String(log.status || "").toUpperCase() === "LATE").length;
 
-  const totalPoints = routeRows.length || checkedFromLogs + invalidPoints;
+  const totalPoints = routeRows.length ? routeRows.length * roundsRequired : checkedFromLogs + invalidPoints;
   const checkedPoints = routeRows.length
     ? Object.keys(expectedCount).reduce((sum, checkpointId) => sum + Math.min(Number(expectedCount[checkpointId] || 0), Number(checkedCount[checkpointId] || 0)), 0)
     : checkedFromLogs;
@@ -513,6 +488,7 @@ function buildDashboardSummaryRow(payload) {
     guard_id: payload.guardId || "",
     guard_name: payload.guardName || "",
     template_label: payload.templateLabel || "-",
+    rounds_required: roundsRequired,
     start_time: payload.startTime || "",
     end_time: payload.endTime || "",
     total_points: totalPoints,
@@ -522,6 +498,7 @@ function buildDashboardSummaryRow(payload) {
     invalid_points: invalidPoints,
     incidents_count: incidents.length,
     status: payload.status || "ACTIVE",
+    timing_state: getDashboardTimingState(payload.assignDate, payload.startTime, payload.endTime),
     source_mode: payload.sourceMode || "shift"
   };
 }
@@ -533,9 +510,28 @@ function getDashboardStatusText(row) {
   const baseStatus = String(row.status || "").toUpperCase();
 
   if (baseStatus === "INACTIVE") return "ปิดใช้งาน";
-  if (totalPoints > 0 && checkedPoints >= totalPoints) return "ครบแล้ว";
+  if (totalPoints > 0 && checkedPoints >= totalPoints) return "ตรวจครบแล้ว";
+  if (row.timing_state === "ENDED") return `หมดเวลา (คงเหลือ ${Math.max(0, totalPoints - checkedPoints)} จุด)`;
+  if (row.timing_state === "FUTURE") return "ยังไม่ถึงเวลา";
   if (checkedPoints > 0 || invalidPoints > 0) return "กำลังตรวจ";
   return "รอเริ่ม";
+}
+
+function getDashboardTimingState(assignDate, startTime, endTime) {
+  const dateKey = String(assignDate || "").slice(0, 10);
+  const start = normalizeTimeForCompare(startTime);
+  const end = normalizeTimeForCompare(endTime);
+  if (!dateKey || !start || !end) return "";
+
+  const startAt = new Date(`${dateKey}T${start}`);
+  const endAt = new Date(`${dateKey}T${end}`);
+  if (isNaN(startAt.getTime()) || isNaN(endAt.getTime())) return "";
+  if (endAt.getTime() <= startAt.getTime()) endAt.setDate(endAt.getDate() + 1);
+
+  const now = new Date();
+  if (now.getTime() < startAt.getTime()) return "FUTURE";
+  if (now.getTime() > endAt.getTime()) return "ENDED";
+  return "ACTIVE";
 }
 
 function normalizeTimeForCompare(value) {
@@ -574,11 +570,18 @@ function renderDashboardCharts(snapshot, dateYmd) {
   if (!window.Chart) return;
 
   const analytics = buildTodayChartAnalytics(snapshot, dateYmd);
+  const dateLabel = formatDashboardDateLabel(dateYmd);
+  const complianceTitle = document.getElementById("chartComplianceTitle");
+  const operationsTitle = document.getElementById("chartOperationsTitle");
+  const activityTitle = document.getElementById("chartActivityTitle");
+  if (complianceTitle) complianceTitle.textContent = `สถานะการตรวจ: ${dateLabel}`;
+  if (operationsTitle) operationsTitle.textContent = `ผลงานราย รปภ: ${dateLabel}`;
+  if (activityTitle) activityTitle.textContent = `กิจกรรมตามช่วงเวลา: ${dateLabel}`;
 
   upsertChart("compliance", el.chartCompliance, {
     type: "doughnut",
     data: {
-      labels: ["ตรวจตรงเวลา", "ตรวจช้า", "ตกหล่น", "ผิดจุด/พิกัด"],
+      labels: ["ตรวจตรงเวลา", "ตรวจช้า", "คงเหลือ", "ผิดจุด/พิกัด"],
       datasets: [{
         label: "จำนวนจุด",
         data: [
@@ -646,14 +649,14 @@ function renderDashboardCharts(snapshot, dateYmd) {
       labels: analytics.byHour.map((x) => x.hour),
       datasets: [
         {
-          label: "จุดที่ตรวจ",
+          label: "รายการบันทึกจุดตรวจ",
           data: analytics.byHour.map((x) => x.total),
           backgroundColor: "#1b9aaa",
           borderRadius: 6,
           maxBarThickness: 22
         },
         {
-          label: "เหตุผิดปกติ",
+          label: "รายการแจ้งเหตุ",
           data: analytics.byHour.map((x) => x.incidents),
           backgroundColor: "#e76f51",
           borderRadius: 6,
@@ -671,9 +674,11 @@ function renderDashboardCharts(snapshot, dateYmd) {
 }
 
 function buildTodayChartAnalytics(snapshot, dateYmd) {
-  const summaryRows = Array.isArray(snapshot?.summaryRows) ? snapshot.summaryRows : [];
   const logs = Array.isArray(snapshot?.logs) ? snapshot.logs : [];
   const incidents = Array.isArray(snapshot?.incidents) ? snapshot.incidents : [];
+  const assignments = Array.isArray(snapshot?.assignments) ? snapshot.assignments : [];
+  const guardMap = snapshot?.guardMap && typeof snapshot.guardMap === "object" ? snapshot.guardMap : {};
+  const summaryRows = Array.isArray(snapshot?.summaryRows) ? snapshot.summaryRows : [];
   const targetDate = String(dateYmd || "").trim();
 
   const today = {
@@ -684,23 +689,47 @@ function buildTodayChartAnalytics(snapshot, dateYmd) {
   };
 
   const guardAgg = {};
+  assignments.forEach((assignment) => {
+    const guardId = String(assignment.guard_id || "").trim();
+    if (!guardId) return;
+    const guardName = String(guardMap[guardId]?.name || assignment.guard_label || "").trim();
+    guardAgg[guardId] = {
+      guard: guardName || guardId,
+      checked: 0,
+      incidents: 0
+    };
+  });
+
   summaryRows.forEach((row) => {
     const checked = Number(row.checked_points || 0);
     const late = Number(row.late_points || 0);
     const missed = Number(row.missed_points || 0);
     const invalid = Number(row.invalid_points || 0);
-    const guardKey = formatGuardDisplay(row.guard_id, row.guard_name);
-
     today.ontime += Math.max(0, checked - late);
     today.late += late;
     today.missed += missed;
     today.invalid += invalid;
+  });
 
-    if (!guardAgg[guardKey]) {
-      guardAgg[guardKey] = { guard: guardKey, checked: 0, incidents: 0 };
+  logs.forEach((log) => {
+    const guardId = String(log.guard_id || "").trim();
+    if (!guardId) return;
+    if (!guardAgg[guardId]) {
+      const guardName = String(guardMap[guardId]?.name || "").trim();
+      guardAgg[guardId] = { guard: guardName || guardId, checked: 0, incidents: 0 };
     }
-    guardAgg[guardKey].checked += checked;
-    guardAgg[guardKey].incidents += Number(row.incidents_count || 0);
+    const status = String(log.status || "").toUpperCase();
+    if (status === "ONTIME" || status === "LATE") guardAgg[guardId].checked += 1;
+  });
+
+  incidents.forEach((incident) => {
+    const guardId = String(incident.guard_id || "").trim();
+    if (!guardId) return;
+    if (!guardAgg[guardId]) {
+      const guardName = String(guardMap[guardId]?.name || "").trim();
+      guardAgg[guardId] = { guard: guardName || guardId, checked: 0, incidents: 0 };
+    }
+    guardAgg[guardId].incidents += 1;
   });
 
   let byGuard = Object.values(guardAgg);
@@ -739,6 +768,18 @@ function buildTodayChartAnalytics(snapshot, dateYmd) {
     .map((key) => hourMap[key]);
 
   return { today, byGuard, byHour };
+}
+
+function formatDashboardDateLabel(dateYmd) {
+  const value = String(dateYmd || "").trim();
+  if (!value) return "-";
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  if (isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  }).format(date);
 }
 
 function upsertChart(key, canvasEl, config) {
