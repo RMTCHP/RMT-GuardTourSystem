@@ -1579,3 +1579,174 @@ input:focus, textarea:focus, select:focus {
   .guard-meta strong { max-width: 98px; font-size: .95rem; }
 }
 
+/* Guard mobile application layout: Android + iOS safe areas and compact phones. */
+.guard-theme {
+  min-height: 100svh;
+  min-height: 100dvh;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+.guard-theme .mobile-app {
+  width: 100%;
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding-top: calc(env(safe-area-inset-top) + 124px);
+  padding-right: max(12px, env(safe-area-inset-right));
+  padding-bottom: calc(env(safe-area-inset-bottom) + 104px);
+  padding-left: max(12px, env(safe-area-inset-left));
+  font-family: "Noto Sans Thai", "Segoe UI", Tahoma, sans-serif;
+}
+
+.guard-theme .topbar {
+  width: min(520px, calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 20px));
+  min-height: 86px;
+  padding: 12px 14px;
+}
+
+.guard-theme .topbar-title {
+  font-size: clamp(1.2rem, 5.4vw, 1.55rem);
+}
+
+.guard-theme .topbar-sub {
+  font-size: clamp(.73rem, 3.4vw, .84rem);
+}
+
+.guard-theme .panel {
+  width: 100%;
+  border-radius: 18px;
+  padding: clamp(12px, 3.8vw, 16px);
+}
+
+.guard-theme h2 {
+  font-size: clamp(1.08rem, 5vw, 1.34rem);
+  line-height: 1.28;
+}
+
+.guard-theme h3 {
+  font-size: clamp(.96rem, 4.2vw, 1.1rem);
+}
+
+.guard-theme .hint,
+.guard-theme .tour-round-summary {
+  font-size: clamp(.78rem, 3.55vw, .92rem);
+  line-height: 1.45;
+}
+
+.guard-theme .checkpoint-list {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: clamp(8px, 2.6vw, 12px);
+}
+
+.guard-theme .checkpoint-card {
+  min-height: 112px;
+  padding: 10px;
+}
+
+.guard-theme .checkpoint-card h4 {
+  font-size: clamp(.86rem, 3.8vw, 1rem);
+  line-height: 1.22;
+}
+
+.guard-theme .quick-grid {
+  gap: clamp(7px, 2.4vw, 10px);
+}
+
+.guard-theme .quick-card {
+  min-height: clamp(100px, 28vw, 120px);
+  padding: 10px 6px;
+}
+
+.guard-theme .quick-icon {
+  width: clamp(46px, 14vw, 58px);
+  height: clamp(46px, 14vw, 58px);
+  font-size: clamp(27px, 8vw, 34px);
+}
+
+.guard-theme .quick-title {
+  font-size: clamp(.78rem, 3.55vw, .96rem);
+  text-align: center;
+}
+
+.guard-theme input,
+.guard-theme textarea,
+.guard-theme select {
+  font-size: 16px; /* Prevent iOS Safari from zooming on focus. */
+}
+
+.guard-theme .btn,
+.guard-theme .chip,
+.guard-theme .icon-btn,
+.guard-theme .tour-head-icon,
+.guard-theme .nav-btn,
+.guard-theme .guard-badge {
+  min-height: 44px;
+}
+
+.guard-theme .bottom-nav {
+  width: min(520px, calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 20px));
+  bottom: calc(env(safe-area-inset-bottom) + 8px);
+}
+
+@media (max-width: 359px) {
+  .guard-theme .mobile-app {
+    padding-top: calc(env(safe-area-inset-top) + 114px);
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .guard-theme .topbar {
+    width: calc(100vw - 14px);
+    min-height: 78px;
+    padding: 10px;
+  }
+
+  .guard-theme .guard-badge {
+    padding-right: 8px;
+  }
+
+  .guard-theme .guard-meta strong {
+    max-width: 74px;
+    font-size: .84rem;
+  }
+
+  .guard-theme .checkpoint-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .guard-theme .quick-card {
+    min-height: 94px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  .guard-theme .mobile-app {
+    padding-top: calc(env(safe-area-inset-top) + 88px);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 78px);
+  }
+
+  .guard-theme .topbar {
+    min-height: 68px;
+    padding: 8px 12px;
+  }
+
+  .guard-theme .topbar-label,
+  .guard-theme .topbar-sub {
+    display: none;
+  }
+
+  .guard-theme .topbar-title {
+    font-size: 1.16rem;
+  }
+
+  .guard-theme .bottom-nav {
+    padding: 5px;
+  }
+
+  .guard-theme .nav-btn {
+    min-height: 38px;
+    padding: 7px;
+  }
+}
+
