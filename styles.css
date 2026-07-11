@@ -1635,18 +1635,67 @@ input:focus, textarea:focus, select:focus {
 }
 
 .guard-theme .checkpoint-list {
-  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: clamp(8px, 2.6vw, 12px);
 }
 
 .guard-theme .checkpoint-card {
   min-height: 112px;
   padding: 10px;
+  overflow: hidden;
+}
+
+.guard-theme .checkpoint-card .point-head {
+  min-width: 0;
+}
+
+.guard-theme .checkpoint-card .point-head > div {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .guard-theme .checkpoint-card h4 {
   font-size: clamp(.86rem, 3.8vw, 1rem);
   line-height: 1.22;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.guard-theme .checkpoint-card .point-no {
+  flex: 0 0 auto;
+  font-size: clamp(1.62rem, 8vw, 2rem);
+  white-space: nowrap;
+}
+
+.guard-theme .checkpoint-card .status-row {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  gap: 5px;
+}
+
+.guard-theme .checkpoint-card .status-icon {
+  flex: 0 0 20px;
+}
+
+.guard-theme .checkpoint-card .status-text {
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(.72rem, 3.2vw, .82rem);
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.guard-theme .checkpoint-card .status-subline {
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .guard-theme .quick-grid {
