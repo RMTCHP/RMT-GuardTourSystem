@@ -1,9 +1,10 @@
-async function ensureAdminsLoaded(silentMode, forceReload) {
+﻿async function ensureAdminsLoaded(silentMode, forceReload) {
   if (!state.supervisor) return [];
   if (state.adminsLoaded && !forceReload) {
     renderAdminTable(state.admins || []);
     return state.admins || [];
   }
+
   try {
     const rows = await callApi("listSupervisors", {});
     state.admins = Array.isArray(rows) ? rows : [];
@@ -14,7 +15,7 @@ async function ensureAdminsLoaded(silentMode, forceReload) {
     state.admins = [];
     state.adminsLoaded = false;
     renderAdminTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Admin ไม่สำเร็จ: ${err.message}`, "error");
+    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
     return [];
   }
 }
@@ -36,7 +37,7 @@ async function ensureGuardsLoaded(silentMode, forceReload) {
     state.guards = [];
     state.guardsLoaded = false;
     renderGuardsTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Guards ไม่สำเร็จ: ${err.message}`, "error");
+    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guards à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
     return [];
   }
 }
@@ -58,7 +59,7 @@ async function ensureCheckpointsLoaded(silentMode, forceReload) {
     state.checkpoints = [];
     state.checkpointsLoaded = false;
     renderCheckpointsTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Checkpoints ไม่สำเร็จ: ${err.message}`, "error");
+    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Checkpoints à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
     return [];
   }
 }
@@ -80,7 +81,7 @@ async function ensureTemplatesLoaded(silentMode, forceReload) {
     state.templates = [];
     state.templatesLoaded = false;
     renderTemplatesTable([]);
-    if (!silentMode) notify(`โหลดข้อมูล Template ไม่สำเร็จ: ${err.message}`, "error");
+    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Template à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
     return [];
   }
 }
@@ -106,7 +107,7 @@ async function ensureAssignmentsLoaded(silentMode, forceReload) {
   } catch (err) {
     state.assignments = [];
     renderAssignmentsBoard([]);
-    if (!silentMode) notify(`โหลดข้อมูล Assign ไม่สำเร็จ: ${err.message}`, "error");
+    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Assign à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
     return [];
   }
 }
@@ -125,7 +126,7 @@ async function ensureShiftSettingsLoaded(silentMode, forceReload) {
   } catch (err) {
     state.shiftSettings = [];
     state.shiftSettingsLoaded = false;
-    if (!silentMode) notify(`โหลดข้อมูล Shift Settings ไม่สำเร็จ: ${err.message}`, "error");
+    if (!silentMode) notify(`à¹‚à¸«à¸¥à¸”à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Shift Settings à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
     return [];
   }
 }
@@ -208,11 +209,16 @@ function renderAssignShiftPill(shiftCode, rows) {
   const templateNames = [...new Set(
     list.map((row) => String(row.template_label || row.template_id || "").trim()).filter(Boolean)
   )];
-  const title = `${shiftLabel}: ${templateNames[0] || "-"} / รปภ ${list.length} คน`;
+  const maxRoundsRequired = list.reduce((max, row) => {
+    const rounds = Math.max(1, Number(row.rounds_required || 1));
+    return Math.max(max, rounds);
+  }, 1);
+  const title = `${shiftLabel}: ${templateNames[0] || "-"} / รปภ ${list.length} คน / ${maxRoundsRequired} รอบ`;
 
   return `
     <div class="assign-shift-pill is-assigned is-${isDay ? "day" : "night"}" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">
       <span class="assign-shift-icon">${iconSvg}</span>
+      <span class="assign-shift-round-badge">${maxRoundsRequired}</span>
     </div>
   `;
 }
@@ -230,20 +236,21 @@ function bindAssignmentCalendarActions() {
 
 function formatAssignMonthThai(date) {
   const months = [
-    "มกราคม",
-    "กุมภาพันธ์",
-    "มีนาคม",
-    "เมษายน",
-    "พฤษภาคม",
-    "มิถุนายน",
-    "กรกฎาคม",
-    "สิงหาคม",
-    "กันยายน",
-    "ตุลาคม",
-    "พฤศจิกายน",
-    "ธันวาคม"
+    "à¸¡à¸à¸£à¸²à¸„à¸¡",
+    "à¸à¸¸à¸¡à¸ à¸²à¸žà¸±à¸™à¸˜à¹Œ",
+    "à¸¡à¸µà¸™à¸²à¸„à¸¡",
+    "à¹€à¸¡à¸©à¸²à¸¢à¸™",
+    "à¸žà¸¤à¸©à¸ à¸²à¸„à¸¡",
+    "à¸¡à¸´à¸–à¸¸à¸™à¸²à¸¢à¸™",
+    "à¸à¸£à¸à¸Žà¸²à¸„à¸¡",
+    "à¸ªà¸´à¸‡à¸«à¸²à¸„à¸¡",
+    "à¸à¸±à¸™à¸¢à¸²à¸¢à¸™",
+    "à¸•à¸¸à¸¥à¸²à¸„à¸¡",
+    "à¸žà¸¤à¸¨à¸ˆà¸´à¸à¸²à¸¢à¸™",
+    "à¸˜à¸±à¸™à¸§à¸²à¸„à¸¡"
   ];
   const d = Object.prototype.toString.call(date) === "[object Date]" ? date : new Date(date);
   if (isNaN(d.getTime())) return "-";
   return `${months[d.getMonth()]} ${d.getFullYear() + 543}`;
 }
+

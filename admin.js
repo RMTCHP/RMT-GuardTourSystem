@@ -45,6 +45,8 @@ function bindElements() {
     "chartOperations",
     "chartShiftType",
     "summaryList",
+    "summaryTabDay",
+    "summaryTabNight",
     "incidentList",
     "addUserBtn",
     "userTabAdmin",
@@ -69,6 +71,12 @@ function bindElements() {
 
 function bindEvents() {
   if (el.loadBtn) el.loadBtn.addEventListener("click", () => loadDashboard(false, true));
+  if (el.summaryTabDay) {
+    el.summaryTabDay.addEventListener("click", () => switchSummaryShiftTab("DAY"));
+  }
+  if (el.summaryTabNight) {
+    el.summaryTabNight.addEventListener("click", () => switchSummaryShiftTab("NIGHT"));
+  }
   if (el.assignPrevMonthBtn) {
     el.assignPrevMonthBtn.addEventListener("click", () => {
       const base = state.assignCalendarMonth || new Date();
@@ -282,7 +290,7 @@ function switchFuncPanel(panelName) {
     return;
   }
   if (panelName === "templates") {
-    loadTemplateData(true);
+    loadTemplateData(false);
     return;
   }
   if (panelName === "assign") {
@@ -296,6 +304,7 @@ function switchFuncPanel(panelName) {
     return;
   }
 }
+
 function switchUserTab(tabName) {
   state.userTab = tabName === "guards" ? "guards" : "admin";
   if (el.userTabAdmin) el.userTabAdmin.classList.toggle("active", state.userTab === "admin");

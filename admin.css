@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #ecf1f7;
   --nav-dark: #2d3548;
   --nav-dark-2: #242b3a;
@@ -519,6 +519,47 @@ select {
   margin: 0 0 10px;
   font-size: 1.05rem;
   letter-spacing: 0.2px;
+}
+
+.panel-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.panel-box-head h3 {
+  margin: 0;
+}
+
+.summary-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-tab {
+  border: 1px solid #c8d7ea;
+  background: #f4f8fd;
+  color: #29496e;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.summary-tab:hover {
+  background: #e7f0fb;
+  border-color: #9eb7d7;
+}
+
+.summary-tab.active {
+  background: #1b9aaa;
+  border-color: #1b9aaa;
+  color: #ffffff;
 }
 
 .list {
@@ -1469,13 +1510,13 @@ select {
 
 .assign-shift-pill {
   min-height: 28px;
-  padding: 0;
+  padding: 0 6px;
   border-radius: 10px;
   background: #f5f8fc;
   border: 1px solid #dde8f4;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   color: #7588a2;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -1504,6 +1545,21 @@ select {
   width: 18px;
   height: 18px;
   fill: currentColor;
+}
+
+.assign-shift-round-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid currentColor;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .assign-shift-pill.is-assigned.is-day {
@@ -1617,3 +1673,4 @@ select {
     grid-template-columns: 1fr;
   }
 }
+

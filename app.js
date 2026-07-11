@@ -27,7 +27,7 @@ function bindElements() {
   [
     "appRoot", "appHeader", "todayText", "guardBadge", "guardAvatar", "guardNameText", "guardIdText",
     "view-shifts", "view-tour", "view-dashboard",
-    "logoutBtn", "shiftList", "tourTitle",
+    "logoutBtn", "shiftList", "tourTitle", "tourRoundSummary",
     "dbShiftTotal", "dbRoundProgress", "dbCheckedTotal", "dbIncidentTotal", "dashboardList", "syncNowBtn",
     "statTotal", "statDone", "qrReader", "manualQr",
     "actionQrCard", "actionGpsCard", "actionIncidentCard",
@@ -290,6 +290,10 @@ async function openShift(index) {
   hideAllActionDetails();
 
   el.tourTitle.textContent = `${getShiftProfile(shift)} (${formatShiftWindow(shift)})`;
+  if (el.tourRoundSummary) {
+    const roundsRequired = Math.max(1, Number(shift.rounds_required || 1));
+    el.tourRoundSummary.textContent = `กะนี้ต้องตรวจทั้งหมด ${roundsRequired} รอบ`;
+  }
   saveSession({ guardId: state.guard.guard_id, activeShiftId: shift.shift_id });
   state.doneCheckpointCounter = getShiftProgressCounter(shift);
 
@@ -397,6 +401,9 @@ function refreshStats() {
   const doneRounds = rounds.filter((r) => isRoundDone(r)).length;
   el.statTotal.textContent = `${totalRounds} \u0e23\u0e2d\u0e1a`;
   el.statDone.textContent = `${doneRounds} \u0e23\u0e2d\u0e1a`;
+  if (el.tourRoundSummary) {
+    el.tourRoundSummary.textContent = `กะนี้ต้องตรวจทั้งหมด ${totalRounds} รอบ`;
+  }
 }
 
 async function loadGps() {
@@ -708,12 +715,7 @@ async function loadGuardBootstrap(guardId, date, moment) {
   if (!gid || !date) return [];
 
   const data = await callApi("guardBootstrap", { guardId: gid, date, moment: moment || new Date().toISOString() });
-  let checkpointRows = [];
-  try {
-    checkpointRows = await callApi("listCheckpoints", {});
-  } catch (_) {
-    checkpointRows = [];
-  }
+  const checkpointRows = Array.isArray(data && data.checkpoint_meta_rows) ? data.checkpoint_meta_rows : [];
   state.guard = data && data.guard ? data.guard : null;
   state.shifts = Array.isArray(data && data.shifts) ? data.shifts : [];
   state.shiftProgressMap = data && data.progress_by_shift ? data.progress_by_shift : {};
