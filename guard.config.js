@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycby5hEIim-I0KCEsZsprWne8clnsBBOhyACbw6kzagoHfpEjecLlYjb240sYB2wUUTg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyGeCsJDJ8pmlmiCCXZS_eVLumVFfphMEqHhZ_MPQlwKH8_XfcEN2HXO9EaR2_GRdA/exec";
 
 const STORAGE = {
   SESSION: "guardtour.session",

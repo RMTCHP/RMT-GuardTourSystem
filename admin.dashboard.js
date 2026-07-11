@@ -1,4 +1,4 @@
-async function loadDashboard(silentMode, forceReload) {
+﻿async function loadDashboard(silentMode, forceReload) {
   if (!state.supervisor) return;
   if ((state.activePanel || "overview") !== "overview") return;
 
@@ -23,8 +23,12 @@ async function loadDashboard(silentMode, forceReload) {
 }
 
 function renderSummary(rows) {
-  if (!rows.length) {
-    el.summaryList.innerHTML = '<div class="item">ยังไม่มีงานที่มอบหมายในวันนี้</div>';
+  const activeTab = String(state.summaryShiftTab || "DAY").toUpperCase() === "NIGHT" ? "NIGHT" : "DAY";
+  updateSummaryTabUi(activeTab);
+
+  const filteredRows = (Array.isArray(rows) ? rows : []).filter((row) => detectDashboardShiftType(row) === activeTab);
+  if (!filteredRows.length) {
+    el.summaryList.innerHTML = `<div class="item">${activeTab === "DAY" ? "ยังไม่มีข้อมูลงานกะกลางวัน" : "ยังไม่มีข้อมูลงานกะกลางคืน"}</div>`;
     return;
   }
 
@@ -47,10 +51,10 @@ function renderSummary(rows) {
           </tr>
         </thead>
         <tbody>
-          ${rows.map((r) => `
+          ${filteredRows.map((r) => `
             <tr>
               <td>${escapeHtml(r.shift_name || "-")}</td>
-              <td>${escapeHtml(formatGuardDisplay(r.guard_id, r.guard_name))}</td>
+              <td>${escapeHtml(String(r.guard_name || "-"))}</td>
               <td>${escapeHtml(r.template_label || "-")}</td>
               <td>${escapeHtml(formatShiftTimeRange(r.start_time, r.end_time))}</td>
               <td>${Number(r.total_points || 0)}</td>
@@ -66,6 +70,30 @@ function renderSummary(rows) {
       </table>
     </div>
   `;
+}
+
+function switchSummaryShiftTab(shiftType) {
+  const nextTab = String(shiftType || "DAY").toUpperCase() === "NIGHT" ? "NIGHT" : "DAY";
+  if (state.summaryShiftTab === nextTab) return;
+  state.summaryShiftTab = nextTab;
+  const snapshot = getCurrentDashboardSnapshot();
+  renderSummary(snapshot?.summaryRows || []);
+}
+
+function updateSummaryTabUi(activeTab) {
+  if (el.summaryTabDay) {
+    el.summaryTabDay.classList.toggle("active", activeTab === "DAY");
+  }
+  if (el.summaryTabNight) {
+    el.summaryTabNight.classList.toggle("active", activeTab === "NIGHT");
+  }
+}
+
+function getCurrentDashboardSnapshot() {
+  const supervisorId = state.supervisor?.supervisor_id || "";
+  const date = el.reportDate?.value || toYmd(new Date());
+  const cacheKey = `${supervisorId}|${date}`;
+  return state.dashboardSnapshotCache ? state.dashboardSnapshotCache[cacheKey] : null;
 }
 
 function renderIncidents(rows) {
@@ -122,12 +150,7 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
     return state.dashboardSnapshotCache[cacheKey];
   }
 
-  const [assignmentRes, shiftsRes, logsRes, incidentsRes] = await Promise.all([
-    callApi("listAssignments", { date }),
-    callApi("listShifts", { date, supervisorId }),
-    callApi("listCheckLogs", { supervisorId, date, guardId: "", status: "" }),
-    callApi("listIncidents", { supervisorId, date, guardId: "", status: "" })
-  ]);
+  const bundle = await callApi("getDashboardDataBundle", { supervisorId, date });
 
   const guardMap = {};
   (state.guards || []).forEach((g) => {
@@ -136,10 +159,16 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
   });
 
   const allowedGuardIds = new Set(Object.keys(guardMap));
-  const assignmentRowsRaw = Array.isArray(assignmentRes) ? assignmentRes : [];
-  const shiftRowsRaw = Array.isArray(shiftsRes) ? shiftsRes : [];
-  const logRowsRaw = Array.isArray(logsRes) ? logsRes : [];
-  const incidentRowsRaw = Array.isArray(incidentsRes) ? incidentsRes : [];
+  const assignmentRowsRaw = Array.isArray(bundle?.assignments) ? bundle.assignments : [];
+  const shiftRowsRaw = Array.isArray(bundle?.shifts) ? bundle.shifts : [];
+  const logRowsRaw = Array.isArray(bundle?.logs) ? bundle.logs : [];
+  const incidentRowsRaw = Array.isArray(bundle?.incidents) ? bundle.incidents : [];
+  const bundledTemplateRoutes = bundle?.template_routes && typeof bundle.template_routes === "object"
+    ? bundle.template_routes
+    : {};
+  const bundledShiftRoutes = bundle?.shift_routes && typeof bundle.shift_routes === "object"
+    ? bundle.shift_routes
+    : {};
 
   const assignmentRows = assignmentRowsRaw.filter((row) => {
     const guardId = String(row.guard_id || "").trim();
@@ -158,14 +187,35 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
     return !allowedGuardIds.size || allowedGuardIds.has(guardId);
   });
 
+  const assignmentGroups = groupAssignmentsForDashboard(assignmentRows, guardMap);
+
   const uniqueTemplateIds = [...new Set(
-    assignmentRows
+    assignmentGroups
       .map((row) => String(row.template_id || "").trim())
       .filter(Boolean)
   )];
-  const templateRouteMap = await ensureDashboardTemplateRoutes(uniqueTemplateIds);
+  if (!state.templateRouteCache) state.templateRouteCache = {};
+  uniqueTemplateIds.forEach((templateId) => {
+    if (Array.isArray(bundledTemplateRoutes[templateId])) {
+      state.templateRouteCache[templateId] = bundledTemplateRoutes[templateId];
+    }
+  });
+  if (!state.shiftCheckpoints) state.shiftCheckpoints = {};
+  Object.keys(bundledShiftRoutes).forEach((shiftId) => {
+    if (Array.isArray(bundledShiftRoutes[shiftId])) {
+      state.shiftCheckpoints[shiftId] = bundledShiftRoutes[shiftId];
+    }
+  });
 
-  const routeMap = await ensureDashboardShiftRoutes(shiftRows, forceReload);
+  const templateRouteMap = Object.fromEntries(
+    uniqueTemplateIds.map((templateId) => [templateId, state.templateRouteCache[templateId] || []])
+  );
+  const routeMap = Object.fromEntries(
+    shiftRows.map((shift) => {
+      const shiftId = String(shift.shift_id || "").trim();
+      return [shiftId, state.shiftCheckpoints[shiftId] || []];
+    })
+  );
   const shiftById = {};
   shiftRows.forEach((row) => {
     shiftById[String(row.shift_id || "")] = row;
@@ -187,55 +237,40 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
     incidentsByShift[shiftId].push(row);
   });
 
-  const unusedShiftIds = new Set(Object.keys(shiftById));
   const summaryRows = [];
 
-  assignmentRows.forEach((assignment) => {
-    const matchedShift = pickBestShiftForAssignment(assignment, shiftRows, unusedShiftIds);
-    if (matchedShift) {
-      unusedShiftIds.delete(String(matchedShift.shift_id || ""));
-    }
+  assignmentGroups.forEach((assignment) => {
+    const groupShiftRows = shiftRows.filter((shift) => isShiftInAssignmentGroup(shift, assignment));
+    const groupShiftIds = groupShiftRows
+      .map((shift) => String(shift.shift_id || "").trim())
+      .filter(Boolean);
 
-    const shiftId = String(matchedShift?.shift_id || "");
-    const routeRows = shiftId ? (routeMap[shiftId] || []) : [];
+    const routeRows = groupShiftIds.reduce((acc, shiftId) => {
+      const rows = Array.isArray(routeMap[shiftId]) ? routeMap[shiftId] : [];
+      if (rows.length) return rows;
+      return acc;
+    }, []);
+
     const templateId = String(assignment.template_id || "").trim();
     const templateRoutes = templateId ? (templateRouteMap[templateId] || []) : [];
     const effectiveRoutes = routeRows.length ? routeRows : templateRoutes;
-    const effectiveLogs = shiftId ? (logsByShift[shiftId] || []) : [];
-    const effectiveIncidents = shiftId ? (incidentsByShift[shiftId] || []) : [];
+    const effectiveLogs = groupShiftIds.flatMap((shiftId) => logsByShift[shiftId] || []);
+    const effectiveIncidents = groupShiftIds.flatMap((shiftId) => incidentsByShift[shiftId] || []);
+    const primaryShift = groupShiftRows[0] || null;
 
     summaryRows.push(buildDashboardSummaryRow({
-      shiftId: shiftId || String(assignment.assign_id || ""),
-      shiftName: assignment.shift_name || matchedShift?.shift_name || "-",
-      guardId: assignment.guard_id || matchedShift?.guard_id || "",
-      guardName: guardMap[String(assignment.guard_id || matchedShift?.guard_id || "")]?.name || "",
+      shiftId: String(assignment.group_key || assignment.assign_id || ""),
+      shiftName: assignment.shift_name || primaryShift?.shift_name || "-",
+      guardId: assignment.guard_ids_joined || "",
+      guardName: assignment.guard_names_joined || "",
       templateLabel: assignment.template_label || assignment.template_id || "-",
-      startTime: assignment.start_time || matchedShift?.start_time || "",
-      endTime: assignment.end_time || matchedShift?.end_time || "",
-      status: assignment.status || matchedShift?.status || "ACTIVE",
+      startTime: assignment.start_time || primaryShift?.start_time || "",
+      endTime: assignment.end_time || primaryShift?.end_time || "",
+      status: assignment.status || primaryShift?.status || "ACTIVE",
       routeRows: effectiveRoutes,
       logs: effectiveLogs,
       incidents: effectiveIncidents,
       sourceMode: "assignment"
-    }));
-  });
-
-  unusedShiftIds.forEach((shiftId) => {
-    const shift = shiftById[shiftId];
-    if (!shift) return;
-    summaryRows.push(buildDashboardSummaryRow({
-      shiftId,
-      shiftName: shift.shift_name || shiftId,
-      guardId: shift.guard_id || "",
-      guardName: guardMap[String(shift.guard_id || "")]?.name || "",
-      templateLabel: shift.template_id || "-",
-      startTime: shift.start_time || "",
-      endTime: shift.end_time || "",
-      status: shift.status || "OPEN",
-      routeRows: routeMap[shiftId] || [],
-      logs: logsByShift[shiftId] || [],
-      incidents: incidentsByShift[shiftId] || [],
-      sourceMode: "shift"
     }));
   });
 
@@ -248,16 +283,17 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
     .map((row) => {
       const shiftId = String(row.shift_id || "").trim();
       const summary = summaryRows.find((item) => String(item.shift_id || "") === shiftId);
+      const shiftRow = shiftById[shiftId] || null;
       const guardId = String(row.guard_id || "").trim();
       return {
         ...row,
-        shift_name: summary?.shift_name || shiftId || "-",
+        shift_name: summary?.shift_name || shiftRow?.shift_name || shiftId || "-",
         guard_name: guardMap[guardId]?.name || ""
       };
     })
     .sort((a, b) => String(b.incident_time || "").localeCompare(String(a.incident_time || "")));
 
-  const assignmentCount = assignmentRows.filter((row) => String(row.status || "ACTIVE").toUpperCase() === "ACTIVE").length;
+  const assignmentCount = assignmentGroups.filter((row) => String(row.status || "ACTIVE").toUpperCase() === "ACTIVE").length;
   const guardIds = new Set(
     assignmentRows
       .filter((row) => String(row.status || "ACTIVE").toUpperCase() === "ACTIVE")
@@ -296,6 +332,56 @@ async function buildDailyDashboardSnapshot(date, forceReload) {
   if (!state.dashboardSnapshotCache) state.dashboardSnapshotCache = {};
   state.dashboardSnapshotCache[cacheKey] = snapshot;
   return snapshot;
+}
+
+function groupAssignmentsForDashboard(rows, guardMap) {
+  const map = {};
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const dateKey = String(row.assign_date || "").trim();
+    const shiftCode = String(row.shift_code || "").trim().toUpperCase();
+    const templateId = String(row.template_id || "").trim();
+    const groupKey = [dateKey, shiftCode, templateId].join("|");
+    if (!map[groupKey]) {
+      map[groupKey] = {
+        group_key: groupKey,
+        assign_date: dateKey,
+        shift_code: shiftCode,
+        shift_name: row.shift_name || "-",
+        template_id: templateId,
+        template_label: row.template_label || templateId || "-",
+        start_time: row.start_time || "",
+        end_time: row.end_time || "",
+        status: row.status || "ACTIVE",
+        assign_ids: [],
+        guard_ids: [],
+        guard_names: []
+      };
+    }
+    const group = map[groupKey];
+    const assignId = String(row.assign_id || "").trim();
+    const guardId = String(row.guard_id || "").trim();
+    const guardName = String(guardMap[guardId]?.name || row.guard_label || "").trim();
+
+    if (assignId && group.assign_ids.indexOf(assignId) < 0) group.assign_ids.push(assignId);
+    if (guardId && group.guard_ids.indexOf(guardId) < 0) group.guard_ids.push(guardId);
+    if (guardName && group.guard_names.indexOf(guardName) < 0) group.guard_names.push(guardName);
+    if (String(row.status || "").toUpperCase() === "ACTIVE") group.status = "ACTIVE";
+  });
+
+  return Object.values(map).map((group) => ({
+    ...group,
+    guard_ids_joined: group.guard_ids.join(", "),
+    guard_names_joined: group.guard_names.join(", ")
+  }));
+}
+
+function isShiftInAssignmentGroup(shift, assignmentGroup) {
+  const shiftTemplateId = String(shift?.template_id || "").trim();
+  const shiftGuardId = String(shift?.guard_id || "").trim();
+  return (
+    shiftTemplateId === String(assignmentGroup.template_id || "").trim() &&
+    (assignmentGroup.guard_ids || []).indexOf(shiftGuardId) >= 0
+  );
 }
 
 async function ensureDashboardTemplateRoutes(templateIds) {
@@ -470,6 +556,18 @@ function formatShiftTimeRange(startTime, endTime) {
   if (!end) return start;
   if (!start) return end;
   return `${start} - ${end}`;
+}
+
+function detectDashboardShiftType(row) {
+  const shiftName = String(row?.shift_name || "").trim();
+  const upperName = shiftName.toUpperCase();
+  const start = normalizeTimeForCompare(row?.start_time || "");
+  const end = normalizeTimeForCompare(row?.end_time || "");
+
+  if (upperName.includes("NIGHT") || shiftName.includes("กลางคืน")) return "NIGHT";
+  if (upperName.includes("DAY") || shiftName.includes("กลางวัน")) return "DAY";
+  if (start && end && start >= end) return "NIGHT";
+  return "DAY";
 }
 
 function renderDashboardCharts(snapshot, dateYmd) {
@@ -720,3 +818,4 @@ function destroyAllCharts() {
   });
   state.charts = {};
 }
+

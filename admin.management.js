@@ -8,13 +8,13 @@ async function openAddAdminSwal(existingAdmin) {
   const isEdit = !!existingAdmin;
   if (!window.Swal) return;
   const result = await Swal.fire({
-    title: isEdit ? "à¹à¸à¹‰à¹„à¸‚ Admin" : "à¹€à¸žà¸´à¹ˆà¸¡ Admin",
+    title: isEdit ? "แก้ไข Admin" : "เพิ่ม Admin",
     width: 640,
     html: `
       <div class="swal-form-grid">
         <div class="swal-form-field">
           <label>Supervisor ID</label>
-          <input id="swalSupervisorId" class="swal2-input" placeholder="à¹€à¸Šà¹ˆà¸™ 1234" value="${escapeAttr(isEdit ? (existingAdmin.supervisor_id || "") : "")}" ${isEdit ? "disabled" : ""}>
+          <input id="swalSupervisorId" class="swal2-input" placeholder="เช่น 1234" value="${escapeAttr(isEdit ? (existingAdmin.supervisor_id || "") : "")}" ${isEdit ? "disabled" : ""}>
         </div>
         <div class="swal-form-field">
           <label>Username</label>
@@ -22,15 +22,15 @@ async function openAddAdminSwal(existingAdmin) {
         </div>
         <div class="swal-form-field">
           <label>Name</label>
-          <input id="swalSupervisorName" class="swal2-input" placeholder="à¸Šà¸·à¹ˆà¸­à¸œà¸¹à¹‰à¸”à¸¹à¹à¸¥" value="${escapeAttr(isEdit ? (existingAdmin.name || "") : "")}">
+          <input id="swalSupervisorName" class="swal2-input" placeholder="ชื่อผู้ดูแล" value="${escapeAttr(isEdit ? (existingAdmin.name || "") : "")}">
         </div>
         <div class="swal-form-field">
           <label>Email</label>
-          <input id="swalSupervisorEmail" class="swal2-input" placeholder="à¸­à¸µà¹€à¸¡à¸¥" value="${escapeAttr(isEdit ? (existingAdmin.email || "") : "")}">
+          <input id="swalSupervisorEmail" class="swal2-input" placeholder="อีเมล" value="${escapeAttr(isEdit ? (existingAdmin.email || "") : "")}">
         </div>
         <div class="swal-form-field">
-          <label>${isEdit ? "Password à¹ƒà¸«à¸¡à¹ˆ" : "Password"}</label>
-          <input id="swalSupervisorPassword" class="swal2-input" type="password" placeholder="${isEdit ? "à¹€à¸§à¹‰à¸™à¸§à¹ˆà¸²à¸‡à¸«à¸²à¸à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™" : "à¸à¸³à¸«à¸™à¸”à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™"}">
+          <label>${isEdit ? "Password ใหม่" : "Password"}</label>
+          <input id="swalSupervisorPassword" class="swal2-input" type="password" placeholder="${isEdit ? "เว้นว่างหากไม่เปลี่ยน" : "กำหนดรหัสผ่าน"}">
         </div>
         <div class="swal-form-field">
           <label>Status</label>
@@ -39,12 +39,12 @@ async function openAddAdminSwal(existingAdmin) {
             <option value="inactive" ${(isEdit ? String(existingAdmin.status || "") : "").toLowerCase() === "inactive" ? "selected" : ""}>inactive</option>
           </select>
         </div>
-        <div class="swal-form-note">* à¸•à¹‰à¸­à¸‡à¸£à¸°à¸šà¸¸ Supervisor ID, Username à¹à¸¥à¸° Name</div>
+        <div class="swal-form-note">* ต้องระบุ Supervisor ID, Username และ Name</div>
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: isEdit ? "à¸šà¸±à¸™à¸—à¸¶à¸" : "à¹€à¸žà¸´à¹ˆà¸¡",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    confirmButtonText: isEdit ? "บันทึก" : "เพิ่ม",
+    cancelButtonText: "ยกเลิก",
     buttonsStyling: false,
     customClass: {
       popup: "swal-user-popup",
@@ -59,15 +59,15 @@ async function openAddAdminSwal(existingAdmin) {
       const password = document.getElementById("swalSupervisorPassword").value;
       const status = document.getElementById("swalSupervisorStatus").value;
       if (!supervisor_id || !username || !name) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸ Supervisor ID, Username à¹à¸¥à¸° Name");
+        Swal.showValidationMessage("กรุณากรอก Supervisor ID, Username และ Name");
         return false;
       }
       if (!isValidEmailInput(email)) {
-        Swal.showValidationMessage("à¸£à¸¹à¸›à¹à¸šà¸šà¸­à¸µà¹€à¸¡à¸¥à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡");
+        Swal.showValidationMessage("รูปแบบอีเมลไม่ถูกต้อง");
         return false;
       }
       if (!isEdit && !password) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸à¸³à¸«à¸™à¸”à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™");
+        Swal.showValidationMessage("กรุณากำหนดรหัสผ่าน");
         return false;
       }
       return { supervisor_id, username, name, email, password, status };
@@ -77,7 +77,7 @@ async function openAddAdminSwal(existingAdmin) {
 
   try {
     await callApi("upsertSupervisor", { payload: result.value });
-    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Admin à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("บันทึกข้อมูล Admin สำเร็จ");
     if (state.supervisor && String(state.supervisor.supervisor_id) === String(result.value.supervisor_id)) {
       state.supervisor = {
         ...state.supervisor,
@@ -94,7 +94,7 @@ async function openAddAdminSwal(existingAdmin) {
     state.adminsLoaded = false;
     await ensureAdminsLoaded(true, true);
   } catch (err) {
-    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`บันทึกข้อมูล Admin ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -104,19 +104,23 @@ function invalidateAdminCaches() {
   state.dashboardChartsCache = {};
 }
 
+function stripTemplateIdPrefix(value) {
+  return String(value || "").replace(/^TPL\d+\s*-\s*/i, "").trim();
+}
+
 async function openAddUserSwal(existingGuard) {
   if (!state.supervisor) return;
   const isEdit = !!existingGuard;
 
   if (!window.Swal) return;
   const result = await Swal.fire({
-    title: isEdit ? "à¹à¸à¹‰à¹„à¸‚ User" : "à¹€à¸žà¸´à¹ˆà¸¡ User",
+    title: isEdit ? "แก้ไข User" : "เพิ่ม User",
     width: 640,
     html: `
       <div class="swal-form-grid">
         <div class="swal-form-field">
           <label>Guard ID</label>
-          <input id="swalGuardId" class="swal2-input" placeholder="à¹€à¸Šà¹ˆà¸™ 1001" value="${escapeAttr(isEdit ? existingGuard.guard_id : "")}" ${isEdit ? "disabled" : ""}>
+          <input id="swalGuardId" class="swal2-input" placeholder="เช่น 1001" value="${escapeAttr(isEdit ? existingGuard.guard_id : "")}" ${isEdit ? "disabled" : ""}>
         </div>
         <div class="swal-form-field">
           <label>Username</label>
@@ -124,19 +128,19 @@ async function openAddUserSwal(existingGuard) {
         </div>
         <div class="swal-form-field">
           <label>Name</label>
-          <input id="swalGuardName" class="swal2-input" placeholder="à¸Šà¸·à¹ˆà¸­ à¸£à¸›à¸ " value="${escapeAttr(isEdit ? (existingGuard.name || "") : "")}">
+          <input id="swalGuardName" class="swal2-input" placeholder="ชื่อ รปภ" value="${escapeAttr(isEdit ? (existingGuard.name || "") : "")}">
         </div>
         <div class="swal-form-field">
           <label>Phone</label>
-          <input id="swalGuardPhone" class="swal2-input" placeholder="à¹€à¸šà¸­à¸£à¹Œà¹‚à¸—à¸£" value="${escapeAttr(isEdit ? (existingGuard.phone || "") : "")}">
+          <input id="swalGuardPhone" class="swal2-input" placeholder="เบอร์โทร" value="${escapeAttr(isEdit ? (existingGuard.phone || "") : "")}">
         </div>
         <div class="swal-form-field">
           <label>Email</label>
-          <input id="swalGuardEmail" class="swal2-input" placeholder="à¸­à¸µà¹€à¸¡à¸¥" value="${escapeAttr(isEdit ? (existingGuard.email || "") : "")}">
+          <input id="swalGuardEmail" class="swal2-input" placeholder="อีเมล" value="${escapeAttr(isEdit ? (existingGuard.email || "") : "")}">
         </div>
         <div class="swal-form-field">
-          <label>${isEdit ? "Password à¹ƒà¸«à¸¡à¹ˆ" : "Password"}</label>
-          <input id="swalGuardPassword" class="swal2-input" type="password" placeholder="${isEdit ? "à¹€à¸§à¹‰à¸™à¸§à¹ˆà¸²à¸‡à¸«à¸²à¸à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™" : "à¸à¸³à¸«à¸™à¸”à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™"}">
+          <label>${isEdit ? "Password ใหม่" : "Password"}</label>
+          <input id="swalGuardPassword" class="swal2-input" type="password" placeholder="${isEdit ? "เว้นว่างหากไม่เปลี่ยน" : "กำหนดรหัสผ่าน"}">
         </div>
         <div class="swal-form-field swal-form-field-full">
           <label>Status</label>
@@ -145,12 +149,12 @@ async function openAddUserSwal(existingGuard) {
             <option value="inactive" ${(isEdit ? String(existingGuard.status || "") : "") === "inactive" ? "selected" : ""}>inactive</option>
           </select>
         </div>
-        <div class="swal-form-note">* à¸•à¹‰à¸­à¸‡à¸£à¸°à¸šà¸¸ Guard ID, Username à¹à¸¥à¸° Name</div>
+        <div class="swal-form-note">* ต้องระบุ Guard ID, Username และ Name</div>
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: isEdit ? "à¸šà¸±à¸™à¸—à¸¶à¸" : "à¹€à¸žà¸´à¹ˆà¸¡",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    confirmButtonText: isEdit ? "บันทึก" : "เพิ่ม",
+    cancelButtonText: "ยกเลิก",
     buttonsStyling: false,
     customClass: {
       popup: "swal-user-popup",
@@ -166,15 +170,15 @@ async function openAddUserSwal(existingGuard) {
       const password = document.getElementById("swalGuardPassword").value;
       const status = document.getElementById("swalGuardStatus").value;
       if (!guardId || !username || !name) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸ Guard ID, Username à¹à¸¥à¸° Name");
+        Swal.showValidationMessage("กรุณากรอก Guard ID, Username และ Name");
         return false;
       }
       if (!isValidEmailInput(email)) {
-        Swal.showValidationMessage("à¸£à¸¹à¸›à¹à¸šà¸šà¸­à¸µà¹€à¸¡à¸¥à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡");
+        Swal.showValidationMessage("รูปแบบอีเมลไม่ถูกต้อง");
         return false;
       }
       if (!isEdit && !password) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸à¸³à¸«à¸™à¸”à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™");
+        Swal.showValidationMessage("กรุณากำหนดรหัสผ่าน");
         return false;
       }
       return { guard_id: guardId, username, name, phone, email, password, status };
@@ -188,10 +192,10 @@ async function openAddUserSwal(existingGuard) {
     };
     await callApi("upsertGuard", { payload });
     invalidateAdminCaches();
-    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("บันทึกข้อมูล Guard สำเร็จ");
     await ensureGuardsLoaded(true, true);
   } catch (err) {
-    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Guard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`บันทึกข้อมูล Guard ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -206,7 +210,7 @@ async function openCheckpointSwal(existingCheckpoint) {
     : autoCheckpointId;
 
   const result = await Swal.fire({
-    title: isEdit ? "à¹à¸à¹‰à¹„à¸‚ Checkpoint" : "à¹€à¸žà¸´à¹ˆà¸¡ Checkpoint",
+    title: isEdit ? "แก้ไข Checkpoint" : "เพิ่ม Checkpoint",
     width: "92vw",
     customClass: {
       popup: "swal-checkpoint-popup",
@@ -237,7 +241,7 @@ async function openCheckpointSwal(existingCheckpoint) {
         </div>
         <div class="cp-field cp-help-box">
           <label class="cp-help-title">Map</label>
-          <span id="swalCpMapNotice" class="cp-label-note">à¸à¸£à¸­à¸ Latitude/Longitude à¹€à¸­à¸‡ à¸«à¸£à¸·à¸­à¹€à¸›à¸´à¸” Google Maps</span>
+          <span id="swalCpMapNotice" class="cp-label-note">กรอก Latitude/Longitude เอง หรือเปิด Google Maps</span>
           <button id="swalCpOpenGoogleBtn" type="button" class="cp-map-btn cp-map-btn-google">
             <span class="cp-map-google-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
@@ -264,8 +268,8 @@ async function openCheckpointSwal(existingCheckpoint) {
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: isEdit ? "à¸šà¸±à¸™à¸—à¸¶à¸" : "à¹€à¸žà¸´à¹ˆà¸¡",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    confirmButtonText: isEdit ? "บันทึก" : "เพิ่ม",
+    cancelButtonText: "ยกเลิก",
     buttonsStyling: false,
     didOpen: async () => {
       const initialLat = Number(isEdit ? existingCheckpoint.lat : 0);
@@ -284,15 +288,15 @@ async function openCheckpointSwal(existingCheckpoint) {
       const is_photo_required = document.getElementById("swalCpPhotoRequired").value;
       const active = document.getElementById("swalCpActive").value;
       if (!checkpoint_id || !checkpoint_name || !qr_text) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸ Checkpoint ID, à¸Šà¸·à¹ˆà¸­à¸ˆà¸¸à¸”à¸•à¸£à¸§à¸ˆ à¹à¸¥à¸° QR Text");
+        Swal.showValidationMessage("กรุณากรอก Checkpoint ID, ชื่อจุดตรวจ และ QR Text");
         return false;
       }
       if (coords && !parsed) {
-        Swal.showValidationMessage("à¸žà¸´à¸à¸±à¸”à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡ à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡ 13.782520, 100.971532");
+        Swal.showValidationMessage("พิกัดไม่ถูกต้อง ตัวอย่าง 13.782520, 100.971532");
         return false;
       }
       if (!Number.isFinite(radius_m) || radius_m <= 0) {
-        Swal.showValidationMessage("à¸£à¸±à¸¨à¸¡à¸µà¸•à¹‰à¸­à¸‡à¹€à¸›à¹‡à¸™à¸•à¸±à¸§à¹€à¸¥à¸‚à¸¡à¸²à¸à¸à¸§à¹ˆà¸² 0");
+        Swal.showValidationMessage("รัศมีต้องเป็นตัวเลขมากกว่า 0");
         return false;
       }
       return { checkpoint_id, checkpoint_name, qr_text, lat, lng, radius_m, is_photo_required, active };
@@ -302,17 +306,17 @@ async function openCheckpointSwal(existingCheckpoint) {
   try {
     await callApi("upsertCheckpoint", { payload: result.value });
     invalidateAdminCaches();
-    notify("à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Checkpoint à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("บันทึกข้อมูล Checkpoint สำเร็จ");
     await ensureCheckpointsLoaded(true, true);
   } catch (err) {
-    notify(`à¸šà¸±à¸™à¸—à¸¶à¸à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ Checkpoint à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`บันทึกข้อมูล Checkpoint ไม่สำเร็จ: ${err.message}`);
   }
 }
 
 function renderAdminTable(rows) {
   const admins = Array.isArray(rows) ? rows : (state.admins || []);
   if (!admins.length) {
-    el.adminTableBody.innerHTML = '<tr><td colspan="5">??????????? Admin</td></tr>';
+    el.adminTableBody.innerHTML = '<tr><td colspan="5">ไม่พบข้อมูล Admin</td></tr>';
     return;
   }
 
@@ -363,7 +367,7 @@ function renderAdminTable(rows) {
 
 function renderGuardsTable(rows) {
   if (!rows.length) {
-    el.guardsTableBody.innerHTML = '<tr><td colspan="7">??????????? User</td></tr>';
+    el.guardsTableBody.innerHTML = '<tr><td colspan="7">ไม่พบข้อมูล User</td></tr>';
     return;
   }
 
@@ -413,7 +417,7 @@ async function confirmDeleteGuard(guard) {
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Delete",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    cancelButtonText: "ยกเลิก",
     confirmButtonColor: "#d14343"
   });
   if (!result.isConfirmed) return;
@@ -421,11 +425,11 @@ async function confirmDeleteGuard(guard) {
   try {
     await callApi("deleteGuard", { guardId: guard.guard_id });
     invalidateAdminCaches();
-    notify("à¸¥à¸š Guard à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Guard สำเร็จ");
     state.guardsLoaded = false;
     await ensureGuardsLoaded(true, true);
   } catch (err) {
-    notify(`à¸¥à¸š Guard à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Guard ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -437,14 +441,14 @@ async function confirmDeleteAdmin(admin) {
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Delete",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    cancelButtonText: "ยกเลิก",
     confirmButtonColor: "#d14343"
   });
   if (!result.isConfirmed) return;
 
   try {
     await callApi("deleteSupervisor", { supervisorId: admin.supervisor_id });
-    notify("à¸¥à¸š Admin à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Admin สำเร็จ");
     if (state.supervisor && String(state.supervisor.supervisor_id) === String(admin.supervisor_id)) {
       logout();
       return;
@@ -452,13 +456,13 @@ async function confirmDeleteAdmin(admin) {
     state.adminsLoaded = false;
     await ensureAdminsLoaded(true, true);
   } catch (err) {
-    notify(`à¸¥à¸š Admin à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Admin ไม่สำเร็จ: ${err.message}`);
   }
 }
 
 function renderCheckpointsTable(rows) {
   if (!rows.length) {
-    el.checkpointsTableBody.innerHTML = '<tr><td colspan="9">No checkpoints</td></tr>';
+    el.checkpointsTableBody.innerHTML = '<tr><td colspan="9">ไม่พบข้อมูล Checkpoint</td></tr>';
     return;
   }
 
@@ -518,7 +522,7 @@ async function openCheckpointQrSwal(checkpoint) {
   if (!window.Swal) return;
   const qrText = String(checkpoint.qr_text || checkpoint.checkpoint_id || "").trim();
   if (!qrText) {
-    notify("Checkpoint à¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸¡à¸µ QR Text");
+    notify("Checkpoint นี้ไม่มี QR Text");
     return;
   }
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(qrText)}`;
@@ -545,7 +549,7 @@ async function confirmDeleteCheckpoint(checkpoint) {
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Delete",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    cancelButtonText: "ยกเลิก",
     confirmButtonColor: "#d14343"
   });
   if (!result.isConfirmed) return;
@@ -553,11 +557,11 @@ async function confirmDeleteCheckpoint(checkpoint) {
   try {
     await callApi("deleteCheckpoint", { checkpointId: checkpoint.checkpoint_id });
     invalidateAdminCaches();
-    notify("à¸¥à¸š Checkpoint à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("ลบ Checkpoint สำเร็จ");
     state.checkpointsLoaded = false;
     await ensureCheckpointsLoaded(true, true);
   } catch (err) {
-    notify(`à¸¥à¸š Checkpoint à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`ลบ Checkpoint ไม่สำเร็จ: ${err.message}`);
   }
 }
 
@@ -884,7 +888,7 @@ async function openAssignDaySwal(dateKey) {
   const templateOptions = ['<option value="">เลือก Template</option>']
     .concat(templates.map((row) => `
       <option value="${escapeAttr(row.template_id || "")}">
-        ${escapeHtml(row.template_id || "")} - ${escapeHtml(row.template_name || "-")}
+        ${escapeHtml(stripTemplateIdPrefix(row.template_name || row.template_id || "-"))}
       </option>
     `))
     .join("");
@@ -895,18 +899,24 @@ async function openAssignDaySwal(dateKey) {
       String(row.shift_code || "").toUpperCase() === shiftCode
     );
     const selectedTemplateId = rows.length ? String(rows[0].template_id || "").trim() : "";
+    const selectedRoundsRequired = Math.max(1, Number(rows.length ? (rows[0].rounds_required || 1) : 1));
     const uniqueGuardCount = new Set(rows.map((row) => String(row.guard_id || "").trim()).filter(Boolean)).size;
     const shiftTemplateOptions = ['<option value="">เลือก Template</option>']
       .concat(templates.map((row) => `
         <option value="${escapeAttr(row.template_id || "")}"${String(row.template_id || "") === selectedTemplateId ? " selected" : ""}>
-          ${escapeHtml(row.template_id || "")} - ${escapeHtml(row.template_name || "-")}
+          ${escapeHtml(stripTemplateIdPrefix(row.template_name || row.template_id || "-"))}
         </option>
       `))
       .join("");
-    const templateNames = [...new Set(rows.map((row) => String(row.template_label || row.template_id || "").trim()).filter(Boolean))];
+    const templateNames = [...new Set(
+      rows
+        .map((row) => stripTemplateIdPrefix(row.template_label || row.template_id || ""))
+        .filter(Boolean)
+    )];
     const summary = rows.length
       ? `
         <div>Template ปัจจุบัน: <strong>${escapeHtml(templateNames[0] || "-")}</strong></div>
+        <div>จำนวนรอบ: <strong>${selectedRoundsRequired}</strong> รอบ</div>
         <div>Guard ที่ถูก assign: <strong>${uniqueGuardCount}</strong> คน</div>
       `
       : `<div>ยังไม่มีการ assign สำหรับ${formatShiftCodeThai(shiftCode)}</div>`;
@@ -920,6 +930,8 @@ async function openAssignDaySwal(dateKey) {
           <select id="assignTemplate_${shiftCode}">
             ${shiftTemplateOptions}
           </select>
+          <label for="assignRounds_${shiftCode}">จำนวนรอบ</label>
+          <input id="assignRounds_${shiftCode}" class="swal2-input" type="number" min="1" step="1" value="${escapeAttr(selectedRoundsRequired)}">
           <div class="assign-shift-btns">
             <button type="button" class="btn swal-btn swal-btn-secondary" data-clear-shift="${shiftCode}">ล้าง</button>
           </div>
@@ -951,11 +963,21 @@ async function openAssignDaySwal(dateKey) {
     preConfirm: () => {
       const dayTemplateId = String(document.getElementById("assignTemplate_DAY")?.value || "").trim();
       const nightTemplateId = String(document.getElementById("assignTemplate_NIGHT")?.value || "").trim();
+      const dayRoundsRequired = Math.max(1, Number(document.getElementById("assignRounds_DAY")?.value || 1));
+      const nightRoundsRequired = Math.max(1, Number(document.getElementById("assignRounds_NIGHT")?.value || 1));
       if (!dayTemplateId && !nightTemplateId) {
         Swal.showValidationMessage("กรุณาเลือก Template อย่างน้อย 1 กะ");
         return false;
       }
-      return { dayTemplateId, nightTemplateId };
+      if ((dayTemplateId && !Number.isFinite(dayRoundsRequired)) || dayRoundsRequired <= 0) {
+        Swal.showValidationMessage("จำนวนรอบของกะกลางวันต้องมากกว่า 0");
+        return false;
+      }
+      if ((nightTemplateId && !Number.isFinite(nightRoundsRequired)) || nightRoundsRequired <= 0) {
+        Swal.showValidationMessage("จำนวนรอบของกะกลางคืนต้องมากกว่า 0");
+        return false;
+      }
+      return { dayTemplateId, nightTemplateId, dayRoundsRequired, nightRoundsRequired };
     },
     didOpen: () => {
       const popup = Swal.getPopup();
@@ -990,10 +1012,10 @@ async function openAssignDaySwal(dateKey) {
 
   try {
     if (result.value.dayTemplateId) {
-      await saveAssignShiftByDate(targetDate, "DAY", result.value.dayTemplateId, true);
+      await saveAssignShiftByDate(targetDate, "DAY", result.value.dayTemplateId, result.value.dayRoundsRequired, true);
     }
     if (result.value.nightTemplateId) {
-      await saveAssignShiftByDate(targetDate, "NIGHT", result.value.nightTemplateId, true);
+      await saveAssignShiftByDate(targetDate, "NIGHT", result.value.nightTemplateId, result.value.nightRoundsRequired, true);
     }
     state.assignmentsByDateCache = {};
     state.assignmentsLoadedDate = "";
@@ -1004,7 +1026,7 @@ async function openAssignDaySwal(dateKey) {
   }
 }
 
-async function saveAssignShiftByDate(assignDate, shiftCode, templateId, silentMode) {
+async function saveAssignShiftByDate(assignDate, shiftCode, templateId, roundsRequired, silentMode) {
   const activeGuards = (state.guards || []).filter((row) => String(row.status || "active").toLowerCase() === "active");
   if (!activeGuards.length) {
     if (!silentMode) notify("ไม่พบ Guard ที่ Active ในระบบ", "warning");
@@ -1012,30 +1034,22 @@ async function saveAssignShiftByDate(assignDate, shiftCode, templateId, silentMo
   }
   await ensureShiftSettingsLoaded(true, false);
   const shiftTimes = getShiftSettingTimeRange(shiftCode);
-
-  const existingRows = (state.assignments || []).filter((row) =>
-    String(row.assign_date || "") === String(assignDate || "") &&
-    String(row.shift_code || "").toUpperCase() === String(shiftCode || "").toUpperCase()
-  );
+  const normalizedRoundsRequired = Math.max(1, Number(roundsRequired || 1));
 
   try {
-    await Promise.all(activeGuards.map((guard) => {
-      const guardId = String(guard.guard_id || "").trim();
-      const existingRow = existingRows.find((row) => String(row.guard_id || "") === guardId);
-      return callApi("upsertAssignment", {
-        payload: {
-          assign_id: existingRow?.assign_id || "",
-          assign_date: assignDate,
-          shift_code: shiftCode,
-          guard_id: guardId,
-          template_id: templateId,
-          start_time: shiftTimes.start_time,
-          end_time: shiftTimes.end_time,
-          status: "ACTIVE",
-          remark: ""
-        }
-      });
-    }));
+    await callApi("replaceAssignmentsForShift", {
+      payload: {
+        assign_date: assignDate,
+        shift_code: shiftCode,
+        template_id: templateId,
+        guard_ids: activeGuards.map((guard) => String(guard.guard_id || "").trim()).filter(Boolean),
+        rounds_required: normalizedRoundsRequired,
+        start_time: shiftTimes.start_time,
+        end_time: shiftTimes.end_time,
+        status: "ACTIVE",
+        remark: ""
+      }
+    });
 
     state.assignmentsByDateCache = {};
     state.assignmentsLoadedDate = "";
@@ -1061,7 +1075,7 @@ async function clearAssignShiftByDate(assignDate, shiftCode) {
   }
 
   try {
-    await Promise.all(rows.map((row) => callApi("deleteAssignment", { assignId: row.assign_id })));
+    await callApi("clearAssignmentsForShift", { date: assignDate, shiftCode });
     state.assignmentsByDateCache = {};
     state.assignmentsLoadedDate = "";
     await ensureAssignmentsLoaded(true, true);
@@ -1093,7 +1107,7 @@ async function openAssignmentSwal(existingAssignment, fixedShiftCode) {
     .filter((t) => String(t.status || "ACTIVE").toUpperCase() === "ACTIVE")
     .map((t) => `
     <option value="${escapeAttr(t.template_id || "")}"${String(existingAssignment?.template_id || "") === String(t.template_id || "") ? " selected" : ""}>
-      ${escapeHtml(t.template_id || "")} - ${escapeHtml(t.template_name || "-")}
+      ${escapeHtml(stripTemplateIdPrefix(t.template_name || t.template_id || "-"))}
     </option>
   `).join("");
 
@@ -1153,29 +1167,18 @@ async function openAssignmentSwal(existingAssignment, fixedShiftCode) {
       const shiftTimes = getShiftSettingTimeRange(shiftCode);
       const startTime = shiftTimes.start_time;
       const endTime = shiftTimes.end_time;
-      const existingRows = Array.isArray(state.assignments) ? state.assignments : [];
-
-      await Promise.all(activeGuards.map((guard) => {
-        const guardId = String(guard.guard_id || "").trim();
-        const existingRow = existingRows.find((row) =>
-          String(row.assign_date || "") === assignDate &&
-          String(row.shift_code || "").toUpperCase() === shiftCode &&
-          String(row.guard_id || "") === guardId
-        );
-        return callApi("upsertAssignment", {
-          payload: {
-            assign_id: existingRow?.assign_id || "",
-            assign_date: assignDate,
-            shift_code: shiftCode,
-            guard_id: guardId,
-            template_id: templateId,
-            start_time: startTime,
-            end_time: endTime,
-            status: "ACTIVE",
-            remark: ""
-          }
-        });
-      }));
+      await callApi("replaceAssignmentsForShift", {
+        payload: {
+          assign_date: assignDate,
+          shift_code: shiftCode,
+          template_id: templateId,
+          guard_ids: activeGuards.map((guard) => String(guard.guard_id || "").trim()).filter(Boolean),
+          start_time: startTime,
+          end_time: endTime,
+          status: "ACTIVE",
+          remark: ""
+        }
+      });
 
       if (el.assignDate) el.assignDate.value = assignDate;
       state.assignmentsByDateCache[String(assignDate || "")] = null;
@@ -1203,27 +1206,27 @@ async function openAssignmentSwal(existingAssignment, fixedShiftCode) {
     html: `
       <div class="swal-form-grid assign-swal-grid">
         <div class="swal-form-field">
-          <label>à¸§à¸±à¸™à¸—à¸µà¹ˆ</label>
+          <label>วันที่</label>
           <input id="swalAssignDate" class="swal2-input" type="date" value="${escapeAttr(defaultDate)}">
         </div>
         <div class="swal-form-field">
-          <label>à¸à¸°à¸‡à¸²à¸™</label>
+          <label>กะงาน</label>
           <select id="swalAssignShift" class="swal2-select" ${fixedShiftCode ? "disabled" : ""}>
-            <option value="DAY"${defaultShiftCode === "DAY" ? " selected" : ""}>à¸à¸°à¸à¸¥à¸²à¸‡à¸§à¸±à¸™</option>
-            <option value="NIGHT"${defaultShiftCode === "NIGHT" ? " selected" : ""}>à¸à¸°à¸à¸¥à¸²à¸‡à¸„à¸·à¸™</option>
+            <option value="DAY"${defaultShiftCode === "DAY" ? " selected" : ""}>กะกลางวัน</option>
+            <option value="NIGHT"${defaultShiftCode === "NIGHT" ? " selected" : ""}>กะกลางคืน</option>
           </select>
         </div>
         <div class="swal-form-field">
           <label>Guard</label>
           <select id="swalAssignGuard" class="swal2-select">
-            <option value="">à¹€à¸¥à¸·à¸­à¸ Guard</option>
+            <option value="">เลือก Guard</option>
             ${guardOptions}
           </select>
         </div>
         <div class="swal-form-field">
           <label>Template</label>
           <select id="swalAssignTemplate" class="swal2-select">
-            <option value="">à¹€à¸¥à¸·à¸­à¸ Template</option>
+            <option value="">เลือก Template</option>
             ${templateOptions}
           </select>
         </div>
@@ -1243,8 +1246,8 @@ async function openAssignmentSwal(existingAssignment, fixedShiftCode) {
           </select>
         </div>
         <div class="swal-form-field swal-form-field-full">
-          <label>à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸</label>
-          <textarea id="swalAssignRemark" class="swal2-textarea" placeholder="à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸•à¸´à¸¡">${escapeHtml(existingAssignment?.remark || "")}</textarea>
+          <label>หมายเหตุ</label>
+          <textarea id="swalAssignRemark" class="swal2-textarea" placeholder="หมายเหตุเพิ่มเติม">${escapeHtml(existingAssignment?.remark || "")}</textarea>
         </div>
       </div>
     `,
@@ -1259,19 +1262,19 @@ async function openAssignmentSwal(existingAssignment, fixedShiftCode) {
       const remark = String(document.getElementById("swalAssignRemark")?.value || "").trim();
 
       if (!assignDate) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¸§à¸±à¸™à¸—à¸µà¹ˆ");
+        Swal.showValidationMessage("กรุณาเลือกวันที่");
         return false;
       }
       if (!guardId) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸ Guard");
+        Swal.showValidationMessage("กรุณาเลือก Guard");
         return false;
       }
       if (!templateId) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸ Template");
+        Swal.showValidationMessage("กรุณาเลือก Template");
         return false;
       }
       if (!startTime || !endTime) {
-        Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸£à¸°à¸šà¸¸à¹€à¸§à¸¥à¸²à¹€à¸£à¸´à¹ˆà¸¡à¹à¸¥à¸°à¹€à¸§à¸¥à¸²à¸ªà¸´à¹‰à¸™à¸ªà¸¸à¸”");
+        Swal.showValidationMessage("กรุณาระบุเวลาเริ่มและเวลาสิ้นสุด");
         return false;
       }
 
@@ -1296,9 +1299,9 @@ async function openAssignmentSwal(existingAssignment, fixedShiftCode) {
     state.assignmentsByDateCache[String(result.value.assign_date || "")] = null;
     state.assignmentsLoadedDate = "";
     await ensureAssignmentsLoaded(true, true);
-    notify("à¸šà¸±à¸™à¸—à¸¶à¸ Assign à¸ªà¸³à¹€à¸£à¹‡à¸ˆ", "success");
+    notify("บันทึก Assign สำเร็จ", "success");
   } catch (err) {
-    notify(`à¸šà¸±à¸™à¸—à¸¶à¸ Assign à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    notify(`บันทึก Assign ไม่สำเร็จ: ${err.message}`, "error");
   }
 }
 
@@ -1449,12 +1452,12 @@ async function openShiftSettingsSwal() {
 async function confirmDeleteAssignment(row) {
   if (!window.Swal) return;
   const result = await Swal.fire({
-    title: "à¸¥à¸š Assign à¸™à¸µà¹‰à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ",
+    title: "ลบ Assign นี้หรือไม่",
     text: `${row.guard_label || row.guard_id || "-"} / ${row.template_label || row.template_id || "-"}`,
     icon: "warning",
     showCancelButton: true,
-    confirmButtonText: "à¸¥à¸š",
-    cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+    confirmButtonText: "ลบ",
+    cancelButtonText: "ยกเลิก",
     buttonsStyling: false,
     customClass: {
       popup: "swal-user-popup",
@@ -1469,9 +1472,9 @@ async function confirmDeleteAssignment(row) {
     state.assignmentsByDateCache[String(row.assign_date || "")] = null;
     state.assignmentsLoadedDate = "";
     await ensureAssignmentsLoaded(true, true);
-    notify("à¸¥à¸š Assign à¸ªà¸³à¹€à¸£à¹‡à¸ˆ", "success");
+    notify("ลบ Assign สำเร็จ", "success");
   } catch (err) {
-    notify(`à¸¥à¸š Assign à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`, "error");
+    notify(`ลบ Assign ไม่สำเร็จ: ${err.message}`, "error");
   }
 }
 async function openChangePasswordSwal() {
@@ -1479,29 +1482,29 @@ async function openChangePasswordSwal() {
   if (!state.supervisor || !window.Swal) return;
 
   const result = await Swal.fire({
-      title: "à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™",
+      title: "เปลี่ยนรหัสผ่าน",
     width: 460,
     customClass: { popup: "swal-user-popup" },
     html: `
       <div style="display:grid;gap:8px;text-align:left">
-        <label>à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹ƒà¸«à¸¡à¹ˆ</label>
-        <input id="swalNewPassword" class="swal2-input" type="password" placeholder="à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹ƒà¸«à¸¡à¹ˆ">
-        <label>à¸¢à¸·à¸™à¸¢à¸±à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™</label>
-        <input id="swalConfirmPassword" class="swal2-input" type="password" placeholder="à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡">
+        <label>รหัสผ่านใหม่</label>
+        <input id="swalNewPassword" class="swal2-input" type="password" placeholder="กรอกรหัสผ่านใหม่">
+        <label>ยืนยันรหัสผ่าน</label>
+        <input id="swalConfirmPassword" class="swal2-input" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง">
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: "Save",
-      cancelButtonText: "à¸¢à¸à¹€à¸¥à¸´à¸",
+      cancelButtonText: "ยกเลิก",
     preConfirm: () => {
       const newPassword = document.getElementById("swalNewPassword").value;
       const confirmPassword = document.getElementById("swalConfirmPassword").value;
         if (!newPassword) {
-          Swal.showValidationMessage("à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹ƒà¸«à¸¡à¹ˆ");
+          Swal.showValidationMessage("กรุณากรอกรหัสผ่านใหม่");
           return false;
         }
         if (newPassword !== confirmPassword) {
-          Swal.showValidationMessage("à¸¢à¸·à¸™à¸¢à¸±à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹„à¸¡à¹ˆà¸•à¸£à¸‡à¸à¸±à¸™");
+          Swal.showValidationMessage("ยืนยันรหัสผ่านไม่ตรงกัน");
           return false;
         }
       return { newPassword };
@@ -1514,9 +1517,9 @@ async function openChangePasswordSwal() {
       supervisorId: state.supervisor.supervisor_id,
       newPassword: result.value.newPassword
     });
-    notify("à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¸ªà¸³à¹€à¸£à¹‡à¸ˆ");
+    notify("เปลี่ยนรหัสผ่านสำเร็จ");
   } catch (err) {
-    notify(`à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸£à¸«à¸±à¸ªà¸œà¹ˆà¸²à¸™à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ${err.message}`);
+    notify(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${err.message}`);
   }
 }
 

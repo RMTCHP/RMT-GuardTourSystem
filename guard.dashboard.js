@@ -125,18 +125,12 @@ async function loadGuardDashboardSummary(forceRefresh) {
 
   try {
     const dates = getGuardRelevantSummaryDates_();
-    const logResults = await Promise.allSettled(
-      dates.map((date) => callApi("listCheckLogs", { date, guardId: state.guard.guard_id }))
-    );
-    const incidentResults = await Promise.allSettled(
-      dates.map((date) => callApi("listIncidents", { date, guardId: state.guard.guard_id, status: "" }))
-    );
-    const logs = logResults.flatMap((res) => (
-      res.status === "fulfilled" && Array.isArray(res.value) ? res.value : []
-    ));
-    const incidents = incidentResults.flatMap((res) => (
-      res.status === "fulfilled" && Array.isArray(res.value) ? res.value : []
-    ));
+    const bundle = await callApi("getGuardSummaryBundle", {
+      guardId: state.guard.guard_id,
+      dates
+    });
+    const logs = Array.isArray(bundle?.logs) ? bundle.logs : [];
+    const incidents = Array.isArray(bundle?.incidents) ? bundle.incidents : [];
     const summary = buildGuardSummaryFromRows(logs, incidents);
     state.summaryCacheDate = cacheKey;
     state.summaryCache = summary;
@@ -255,9 +249,11 @@ function computeRoundProgressByCounter(shift, counterMap) {
   const done = rounds.filter((r) => Number(r.total || 0) > 0 && Number(r.done || 0) >= Number(r.total || 0)).length;
   return { done, total };
 }
+
 function refreshQueueBanner() {
   // Queue runs in background; no dashboard KPI card for queue/sync anymore.
 }
+
 function invalidateGuardSummaryCache() {
   state.summaryCacheDate = "";
   state.summaryCache = null;

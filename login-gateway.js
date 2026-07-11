@@ -1,4 +1,4 @@
-﻿const API_URL = "https://script.google.com/macros/s/AKfycby5hEIim-I0KCEsZsprWne8clnsBBOhyACbw6kzagoHfpEjecLlYjb240sYB2wUUTg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyGeCsJDJ8pmlmiCCXZS_eVLumVFfphMEqHhZ_MPQlwKH8_XfcEN2HXO9EaR2_GRdA/exec";
 const GUARD_SESSION_KEY = "guardtour.session";
 const ADMIN_SESSION_KEY = "guardtour.supervisor.session";
 
@@ -32,38 +32,32 @@ async function handleLogin(usernameInput, passwordInput) {
   showLoading();
 
   try {
-    const [adminResult, guardResult] = await Promise.allSettled([
-      callApi("supervisorLogin", { username, password }),
-      callApi("loginGuard", { username, password })
-    ]);
-
+    const loginResult = await callApi("identifyLogin", { username, password });
     clearStoredSessions();
 
-    if (adminResult.status === "fulfilled") {
+    if (String(loginResult?.role || "").toLowerCase() === "admin" && loginResult.user) {
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
-        supervisor_id: adminResult.value.supervisor_id || "",
-        username: adminResult.value.username || username,
-        name: adminResult.value.name || "",
-        email: adminResult.value.email || ""
+        supervisor_id: loginResult.user.supervisor_id || "",
+        username: loginResult.user.username || username,
+        name: loginResult.user.name || "",
+        email: loginResult.user.email || ""
       }));
       await showMessage("success", "เข้าสู่ระบบสำเร็จ", "เข้าสู่ระบบในสิทธิ์ Admin");
       window.location.href = "admin.html";
       return;
     }
 
-    if (guardResult.status === "fulfilled") {
+    if (String(loginResult?.role || "").toLowerCase() === "guard" && loginResult.user) {
       localStorage.setItem(GUARD_SESSION_KEY, JSON.stringify({
-        guardId: guardResult.value.guard_id || "",
-        username: guardResult.value.username || username,
+        guardId: loginResult.user.guard_id || "",
+        username: loginResult.user.username || username,
         activeShiftId: ""
       }));
       await showMessage("success", "เข้าสู่ระบบสำเร็จ", "เข้าสู่ระบบในสิทธิ์ รปภ");
       window.location.href = "Guard.html";
       return;
     }
-
-    const errorMessage = extractErrorMessage(adminResult, guardResult);
-    throw new Error(errorMessage);
+    throw new Error("ไม่สามารถระบุสิทธิ์ผู้ใช้งานได้");
   } catch (err) {
     if (window.Swal) Swal.close();
     await showMessage("error", "เข้าสู่ระบบไม่สำเร็จ", err.message || "ไม่สามารถเข้าสู่ระบบได้");
@@ -87,19 +81,6 @@ async function callApi(action, payload) {
   }
 
   return result.data;
-}
-
-function extractErrorMessage(adminResult, guardResult) {
-  const adminMessage = adminResult.status === "rejected" ? String(adminResult.reason?.message || "") : "";
-  const guardMessage = guardResult.status === "rejected" ? String(guardResult.reason?.message || "") : "";
-
-  if (guardMessage && !/Supervisor not found|Invalid password/i.test(guardMessage)) {
-    return guardMessage;
-  }
-  if (adminMessage && !/Guard not found or inactive/i.test(adminMessage)) {
-    return adminMessage;
-  }
-  return "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
 }
 
 function clearStoredSessions() {
